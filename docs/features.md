@@ -2,6 +2,22 @@
 
 This file is the complete functional inventory for version 0.1.0.
 
+## Three-pane workspace
+
+The workspace has three connected regions rather than three unrelated tools:
+
+| Region | Purpose | Main behavior |
+| --- | --- | --- |
+| Course directory | Find and switch lessons | Groups videos by course and chapter, searches titles, shows duration and knowledge-block count, and marks the active lesson |
+| Synchronized player | Watch and navigate the explanation | Provides chapter markers, seek and speed controls, timeline previews, screenshots, PiP, theater mode, fullscreen and keyboard shortcuts |
+| Knowledge notes and AI tutor | Understand, annotate and improve the current lesson | Shows terms, timeline, mechanisms, visual evidence, traps, active recall and the course network; selected notes can be explained, checked or revised through the tutor |
+
+The regions share the current video time. Selecting a lesson loads both the player and
+its notes. Playback highlights the matching note block, while note timestamps seek the
+video. AI requests combine selected text, current time, nearby transcript and the
+nearest visual frame. Proposed revisions remain separate from the note until the
+learner accepts them, and accepted changes can be undone.
+
 ## Course library
 
 - Loads one or more course packs from `packs/`.
