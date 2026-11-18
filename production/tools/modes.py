@@ -20,7 +20,7 @@ MODES = {
         "label": "科普短片（精品手工路线）",
         # 科普不追求量，追求每一支都拿得出手：手写场景、逐页定制、密度更高。
         "target_min": [2.0, 6.0],
-        "gap": 0.25, "mm_speed": 0.85, "quiz": False, "recap": True,
+        "gap": 0.25, "mm_speed": 1.08, "quiz": False, "recap": True,
         "chapters": False, "fps_check": 3,
         "rules": [
             ("每页视觉都要专门设计：禁止用生成器模板页堆片", "handcrafted_only"),
@@ -34,7 +34,7 @@ MODES = {
     "course": {
         "label": "长教学",
         "target_min": [15.0, 60.0],
-        "gap": 0.25, "mm_speed": 0.85, "quiz": True, "recap": True,
+        "gap": 0.25, "mm_speed": 1.08, "quiz": True, "recap": True,
         "chapters": True, "fps_check": 3,
         "rules": [
             ("必须由 ≥2 个 B站来源整合（多源涅槃，不是凭空生成）", "multi_source"),
@@ -56,7 +56,7 @@ MODES = {
     "remix": {
         "label": "视频涅槃",
         "target_min": [0.0, 999.0],          # 不按时长卡，按信息守恒卡
-        "gap": 0.25, "mm_speed": 0.85, "quiz": True, "recap": True,
+        "gap": 0.25, "mm_speed": 1.08, "quiz": True, "recap": True,
         "chapters": False, "fps_check": 3,
         "rules": [
             ("有效信息总量不变：覆盖清单漏一条不许交付", "coverage"),

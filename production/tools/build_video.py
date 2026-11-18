@@ -653,9 +653,10 @@ def main():
                     choices=["edge", "minimax"], help="TTS backend")
     ap.add_argument("--theme", default="dark", choices=["dark", "rough"],
                     help="dark = 深色幻灯片；rough = 手绘白板风（楷体 + 抖动笔画）")
-    ap.add_argument("--mm-speed", type=float, default=0.9,
-                    help="MiniMax speaking speed (0.9 keeps the course over 50 min)")
-    ap.add_argument("--rate", default="-5%")
+    ap.add_argument("--mm-speed", type=float,
+                    default=float(os.environ.get("VKS_TTS_SPEED", "1.08")),
+                    help="MiniMax speaking speed; VKS_TTS_SPEED overrides the default")
+    ap.add_argument("--rate", default=os.environ.get("VKS_EDGE_TTS_RATE", "+5%"))
     ap.add_argument("--gap", type=float, default=0.25)
     a = ap.parse_args()
 

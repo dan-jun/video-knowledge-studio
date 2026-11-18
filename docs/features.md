@@ -1,6 +1,6 @@
 # Feature reference
 
-This file is the complete functional inventory for version 0.2.0.
+This file is the complete functional inventory for version 0.2.1.
 
 ## Three-pane workspace
 
@@ -72,6 +72,8 @@ learner accepts them, and accepted changes can be undone.
   visual density, terminology, pronunciation risk and final artifact presence.
 - Rendering performs per-page TTS, Manim/slide composition, exact segment assembly,
   subtitle generation and hard-subtitle burn-in.
+- Edge TTS is available by default; MiniMax TTS can be configured with a private
+  repository-external key for a more natural voice and adjustable speed.
 - Long jobs run in the background and stream bounded logs to the browser.
 - Final videos can be previewed and downloaded from the same page.
 - Production state lives under `data/production/`; it is ignored by Git and Docker build context.

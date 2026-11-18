@@ -83,3 +83,13 @@ python -m vks
 Docker 默认镜像也会安装制作依赖。大型长教学片需要明显更长的渲染时间；制作项目
 和中间文件放在 `data/production/`，不会进入 Git。源视频自动转写属于单独的
 `.[transcription]` 可选能力。
+
+配音默认使用 Edge TTS `+5%` 语速。需要更自然的声音时，可在环境变量中配置
+MiniMax，并将密钥放在仓库之外：
+
+```text
+TTS_PROVIDER=minimax
+TTS_VOICE=female-yujie
+VKS_TTS_SPEED=1.08
+MINIMAX_KEY_FILE=/absolute/path/to/minimax.key
+```

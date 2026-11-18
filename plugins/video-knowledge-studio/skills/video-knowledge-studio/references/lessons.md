@@ -124,3 +124,17 @@
   tutor evidence-and-revision close-up, and a short GIF rendered by the real pipeline.
 - **Verification:** Inspect the diagrams and screenshots visually, validate SVG XML,
   check every local README link, and bound demo-asset sizes in automated tests.
+
+## 2026-11-18 — Product demos must show the product operating
+
+- **Symptom:** A narrated static-slide demo looked like a PowerPoint and did not prove
+  that video playback, note selection, AI tutoring, production controls, or rendering
+  actually worked.
+- **Root cause:** The recording focused on explaining features instead of performing
+  them, and the default MiniMax speed of 0.85 made narration feel slow and synthetic.
+- **Fix:** Combine a short Manim feature animation with an actual browser recording that
+  includes a visible cursor, live page changes, an AI response, production controls and
+  rendering logs. Use MiniMax `female-yujie` at a faster speed and normalize the final
+  audio.
+- **Verification:** Confirm the finished video contains both animation and live UI,
+  inspect frames from each phase, check H.264/AAC output, and verify audio loudness.

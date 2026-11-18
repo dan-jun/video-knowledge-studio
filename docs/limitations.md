@@ -1,6 +1,6 @@
 # Current limitations
 
-These are real product boundaries for version 0.2.0.
+These are real product boundaries for version 0.2.1.
 
 ## Multi-user and cloud
 

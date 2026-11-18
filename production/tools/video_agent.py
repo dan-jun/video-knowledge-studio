@@ -142,9 +142,10 @@ def cmd_render(a):
     voice = os.environ.get("TTS_VOICE") or (
         "zh-CN-XiaoxiaoNeural" if tts == "edge" else "Chinese (Mandarin)_Reliable_Executive"
     )
+    tts_speed = float(os.environ.get("VKS_TTS_SPEED", p["mm_speed"]))
     cmd = [PY, os.path.join(HERE, "build_video.py"), sb, out,
            "--tts", tts, "--voice", voice,
-           "--mm-speed", str(p["mm_speed"])]
+           "--mm-speed", str(tts_speed)]
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         print(json.dumps({"ok": False, "stage": "render",
