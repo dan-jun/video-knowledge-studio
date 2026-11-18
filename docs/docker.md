@@ -3,6 +3,10 @@
 Docker packages Python, FFmpeg and the application into one image, so users do
 not need to install Python or system dependencies manually.
 
+Install Docker Desktop for Windows or macOS, or Docker Engine with the Compose
+plugin on Linux, before running the commands below. Docker Desktop requires a
+one-time graphical setup and cannot be silently installed by this repository.
+
 ## One command
 
 Windows:
@@ -19,7 +23,8 @@ macOS/Linux:
 
 The helper:
 
-1. verifies Docker is installed;
+1. finds Docker, including the default Docker Desktop install locations when
+   `docker` is not yet available on the current terminal's PATH;
 2. selects a free local port;
 3. generates a random login password and writes `.env.docker`;
 4. runs `docker compose up -d --build`;

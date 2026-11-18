@@ -25,6 +25,27 @@ ENV_FILE = ROOT / ".env.docker"
 def docker_command() -> str:
     command = shutil.which("docker")
     if not command:
+        candidates = []
+        if os.name == "nt":
+            local_app_data = os.environ.get("LOCALAPPDATA")
+            program_files = os.environ.get("ProgramFiles")
+            if local_app_data:
+                candidates.append(
+                    Path(local_app_data)
+                    / "Programs"
+                    / "DockerDesktop"
+                    / "resources"
+                    / "bin"
+                    / "docker.exe"
+                )
+            if program_files:
+                candidates.append(
+                    Path(program_files) / "Docker" / "Docker" / "resources" / "bin" / "docker.exe"
+                )
+        elif sys.platform == "darwin":
+            candidates.append(Path("/Applications/Docker.app/Contents/Resources/bin/docker"))
+        command = next((str(path) for path in candidates if path.is_file()), None)
+    if not command:
         raise SystemExit(
             "Docker is not installed. Install Docker Desktop, or run `python -m vks` without Docker."
         )

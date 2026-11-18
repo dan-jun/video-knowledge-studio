@@ -4,6 +4,8 @@
 __pycache__
 data/state
 data/cache
+data/.session_secret
+data/studio.pid
 .env
 .env.docker
 *.log

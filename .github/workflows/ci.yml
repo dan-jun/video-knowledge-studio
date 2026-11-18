@@ -25,8 +25,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Create secret-like files for build-context check
+        run: |
+          mkdir -p data
+          printf 'must-not-ship' > data/.session_secret
+          printf 'must-not-ship' > data/studio.pid
       - name: Build image
         run: docker build -t video-knowledge-studio:test .
+      - name: Verify private state is not in image
+        run: |
+          docker run --rm --entrypoint sh video-knowledge-studio:test -c \
+            'test ! -e /app/data/.session_secret && test ! -e /app/data/studio.pid'
       - name: Start and health check
         run: |
           docker run -d --name vks-test \

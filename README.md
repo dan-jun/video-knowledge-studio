@@ -98,7 +98,8 @@ python scripts/import_course.py --input "D:\courses\my-course" --title "我的�
 
 ## Docker
 
-无需本机安装 Python 或 FFmpeg，也不需要手工设置密码：
+先安装 Docker Desktop（Windows/macOS）或 Docker Engine + Compose（Linux）。
+项目无需本机安装 Python 或 FFmpeg，也不需要手工设置密码：
 
 ```powershell
 .\docker-up.ps1 -Open
