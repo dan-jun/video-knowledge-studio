@@ -11,3 +11,4 @@
 - Tests, CI, Docker and redistribution-safe demo course.
 - Codex Skill wrapper and one-command bootstrap for Agent-assisted local installs.
 - Complete feature, API, configuration, deployment and limitation documentation.
+- Runtime provider fallback in automatic AI mode.

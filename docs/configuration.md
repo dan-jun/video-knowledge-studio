@@ -26,8 +26,9 @@ The app reads `.env` from the repository root. Existing environment variables wi
 | `OPENAI_API_KEY` | empty | Server-side API key |
 | `VKS_MODEL` | `gpt-4.1-mini` | Exact model identifier |
 
-`auto` selects Codex CLI when available, then an OpenAI-compatible configuration,
-then the offline demo provider.
+`auto` tries Codex CLI when available, then an OpenAI-compatible configuration,
+then the offline demo provider. If a configured provider fails during a request,
+`auto` continues to the next provider and reports the provider that actually answered.
 
 ## Security behavior
 

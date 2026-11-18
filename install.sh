@@ -2,9 +2,9 @@
 set -eu
 
 cd "$(dirname "$0")"
-python3 scripts/bootstrap.py install
 
 if [ "${VKS_INSTALL_ONLY:-0}" = "1" ]; then
+  python3 scripts/bootstrap.py install
   exit 0
 fi
 

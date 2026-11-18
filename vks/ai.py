@@ -215,18 +215,21 @@ class TutorService:
             "mock": MockProvider(),
         }
 
-    def resolve(self):
+    def candidates(self):
         requested = self.settings.ai_provider
         if requested == "auto":
+            rows = []
             for name in ("codex", "openai"):
                 provider = self.providers[name]
                 if provider.available():
-                    return provider
-            return self.providers["mock"]
+                    rows.append(provider)
+            rows.append(self.providers["mock"])
+            return rows
         provider = self.providers.get(requested)
-        if provider:
-            return provider
-        return self.providers["mock"]
+        return [provider or self.providers["mock"]]
+
+    def resolve(self):
+        return self.candidates()[0]
 
     def status(self) -> dict[str, Any]:
         provider = self.resolve()
@@ -237,5 +240,13 @@ class TutorService:
         }
 
     def answer(self, packet: dict[str, Any], image_path: Path | None) -> dict[str, Any]:
-        provider = self.resolve()
-        return provider.answer(json.dumps(packet, ensure_ascii=False), image_path)
+        prompt = json.dumps(packet, ensure_ascii=False)
+        errors = []
+        for provider in self.candidates():
+            try:
+                return provider.answer(prompt, image_path)
+            except Exception as exc:
+                errors.append(f"{provider.name}: {str(exc)[:400]}")
+                if self.settings.ai_provider != "auto":
+                    break
+        raise RuntimeError(" | ".join(errors) or "no AI provider available")
