@@ -11,11 +11,11 @@
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
 [![Container](https://img.shields.io/badge/GHCR-video--knowledge--studio-2496ED?logo=docker&logoColor=white)](https://github.com/dan-jun/video-knowledge-studio/pkgs/container/video-knowledge-studio)
 
-[观看 92 秒演示](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.2/video-knowledge-studio-product-demo-92s.mp4) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
+[观看 92 秒演示](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.2/video-knowledge-studio-product-demo-92s.mp4?download=1) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
 
 > **本地优先**：课程、制作项目、批注和修订默认只保存在自己的电脑上。
 
-[![播放 Video Knowledge Studio 92 秒演示](docs/images/product-demo-poster.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.2/video-knowledge-studio-product-demo-92s.mp4)
+[![播放 Video Knowledge Studio 92 秒演示](docs/images/product-demo-poster.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.2/video-knowledge-studio-product-demo-92s.mp4?download=1)
 
 <sub>92 秒发布片：动画解释与真实产品操作连续剪辑，展示学习链、知识网、上下文 AI、三种视频产线和门禁检查。</sub>
 
