@@ -20,6 +20,8 @@ The project is local-first: course packs stay on disk. Only an explicit AI quest
 - **多提供方**：本机 Codex CLI、任意 OpenAI-compatible API、离线演示模式。
 - **任务式 AI 请求**：浏览器提交任务后轮询状态，不依赖长时间挂起 HTTP 连接。
 
+完整功能清单见 [docs/features.md](docs/features.md)。当前版本明确不支持“一个网站内多用户互不可见”，部署边界见 [docs/limitations.md](docs/limitations.md)。
+
 ## 快速开始
 
 需要 Python 3.10+。核心服务没有第三方 Python 依赖。关键帧提取需要 `ffmpeg`。
@@ -31,6 +33,14 @@ python -m vks
 ```
 
 打开 <http://127.0.0.1:7870/>。没有模型配置时会进入**离线演示模式**，它只验证 UI 交互，不会生成可信知识结论。
+
+也可以让 Agent 按 [Agent 安装说明](docs/agent-install.md) 自动安装。
+
+或者直接使用仓库的一键安装器：
+
+```powershell
+python scripts/bootstrap.py start --open
+```
 
 ### 启用 AI
 
@@ -115,10 +125,22 @@ python scripts/make_demo_media.py
 vks/              Python 服务、课程包、认证、状态和 AI 适配
 web/              播放器与知识笔记前端
 packs/demo/       可再分发的 MIT 演示课程
+skill/            Codex Skill：安装、启动、导入与排错
 scripts/          导入器与演示媒体生成器
 tests/            单元与集成测试
 data/             本地个人状态和帧缓存（不提交）
 ```
+
+## 文档导航
+
+- [完整功能清单](docs/features.md)
+- [课程包格式](docs/course-pack.md)
+- [HTTP API](docs/api.md)
+- [配置项](docs/configuration.md)
+- [部署模式](docs/deployment.md)
+- [当前限制](docs/limitations.md)
+- [Agent 一键安装](docs/agent-install.md)
+- [架构与信任边界](docs/architecture.md)
 
 ## 下一步路线
 

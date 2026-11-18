@@ -9,3 +9,5 @@
 - Codex CLI, OpenAI-compatible and offline demo providers.
 - Background AI jobs and local state store.
 - Tests, CI, Docker and redistribution-safe demo course.
+- Codex Skill wrapper and one-command bootstrap for Agent-assisted local installs.
+- Complete feature, API, configuration, deployment and limitation documentation.

@@ -10,6 +10,7 @@ htmlcov/
 data/state/
 data/cache/
 data/.session_secret
+data/studio.pid
 *.log
 
 .DS_Store
