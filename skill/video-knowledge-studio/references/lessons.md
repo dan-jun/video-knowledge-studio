@@ -38,3 +38,17 @@
 - **Verification:** Compare every table claim with the UI behavior in `web/app.js`
   and `web/knowledge.js`; distinguish the active-lesson marker from saved per-video
   playback position.
+
+## 2026-11-18 — Separate upstream production modes from the learning workspace
+
+- **Symptom:** The public README did not explain the three video-production modes:
+  `remix`, `course`, and `scipop`.
+- **Root cause:** The repository publishes the downstream knowledge workspace, while
+  the production pipeline lives in a separate internal toolchain with additional
+  Manim, TTS, rendering, and gate dependencies.
+- **Fix:** Add the production-mode definitions and selection guide, but state
+  explicitly that the production pipeline is upstream and not bundled as a
+  ready-to-use feature.
+- **Verification:** Cross-check names, labels, duration ranges, source-count rules,
+  chapter and practice constraints, and recap requirements against
+  `tools/modes.py` in the production workspace.
