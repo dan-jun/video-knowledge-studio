@@ -83,3 +83,16 @@
 - **Verification:** Check every local Markdown link and image, keep modes consistent
   with `production/tools/modes.py`, and re-run the test, syntax and Skill validation
   suite after the documentation edit.
+
+## 2026-11-18 — Document demand-driven learning without overclaiming discovery
+
+- **Symptom:** The project's most valuable use case was easy to miss: starting from a
+  work, research or project knowledge gap rather than from an existing course.
+- **Root cause:** The documentation described video production and learning as separate
+  capabilities, but did not connect goal decomposition, source discovery, integration,
+  rendering, note taking and contextual AI into one intent-driven workflow.
+- **Fix:** Add a demand-driven learning section with concrete examples, an end-to-end
+  flow and a copyable Agent task. Mark automatic Bilibili/YouTube discovery and study
+  planning as Roadmap items rather than pretending they are built-in.
+- **Verification:** Recheck every current-versus-planned claim against the production
+  UI and API, then validate all local links and Skill synchronization.
