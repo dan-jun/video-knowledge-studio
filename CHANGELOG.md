@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2 - 2026-11-18
+
+- Rebuilt the product launch video as a 92-second music-driven film with kinetic
+  feature animation, real learning-workspace recording, contextual AI evidence,
+  production-line operation, visible gate results and rendered output.
+- Removed the slow synthetic voiceover and replaced static slide pacing with hard
+  cuts, cursor-led interactions, product closeups and an original instrumental score.
+- Fixed the Codex tutor failing when Windows inherited an unusable temporary
+  directory; AI subprocess scratch files now stay under the workspace data root.
+
 ## 0.2.1 - 2026-11-18
 
 - Added portable MiniMax TTS with configurable voice and speaking speed.

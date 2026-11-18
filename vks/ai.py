@@ -5,9 +5,9 @@ import json
 import os
 import shutil
 import subprocess
-import tempfile
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -104,10 +104,17 @@ class CodexProvider:
         return bool(self.executable and (Path(self.executable).is_file() or shutil.which(self.executable)))
 
     def answer(self, prompt: str, image_path: Path | None) -> dict[str, Any]:
-        with tempfile.TemporaryDirectory(prefix="vks_ai_") as td:
-            answer_file = Path(td) / "answer.json"
-            stdout_file = Path(td) / "stdout.log"
-            stderr_file = Path(td) / "stderr.log"
+        # Windows launchers can inherit a stale or non-ASCII TEMP path. Keep AI
+        # subprocess scratch files inside the workspace data directory so the
+        # Codex CLI can start even when the host TEMP value is unusable.
+        ai_tmp = self.settings.data_dir / "ai-tmp"
+        ai_tmp.mkdir(parents=True, exist_ok=True)
+        run_dir = ai_tmp / f"vks_ai_{uuid.uuid4().hex}"
+        run_dir.mkdir()
+        try:
+            answer_file = run_dir / "answer.json"
+            stdout_file = run_dir / "stdout.log"
+            stderr_file = run_dir / "stderr.log"
             cmd = [
                 self.executable, "exec", "--ephemeral", "--skip-git-repo-check",
                 "-s", "read-only", "-C", str(self.settings.root),
@@ -117,16 +124,24 @@ class CodexProvider:
                 cmd += ["-i", str(image_path)]
             cmd += ["-"]
             with stdout_file.open("wb") as out, stderr_file.open("wb") as err:
+                child_env = {
+                    **os.environ,
+                    "PYTHONIOENCODING": "utf-8",
+                    "TEMP": str(ai_tmp),
+                    "TMP": str(ai_tmp),
+                }
                 proc = subprocess.run(
                     cmd, input=(SYSTEM_PROMPT + "\n\nEVIDENCE PACKET:\n" + prompt).encode(),
                     stdout=out, stderr=err, timeout=self.settings.ai_timeout,
-                    env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+                    env=child_env,
                 )
             raw = answer_file.read_text(encoding="utf-8") if answer_file.is_file() else ""
             if raw:
                 return _normalize(_extract_json(raw), self.name)
             error = stderr_file.read_bytes().decode("utf-8", "replace")[-1200:]
             raise RuntimeError(error or f"codex exited with {proc.returncode}")
+        finally:
+            shutil.rmtree(run_dir, ignore_errors=True)
 
 
 class OpenAICompatibleProvider:

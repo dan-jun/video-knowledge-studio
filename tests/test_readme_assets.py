@@ -42,10 +42,14 @@ class ReadmeAssetTests(unittest.TestCase):
             "production-workspace.png",
             "production-demo.gif",
             "social-preview.png",
+            "product-demo-poster.png",
         ):
             path = ROOT / "docs" / "images" / name
             self.assertGreater(path.stat().st_size, 10_000)
             self.assertLess(path.stat().st_size, 2_000_000)
+        video = ROOT / "docs" / "media" / "product-demo.mp4"
+        self.assertGreater(video.stat().st_size, 1_000_000)
+        self.assertLess(video.stat().st_size, 10_000_000)
 
 
 if __name__ == "__main__":

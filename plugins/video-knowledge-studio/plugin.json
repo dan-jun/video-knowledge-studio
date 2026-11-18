@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "video-knowledge-studio",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Turn a knowledge gap into sourced animated courses and synchronized study notes.",
   "author": {
     "name": "Video Knowledge Studio contributors",

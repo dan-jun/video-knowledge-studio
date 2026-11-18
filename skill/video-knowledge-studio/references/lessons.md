@@ -138,3 +138,32 @@
   audio.
 - **Verification:** Confirm the finished video contains both animation and live UI,
   inspect frames from each phase, check H.264/AAC output, and verify audio loudness.
+
+## 2026-11-18 — Codex tutor must not inherit Windows TEMP blindly
+
+- **Symptom:** The AI badge said `codex-cli`, but requests silently returned the
+  offline-demo answer; a direct provider call raised `WinError 2/5` while creating
+  scratch files.
+- **Root cause:** A Windows launcher had inherited a stale, non-ASCII or unwritable
+  `TEMP` path. Temporary-directory creation failed before the Codex subprocess
+  started, and auto mode silently fell back to mock.
+- **Fix:** Create a unique AI scratch directory under `VKS_DATA/ai-tmp`, pass that
+  directory as both `TEMP` and `TMP` to the child, and remove the run directory in a
+  `finally` block. The fallback remains for genuine provider failures.
+- **Verification:** The same question returned a complete `codex-cli` response with
+  timestamps, evidence and a proposed revision in about 11 seconds; a regression test
+  confirms the child temp path stays inside the configured data directory.
+
+## 2026-11-18 — Reference-inspired launch films need measured pacing
+
+- **Symptom:** A 54-second mix of Manim and live UI was still perceived as a narrated
+  slide deck.
+- **Root cause:** The team treated “more animation” as sufficient without matching the
+  reference's structure: no continuous voiceover, hard visual cuts, real state changes,
+  and dense product examples after one complete workflow.
+- **Fix:** Analyze frames and audio first, then build a 92-second film with kinetic
+  typography, an original beat-driven score, cursor-led recordings, real AI output,
+  production gates and a full-screen rendered-video close.
+- **Verification:** Inspect 1–2 second contact sheets and full-resolution keyframes,
+  confirm no clipped labels, verify 1920×1080 H.264/AAC, no clipped audio, output under
+  10 MB, and replay the learning and production workflows through the public UI.
