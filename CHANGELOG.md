@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.7 - 2026-11-18
+
+- Fixed generated project metadata so `scipop` and `course` runs no longer inherit
+  hard-coded remix duration, speech-rate and quiz settings.
+- The selected production mode now supplies the correct display label and executable
+  parameter set in `agent.json`.
+- Added a regression test that generates a project and verifies the persisted mode,
+  label, duration range, speaking speed and quiz flag.
+
 ## 0.2.6 - 2026-11-18
 
 - Removed the AI response waiting interval from the final cut instead of speeding up
@@ -7,6 +16,8 @@
 - Changed all enlarged interface details to fixed screenshots with stable local crops,
   removing live zooming and scroll-induced jitter.
 - Captured a clean answer screenshot with the selection toolbar and cursor removed.
+- Fixed generated project metadata defaulting to remix settings regardless of the
+  selected `scipop` or `course` mode, and added a regression test.
 
 ## 0.2.5 - 2026-11-18
 

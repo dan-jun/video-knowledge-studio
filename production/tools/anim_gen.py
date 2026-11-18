@@ -334,12 +334,20 @@ def main():
     sb = build_storyboard(spec, topic, cls_names)
     (proj / "storyboard.json").write_text(json.dumps(sb, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    aj = {"mode": a.mode or "remix", "title": spec["title"], "label": spec.get("label", "生成器产物"),
+    from modes import MODES
+    mode_key = a.mode or "remix"
+    mode_cfg = MODES[mode_key]
+    params = {
+        key: value
+        for key, value in mode_cfg.items()
+        if key not in ("label", "rules", "rules_text")
+    }
+    aj = {"mode": mode_key, "title": spec["title"],
+          "label": spec.get("label") or mode_cfg["label"],
           "stage": "transcribed",
           "source": {"local": spec.get("source", "")},
           "sources": spec.get("sources", []),
-          "params": {"target_min": [0, 999], "gap": 0.25, "mm_speed": 0.85,
-                     "quiz": True, "recap": True}}
+          "params": params}
     _save_agent(proj, aj)   # 保留 src_duration / sources / fixture 等已回填字段
 
     if spec.get("keys"):
