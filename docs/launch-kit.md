@@ -43,7 +43,7 @@ self-hosted
 ## Launch sequence
 
 1. Publish a public GHCR image and release asset.
-2. Pin the 80-second demo at the top of the README.
+2. Record a real interaction demo before publishing the launch.
 3. Publish one Chinese walkthrough video.
 4. Publish one technical article explaining the evidence-linked architecture.
 5. Post focused variants in Chinese and English communities.
@@ -115,7 +115,6 @@ Use the same text only where self-promotion is allowed by the community rules.
 
 ## Demo assets
 
-- `docs/media/demo-60s.mp4` — 80-second narrated overview;
 - `docs/images/social-preview.png` — GitHub/social card;
 - `docs/images/demo.png` — learning workspace;
 - `docs/images/ai-tutor-demo.png` — evidence and revision workflow;

@@ -10,7 +10,6 @@ data/studio.pid
 production/projects
 production/.mathtex_cache
 production/scenes/gen_*.py
-.promo-build
 .env
 .env.docker
 *.log
