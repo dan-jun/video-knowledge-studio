@@ -58,11 +58,16 @@ class ServerTests(unittest.TestCase):
     def test_projects_and_knowledge(self):
         status, projects = self.get_json("/api/projects")
         self.assertEqual(status, 200)
-        self.assertEqual(len(projects), 3)
+        self.assertGreaterEqual(len(projects), 4)
+        self.assertIn("raft-e01", {row["id"] for row in projects})
         status, payload = self.get_json("/api/knowledge?id=demo-e01")
         self.assertEqual(status, 200)
         self.assertEqual(payload["episode"]["id"], "demo-e01")
         self.assertTrue(payload["episode"]["timeline"])
+        status, raft = self.get_json("/api/knowledge?id=raft-e01")
+        self.assertEqual(status, 200)
+        self.assertIn("Raft", raft["episode"]["title"])
+        self.assertTrue(raft["episode"]["terms"])
 
     def test_video_range(self):
         request = urllib.request.Request(

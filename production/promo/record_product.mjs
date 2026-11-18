@@ -103,7 +103,7 @@ async function recordLearning(browser) {
   const { page } = session;
   await wait(1200);
 
-  const second = page.locator('.project[data-id="demo-e02"]');
+  const second = page.locator('.project[data-id="raft-e01"]');
   await moveTo(page, second, 500);
   await second.click();
   await wait(1200);
@@ -118,7 +118,7 @@ async function recordLearning(browser) {
   await timelineRow.click();
   await wait(1800);
 
-  const core = page.locator(".k-core-body").first();
+  const core = page.locator(".k-core-body").nth(1);
   await core.scrollIntoViewIfNeeded();
   await wait(700);
   const coreBox = await core.boundingBox();
@@ -208,7 +208,7 @@ async function recordProduction(browser) {
   await wait(1400);
 
   const existing = page.locator(".project", {
-    hasText: "线性代数的本质：矩阵就是空间变换",
+    hasText: "4 小时读懂 Raft 日志复制",
   }).first();
   await moveTo(page, existing, 450);
   await existing.click();
@@ -242,57 +242,6 @@ async function recordProduction(browser) {
   return closeRecording(session);
 }
 
-async function recordOutput(browser) {
-  const session = await openRecordedPage(browser, "output");
-  const { page } = session;
-  await page.goto(`${baseUrl}/production.html`, { waitUntil: "networkidle" });
-  const existing = page.locator(".project", {
-    hasText: "线性代数的本质：矩阵就是空间变换",
-  }).first();
-  await existing.click();
-  await page.waitForFunction(() => document.querySelector("#video")?.getAttribute("src"));
-  await page.evaluate(() => {
-    document.querySelector(".sidebar").style.display = "none";
-    document.querySelector(".top").style.display = "none";
-    document.querySelector(".workspace-head").style.display = "none";
-    document.querySelector(".grid").style.display = "none";
-    const card = document.querySelector("#videoCard");
-    Object.assign(card.style, {
-      position: "fixed",
-      inset: "0",
-      zIndex: "999999",
-      margin: "0",
-      padding: "0",
-      border: "0",
-      borderRadius: "0",
-      background: "#05070a",
-      display: "block",
-    });
-    const head = card.querySelector(".section-head");
-    if (head) head.style.display = "none";
-    const video = card.querySelector("video");
-    Object.assign(video.style, {
-      width: "100vw",
-      height: "100vh",
-      objectFit: "contain",
-      background: "#05070a",
-    });
-    video.currentTime = 12;
-    video.play().catch(() => {});
-  });
-  await wait(4200);
-  await page.evaluate(() => {
-    document.querySelector("#video").currentTime = 41;
-  });
-  await wait(3900);
-  await page.evaluate(() => {
-    document.querySelector("#video").currentTime = 72;
-  });
-  await wait(3900);
-  await page.screenshot({ path: path.join(outputDir, "output-final.png") });
-  return closeRecording(session);
-}
-
 const browser = await chromium.launch({
   headless: true,
   executablePath,
@@ -308,7 +257,6 @@ try {
   const results = [];
   results.push(await recordLearning(browser));
   results.push(await recordProduction(browser));
-  results.push(await recordOutput(browser));
   fs.writeFileSync(
     path.join(outputDir, "recordings.json"),
     JSON.stringify(results, null, 2),

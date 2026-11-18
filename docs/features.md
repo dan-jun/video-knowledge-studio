@@ -1,6 +1,6 @@
 # Feature reference
 
-This file is the complete functional inventory for version 0.2.4.
+This file is the complete functional inventory for version 0.2.5.
 
 ## Three-pane workspace
 

@@ -1,0 +1,133 @@
+{
+  "title": "Raft 日志为什么必须等多数确认",
+  "thesis": "Raft 的日志复制不是把一条日志发给所有节点就结束，而是让 Leader 的日志经过多数副本确认后成为可提交历史。理解主线是：客户端请求、Leader 分发、Follower 落盘、多数确认、提交应用。",
+  "objectives": [
+    "能说清客户端写入请求进入 Raft 后的完整路径。",
+    "能区分“已经复制到某个节点”和“已经成为可提交历史”。",
+    "能把多数确认机制对应到项目中的日志复制代码。"
+  ],
+  "terms": [
+    {
+      "term": "Leader",
+      "plain": "当前负责接收写请求并决定日志顺序的节点。",
+      "example": "客户端把写请求发给 Leader，由它生成新的日志条目。",
+      "first": "00:02"
+    },
+    {
+      "term": "Follower",
+      "plain": "跟随 Leader 复制日志、准备在选举时投票的节点。",
+      "example": "Follower A 收到新条目后写入自己的日志。",
+      "first": "00:03"
+    },
+    {
+      "term": "多数确认",
+      "plain": "超过半数节点持久化同一条日志后形成提交条件。",
+      "example": "3 个节点中至少 2 个确认，日志才允许提交。",
+      "first": "00:05"
+    },
+    {
+      "term": "提交",
+      "plain": "日志已经被集群承认为稳定的历史，状态机可以应用。",
+      "example": "复制到多数节点后，Leader 推进 commit index。",
+      "first": "00:06"
+    }
+  ],
+  "timeline": [
+    {
+      "id": "raft:timeline:goal",
+      "time": "00:00-00:01",
+      "start": 0,
+      "end": 1.2,
+      "topic": "先确定项目目标",
+      "must": "不是泛读 Raft，而是为了明天能修改日志复制代码。"
+    },
+    {
+      "id": "raft:timeline:request",
+      "time": "00:01-00:03",
+      "start": 1.2,
+      "end": 3.2,
+      "topic": "客户端请求进入 Leader",
+      "must": "写请求必须由 Leader 排序，Follower 不自行决定日志位置。"
+    },
+    {
+      "id": "raft:timeline:replicate",
+      "time": "00:03-00:05",
+      "start": 3.2,
+      "end": 5.2,
+      "topic": "日志向 Follower 并行复制",
+      "must": "单节点写入只说明副本存在，不代表日志已经安全。"
+    },
+    {
+      "id": "raft:timeline:commit",
+      "time": "00:05-00:07.6",
+      "start": 5.2,
+      "end": 7.6,
+      "topic": "多数确认后推进提交",
+      "must": "多数副本持久化后才允许提交，之后状态机才能应用。"
+    }
+  ],
+  "core": [
+    {
+      "id": "raft:core:request",
+      "heading": "写请求先进入 Leader",
+      "time": "00:02",
+      "start": 2,
+      "body": "客户端并不直接修改所有节点。它先把请求交给 Leader，由 Leader 生成固定顺序的日志条目。这个顺序是后续复制和提交的基础。"
+    },
+    {
+      "id": "raft:core:replicate",
+      "heading": "复制完成不等于提交完成",
+      "time": "00:04",
+      "start": 4,
+      "body": "日志到达一个 Follower，只能说明这条记录存在于某个副本。它还没有跨过多数确认的安全边界，因此仍不能当作稳定历史应用到状态机。"
+    },
+    {
+      "id": "raft:core:commit",
+      "heading": "多数确认是提交条件",
+      "time": "00:06",
+      "start": 6,
+      "body": "当同一条日志被多数节点持久化后，Leader 才能推进 commit index。只有已提交的日志才允许状态机按顺序应用，这正是 Raft 避免已提交历史被覆盖的关键。"
+    }
+  ],
+  "formula": "客户端 → Leader 追加日志 → 并行复制 → 多数确认 → 提交应用",
+  "visuals": [
+    {
+      "id": "raft:visual:start",
+      "file": "media/poster.png",
+      "time": "00:06",
+      "start": 6,
+      "caption": "图中的绿色日志条表示 Follower 已持久化；勾号表示集群已经达到多数确认。"
+    },
+    {
+      "id": "raft:visual:flow",
+      "file": "",
+      "time": "00:04",
+      "start": 4,
+      "caption": "观察箭头：客户端只向 Leader 发请求，Leader 再并行发给多个 Follower。"
+    }
+  ],
+  "visualThesis": "这张图把“复制”和“提交”拆成了两个阶段：绿色日志出现只代表复制，勾号出现才代表多数确认。",
+  "visualRead": [
+    "先数节点，再找多数，不要把单个 Follower 的确认误当成整体提交。",
+    "提交之后状态机才能应用日志，因此读代码时要把 commit index 与普通 append 分开看。"
+  ],
+  "trap": "最常见错误是把“某个 Follower 已经收到日志”直接当成“日志已经提交”。多数确认之前，这条日志还不是可以安全应用的历史。",
+  "recall": [
+    {
+      "q": "为什么单个 Follower 写完日志还不能提交？",
+      "a": "因为单节点副本不能代表多数共识，Leader 故障或该节点失效时，这条日志仍可能丢失。"
+    },
+    {
+      "q": "读懂 Raft 日志复制后，回到项目代码应重点看哪两个位置？",
+      "a": "看 Leader 如何追加并复制日志，以及 commit index 在什么条件满足后推进。"
+    }
+  ],
+  "bridges": ["客户端请求", "日志匹配", "多数确认", "commit index"],
+  "memoryHook": "复制是条件，多数确认才是提交。",
+  "transcript": [
+    {"start": 0, "end": 1.2, "text": "目标不是泛读 Raft，而是要在明天修改项目里的日志复制代码。"},
+    {"start": 1.2, "end": 3.2, "text": "客户端把写请求交给 Leader，由 Leader 为日志确定顺序。"},
+    {"start": 3.2, "end": 5.2, "text": "Leader 把新日志并行复制给 Follower，单个节点写入还不等于整体提交。"},
+    {"start": 5.2, "end": 7.6, "text": "多数节点持久化日志后才允许提交，状态机随后按顺序应用。"}
+  ]
+}

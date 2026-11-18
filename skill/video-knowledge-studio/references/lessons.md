@@ -161,7 +161,7 @@
 - **Root cause:** The team treated “more animation” as sufficient without matching the
   reference's structure: no continuous voiceover, hard visual cuts, real state changes,
   and dense product examples after one complete workflow.
-- **Fix:** Analyze frames and audio first, then build a 93-second film with kinetic
+- **Fix:** Analyze frames and audio first, then build an 80-second film with kinetic
   typography, a licensed stock score, cursor-led recordings, real AI output,
   production gates and a purpose-built Raft lesson close.
 - **Verification:** Inspect 1–2 second contact sheets and full-resolution keyframes,
@@ -181,7 +181,7 @@
   shows client request, leader fan-out, follower logs, majority acknowledgement and
   commit, then hands off directly to the final product statement.
 - **Verification:** Inspect the last 15 seconds frame by frame, verify no overlap in
-  the Raft diagram, confirm approximately 93 seconds at 1920×1080/30 fps and under
+  the Raft diagram, confirm approximately 80 seconds at 1920×1080/30 fps and under
   10 MB, and compare the uploaded release asset hash with the local file.
 
 ## 2026-11-18 — Product demos need a real job-to-be-done opening
@@ -194,6 +194,18 @@
   project/research/career entry cases, then label the four core differences: questions
   stay attached to source video, AI receives timestamp/transcript/frame context, notes
   form a network, and production returns to the same learning workspace.
-- **Verification:** The 93-second cut matches every claim to a visible screen state or
+- **Verification:** The 80-second cut matches every claim to a visible screen state or
   generated lesson; contact-sheet review confirms the scenario, workflow, all four
   differentiators, gate evidence and Raft lesson remain readable without narration.
+
+## 2026-11-18 — Every advertised scenario must resolve later
+
+- **Symptom:** The intro advertised project, research and career scenarios, but only
+  the project example continued through the demo.
+- **Root cause:** The other cards were visual examples rather than commitments connected
+  to a shared workflow or a final payoff.
+- **Fix:** Map all three scenarios through the same five-stage spine, keep Raft as the
+  detailed walkthrough, and recap what each scenario receives at the end.
+- **Verification:** Review the script as a promise-to-proof checklist: each intro card
+  now reappears in the workflow matrix and in the closing recap, while every middle
+  screen uses the same Raft task shown in the intro.

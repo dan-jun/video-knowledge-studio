@@ -154,9 +154,8 @@ def main() -> None:
     ordered: list[Path] = []
     for scene in (
         "UseCaseIntro",
-        "Promise",
-        "LearningChain",
-        "EvidenceLoop",
+        "WorkflowSpine",
+        "DifferenceOverview",
     ):
         ordered.append(normalize_scene(scene))
 
@@ -168,10 +167,9 @@ def main() -> None:
     ordered.append(normalize_scene("ThreeModes"))
     ordered.append(normalize_screen("production", 1.1, 13.1))
     ordered.append(freeze_crop("production-frames/t12.5.png", (1220, 300, 590, 332), 4.0))
-    ordered.append(normalize_scene("ProductionStatement"))
     ordered.append(normalize_scene("DifferenceBridge"))
     ordered.append(normalize_scene("RaftLesson"))
-    ordered.append(normalize_scene("Finale"))
+    ordered.append(normalize_scene("FinalRecap"))
 
     concat_file = BUILD / "clips.txt"
     concat_file.write_text(

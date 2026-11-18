@@ -14,11 +14,13 @@ ROOT = Path(__file__).resolve().parents[1]
 class CourseStoreTests(unittest.TestCase):
     def test_sample_pack_loads(self):
         store = CourseStore(ROOT / "packs")
-        self.assertEqual(len(store.courses), 1)
-        self.assertEqual(len(store.episodes), 3)
+        self.assertGreaterEqual(len(store.courses), 2)
+        self.assertGreaterEqual(len(store.episodes), 4)
         projects = store.projects()
-        self.assertEqual(projects[0]["id"], "demo-e01")
-        self.assertEqual(projects[0]["chapter"], "第1章 从信息到结构")
+        demo = next(row for row in projects if row["id"] == "demo-e01")
+        self.assertEqual(demo["chapter"], "第1章 从信息到结构")
+        raft = next(row for row in projects if row["id"] == "raft-e01")
+        self.assertEqual(raft["courseTitle"], "4 小时读懂 Raft")
         payload = store.knowledge_payload("demo-e01")
         self.assertEqual(payload["lesson"]["id"] if "lesson" in payload else payload["episode"]["id"], "demo-e01")
         self.assertNotIn("sourceVideo", payload["episode"])

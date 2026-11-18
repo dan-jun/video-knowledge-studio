@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.5 - 2026-11-18
+
+- Replaced the mixed metaphor opening with a three-scenario matrix: project handoff,
+  paper reproduction, and interview/career preparation.
+- Added a workflow spine that maps all three scenarios to goal, source discovery,
+  course generation, contextual study, and real-world use.
+- Added a dedicated four-point differentiation frame and renamed the proof sections so
+  each product capability is visibly tied to the stated difference.
+- Unified the actual learning and production walkthroughs around the same Raft task,
+  and added an original `raft-demo` course pack with synchronized notes and knowledge
+  network for reproducible recording.
+- Replaced the ending with a three-outcome recap followed by the product principle.
+
 ## 0.2.4 - 2026-11-18
 
 - Reworked the launch film around a concrete real-world scenario:

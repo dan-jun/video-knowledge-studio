@@ -102,16 +102,94 @@ class UseCaseIntro(Scene):
         cards.arrange(RIGHT, buff=0.43).move_to(DOWN * 0.55)
         self.play(LaggedStart(*[FadeIn(card, shift=UP * 0.18) for card in cards], lag_ratio=0.16), run_time=1.1)
 
-        self.play(
-            cards[1:].animate.set_opacity(0.35),
-            cards[0][0].animate.set_stroke(width=4),
-            run_time=0.55,
-        )
-
         insight = label("你缺的不是更多视频，", 31, MUTED, weight=MEDIUM).move_to(DOWN * 3.0)
         punch = label("是一条能落到工作上的学习链。", 39, WHITE, weight=BOLD).move_to(DOWN * 3.75)
         self.play(FadeIn(insight), run_time=0.35)
         self.play(Write(punch), run_time=0.65)
+        self.wait(0.9)
+
+
+class WorkflowSpine(Scene):
+    def construct(self):
+        config.background_color = INK
+        self.add(grid(opacity=0.06))
+        title = label("三个场景，一条工作流", 44, WHITE, weight=BOLD).to_edge(UP, buff=0.55)
+        self.play(FadeIn(title), run_time=0.45)
+
+        stages = ["目标", "选源", "成课", "边学边问", "用于工作"]
+        x_positions = [-4.3, -2.15, 0.0, 2.15, 4.35]
+        for text, x in zip(stages, x_positions):
+            self.add(label(text, 23, MUTED, weight=BOLD).move_to([x, 2.4, 0]))
+            if x < x_positions[-1]:
+                self.add(mono("→", 23, "#526A79").move_to([x + 1.08, 2.4, 0]))
+
+        rows = [
+            ("项目接手", "4 小时读懂 Raft", "多源视频", "动画课程", "日志问答", "改复制代码", CYAN),
+            ("论文复现", "定位卡点", "论文 + 视频", "推导动画", "术语追问", "复现实验", VIOLET),
+            ("面试转岗", "时间有限", "精选来源", "短课整合", "主动回忆", "形成体系", AMBER),
+        ]
+        group = VGroup()
+        for row_i, (name, *cells, color) in enumerate(rows):
+            y = 0.95 - row_i * 1.55
+            label_box = RoundedRectangle(
+                corner_radius=0.12, width=1.55, height=0.72,
+                stroke_color=color, stroke_width=2,
+                fill_color=color, fill_opacity=0.10,
+            ).move_to([-6.25, y, 0])
+            label_text = label(name, 21, WHITE, weight=BOLD).move_to(label_box)
+            group.add(VGroup(label_box, label_text))
+            for x, cell in zip(x_positions, cells):
+                card = RoundedRectangle(
+                    corner_radius=0.12, width=1.72, height=0.72,
+                    stroke_color="#3A5667", stroke_width=1.5,
+                    fill_color="#0B1B23", fill_opacity=0.8,
+                ).move_to([x, y, 0])
+                text = label(cell, 17, WHITE if row_i == 0 else "#B7C8D2", weight=MEDIUM)
+                text.set_width(1.45)
+                text.move_to(card)
+                group.add(VGroup(card, text))
+        self.play(LaggedStart(*[FadeIn(item, shift=UP * 0.12) for item in group], lag_ratio=0.025), run_time=2.2)
+
+        line = Line(LEFT * 5.35, RIGHT * 5.35, color=CYAN, stroke_width=2).move_to(DOWN * 2.25)
+        note = label("同一份课程数据，从输入一直走到使用", 30, CYAN, weight=BOLD).move_to(DOWN * 2.78)
+        self.play(Create(line), FadeIn(note), run_time=0.55)
+        self.wait(0.8)
+
+
+class DifferenceOverview(Scene):
+    def construct(self):
+        config.background_color = "#071018"
+        self.add(grid(opacity=0.055))
+        eyebrow = label("D I F F E R E N T I A T O R S", 19, CYAN, weight=BOLD).to_edge(UP, buff=0.5)
+        title = label("不是功能更多，是数据不再断掉", 42, WHITE, weight=BOLD).to_edge(UP, buff=0.88)
+        self.play(FadeIn(eyebrow), run_time=0.3)
+        self.play(Write(title), run_time=0.7)
+
+        cards = [
+            ("01", "原片即证据", "时间戳 · 转录 · 画面", CYAN),
+            ("02", "AI 有现场", "知道你正在看哪一秒", VIOLET),
+            ("03", "笔记成网络", "节点 + 有方向的因果边", MINT),
+            ("04", "成片可继续学", "回到同一个学习工作台", AMBER),
+        ]
+        items = VGroup()
+        for num, head, desc, color in cards:
+            box = RoundedRectangle(
+                corner_radius=0.18, width=3.0, height=2.05,
+                stroke_color=color, stroke_width=2,
+                fill_color=color, fill_opacity=0.075,
+            )
+            n = mono(num, 18, color).move_to(box.get_corner(UL) + RIGHT * 0.48 + DOWN * 0.28)
+            h = label(head, 25, WHITE, weight=BOLD).move_to(box.get_center() + UP * 0.15)
+            d = label(desc, 17, MUTED, weight=MEDIUM)
+            d.set_width(2.58)
+            d.move_to(box.get_center() + DOWN * 0.52)
+            items.add(VGroup(box, n, h, d))
+        items.arrange_in_grid(rows=2, cols=2, buff=(0.55, 0.45), cell_alignment=ORIGIN)
+        items.move_to(DOWN * 0.15)
+        self.play(LaggedStart(*[FadeIn(item, shift=UP * 0.16) for item in items], lag_ratio=0.15), run_time=1.3)
+
+        note = label("找资料 → 看懂 → 用来做事，中间不丢证据", 29, WHITE, weight=MEDIUM).move_to(DOWN * 3.2)
+        self.play(FadeIn(note), run_time=0.45)
         self.wait(0.9)
 
 
@@ -543,6 +621,49 @@ class RaftLesson(Scene):
         slogan = label("先看见机制，再回到代码。", 34, WHITE, weight=BOLD).move_to(DOWN * 3.65)
         self.play(FadeIn(slogan, shift=UP * 0.12), run_time=0.45)
         self.wait(0.8)
+
+
+class FinalRecap(Scene):
+    def construct(self):
+        config.background_color = INK
+        self.add(grid(opacity=0.05))
+        title = label("同一套方法，三种现实结果", 43, WHITE, weight=BOLD).to_edge(UP, buff=0.62)
+        self.play(FadeIn(title), run_time=0.5)
+
+        rows = [
+            ("PROJECT", "项目接手", "4 小时读懂 Raft，直接回到复制代码", CYAN),
+            ("RESEARCH", "论文复现", "多源推导串成一条可核对的因果线", VIOLET),
+            ("CAREER", "面试 / 转岗", "零散知识形成可复习的知识体系", AMBER),
+        ]
+        cards = VGroup()
+        for code, heading, result, color in rows:
+            box = RoundedRectangle(
+                corner_radius=0.17,
+                width=12.2,
+                height=1.22,
+                stroke_color=color,
+                stroke_width=2,
+                fill_color=color,
+                fill_opacity=0.07,
+            )
+            c = mono(code, 17, color).move_to(box.get_corner(UL) + RIGHT * 0.72 + DOWN * 0.28)
+            h = label(heading, 25, WHITE, weight=BOLD).move_to(box.get_left() + RIGHT * 2.25)
+            r = label(result, 24, "#D7E4EA", weight=MEDIUM).move_to(box.get_left() + RIGHT * 7.45)
+            cards.add(VGroup(box, c, h, r))
+        cards.arrange(DOWN, buff=0.35).move_to(UP * 0.4)
+        self.play(LaggedStart(*[FadeIn(card, shift=RIGHT * 0.15) for card in cards], lag_ratio=0.18), run_time=1.2)
+
+        statement = VGroup(
+            label("知识不用收藏", 34, MUTED, weight=BOLD),
+            label("做成自己的体系", 48, CYAN, weight=BOLD),
+        ).arrange(DOWN, buff=0.16).move_to(DOWN * 2.92)
+        self.play(FadeIn(statement[0]), run_time=0.35)
+        self.play(Write(statement[1]), run_time=0.65)
+
+        mark = brand_mark(0.35).move_to([4.8, -3.45, 0])
+        name = mono("VIDEO KNOWLEDGE STUDIO", 16, WHITE).next_to(mark, RIGHT, buff=0.18)
+        self.play(FadeIn(mark), FadeIn(name), run_time=0.45)
+        self.wait(1.1)
 
 
 class Finale(Scene):

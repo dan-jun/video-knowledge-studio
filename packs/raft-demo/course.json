@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "raft-demo",
+  "title": "4 小时读懂 Raft",
+  "description": "从真实项目任务出发的 Raft 日志复制示例课，原文、画面和时间戳均可回查。",
+  "license": "MIT",
+  "chapters": [
+    {
+      "id": "replication",
+      "title": "第1章 从请求到提交",
+      "episodeIds": ["raft-e01"]
+    }
+  ],
+  "episodes": [
+    {
+      "id": "raft-e01",
+      "number": 1,
+      "title": "Raft 日志为什么必须等多数确认",
+      "chapterId": "replication",
+      "duration": 7.6,
+      "video": "media/lesson.mp4",
+      "knowledge": "episodes/e01.json"
+    }
+  ],
+  "network": {
+    "title": "Raft 日志复制知识网",
+    "nodes": [
+      {
+        "id": "goal",
+        "label": "目标",
+        "subtitle": "4 小时能改代码",
+        "episodeIds": ["raft-e01"]
+      },
+      {
+        "id": "request",
+        "label": "客户端请求",
+        "subtitle": "写入从哪里开始",
+        "episodeIds": ["raft-e01"]
+      },
+      {
+        "id": "leader",
+        "label": "Leader",
+        "subtitle": "排序并分发日志",
+        "episodeIds": ["raft-e01"]
+      },
+      {
+        "id": "majority",
+        "label": "多数确认",
+        "subtitle": "提交前的安全边界",
+        "episodeIds": ["raft-e01"]
+      },
+      {
+        "id": "commit",
+        "label": "提交",
+        "subtitle": "状态机可以应用",
+        "episodeIds": ["raft-e01"]
+      },
+      {
+        "id": "code",
+        "label": "项目代码",
+        "subtitle": "看懂复制与回退逻辑",
+        "episodeIds": ["raft-e01"]
+      }
+    ],
+    "edges": [
+      {"from": "goal", "to": "request", "label": "先定位写入入口"},
+      {"from": "request", "to": "leader", "label": "请求交给 Leader"},
+      {"from": "leader", "to": "majority", "label": "并行复制日志"},
+      {"from": "majority", "to": "commit", "label": "越过安全边界"},
+      {"from": "commit", "to": "code", "label": "回到项目理解实现"}
+    ]
+  }
+}
