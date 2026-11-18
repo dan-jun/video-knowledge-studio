@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="650" viewBox="0 0 1600 650" role="img" aria-labelledby="title desc">
+  <title id="title">Scattered learning workflow versus Video Knowledge Studio</title>
+  <desc id="desc">The old workflow spreads search, videos, notes, screenshots, AI and production across disconnected tools. Video Knowledge Studio keeps them on one evidence-linked path.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071016"/>
+      <stop offset="1" stop-color="#0b1b24"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+    <style>
+      .title{font:700 31px "Microsoft YaHei","Noto Sans SC",sans-serif;fill:#eefaff}
+      .sub{font:14px "Cascadia Code",Consolas,monospace;fill:#7895a2;letter-spacing:1.3px}
+      .label{font:700 13px "Cascadia Code",Consolas,monospace;letter-spacing:1.6px}
+      .head{font:700 23px "Microsoft YaHei","Noto Sans SC",sans-serif;fill:#eefaff}
+      .item{font:15px "Microsoft YaHei","Noto Sans SC",sans-serif;fill:#b8d0d9}
+      .small{font:12px "Microsoft YaHei","Noto Sans SC",sans-serif;fill:#7795a1}
+      .accent{fill:#56d8f5}
+    </style>
+  </defs>
+  <rect width="1600" height="650" fill="url(#bg)"/>
+  <path d="M0 90H1600M0 215H1600M0 340H1600M0 465H1600M0 590H1600" stroke="#17303b" opacity=".45"/>
+  <path d="M200 0V650M400 0V650M600 0V650M800 0V650M1000 0V650M1200 0V650M1400 0V650" stroke="#17303b" opacity=".25"/>
+  <text x="54" y="57" class="title">同一个学习任务，两种工作方式</text>
+  <text x="56" y="81" class="sub">DISCONNECTED TOOLS VS ONE EVIDENCE-LINKED WORKSPACE</text>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="126" width="650" height="452" rx="20" fill="#15181c" stroke="#573f33"/>
+    <text x="84" y="166" class="label" fill="#ffad74">BEFORE · 工具彼此割裂</text>
+    <text x="84" y="202" class="head">十几个标签页，知识仍然留不下来</text>
+    <rect x="86" y="238" width="250" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="105" y="265" class="item">B站、YouTube、网页搜索</text>
+    <text x="105" y="286" class="small">来源散落，重复内容多</text>
+    <rect x="365" y="238" width="310" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="384" y="265" class="item">播放器 + 笔记软件 + 截图</text>
+    <text x="384" y="286" class="small">时间、画面和结论无法互相定位</text>
+    <rect x="86" y="321" width="240" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="105" y="348" class="item">另一个 AI 聊天窗口</text>
+    <text x="105" y="369" class="small">不知道你正在看哪一段</text>
+    <rect x="355" y="321" width="320" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="374" y="348" class="item">剪辑软件 + 配音 + 字幕</text>
+    <text x="374" y="369" class="small">制作结果很难回到学习流程</text>
+    <rect x="86" y="404" width="589" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="105" y="431" class="item">最终得到：散落的视频、截图、Markdown、聊天记录</text>
+    <text x="105" y="452" class="small">无法追溯，也无法形成可复习的知识体系</text>
+    <path d="M286 300C314 300 328 266 365 266M286 355C310 355 325 349 355 349M474 300C490 300 500 319 500 321" stroke="#a16042" stroke-width="2" stroke-dasharray="7 7"/>
+    <text x="86" y="525" class="small">问题不是工具不够多，而是上下文没有连接起来。</text>
+    <text x="86" y="551" fill="#ffad74" class="item">学习成本高 · 证据易丢 · 制作与学习脱节</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="746" y="126" width="800" height="452" rx="20" fill="#0b2028" stroke="#24535d"/>
+    <text x="778" y="166" class="label" fill="#66e0b1">AFTER · 一条闭环</text>
+    <text x="778" y="202" class="head">每一条结论都能回到原片、秒数和画面</text>
+
+    <rect x="778" y="238" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="797" y="267" class="label" fill="#56d8f5">01</text>
+    <text x="797" y="296" class="item">明确学习目标</text>
+    <rect x="1004" y="238" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1023" y="267" class="label" fill="#56d8f5">02</text>
+    <text x="1023" y="296" class="item">搜索互补来源</text>
+    <rect x="1230" y="238" width="286" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1249" y="267" class="label" fill="#56d8f5">03</text>
+    <text x="1249" y="296" class="item">整合成动画课程</text>
+
+    <rect x="778" y="350" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="797" y="379" class="label" fill="#73e3a5">04</text>
+    <text x="797" y="408" class="item">同步看视频与笔记</text>
+    <rect x="1004" y="350" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1023" y="379" class="label" fill="#73e3a5">05</text>
+    <text x="1023" y="408" class="item">选中文字问 AI</text>
+    <rect x="1230" y="350" width="286" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1249" y="379" class="label" fill="#73e3a5">06</text>
+    <text x="1249" y="408" class="item">修订、复习、形成知识网</text>
+
+    <path d="M966 279H992M1192 279H1218M1373 320V338M1192 391H1218M966 391H992" stroke="#56d8f5" stroke-width="3"/>
+    <path d="M997 279L991 273L991 285Z" fill="#56d8f5"/>
+    <path d="M1223 279L1217 273L1217 285Z" fill="#56d8f5"/>
+    <path d="M1379 343L1373 337L1373 349Z" fill="#56d8f5"/>
+    <path d="M1223 391L1217 385L1217 397Z" fill="#56d8f5"/>
+    <path d="M997 391L991 385L991 397Z" fill="#56d8f5"/>
+
+    <rect x="778" y="468" width="738" height="62" rx="12" fill="#0a1720" stroke="#2a5c60"/>
+    <text x="798" y="495" class="item">原片 · 时间戳 · 关键画面 · 笔记 · AI 上下文 · 成片</text>
+    <text x="798" y="516" class="small">全部围绕同一组知识数据协作，制作结果也可重新进入学习。</text>
+    <text x="778" y="551" fill="#73e3a5" class="item">更快定位知识缺口 · 证据可追溯 · 制作与学习互相反哺</text>
+  </g>
+
+  <path d="M704 352H742" stroke="#56d8f5" stroke-width="4"/>
+  <path d="M742 341L756 352L742 363Z" fill="#56d8f5"/>
+</svg>
