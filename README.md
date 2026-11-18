@@ -11,11 +11,13 @@
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
 [![Container](https://img.shields.io/badge/GHCR-video--knowledge--studio-2496ED?logo=docker&logoColor=white)](https://github.com/dan-jun/video-knowledge-studio/pkgs/container/video-knowledge-studio)
 
-[观看演示](docs/media/demo-60s.mp4) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
+[观看 80 秒演示](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.0/video-knowledge-studio-demo-80s.mp4) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
 
 > **本地优先**：课程、制作项目、批注和修订默认只保存在自己的电脑上。
 
-[![观看 Video Knowledge Studio 80 秒演示](docs/images/social-preview.png)](docs/media/demo-60s.mp4)
+[![播放 Video Knowledge Studio 80 秒演示](docs/images/demo-video-poster.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.0/video-knowledge-studio-demo-80s.mp4)
+
+<sub>点击封面打开 80 秒演示视频，包含按需学习、学习工作台、AI 证据回答和真实成片。</sub>
 
 ![从知识缺口到真正学会](docs/images/workflow-overview.svg)
 

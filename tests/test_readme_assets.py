@@ -42,6 +42,7 @@ class ReadmeAssetTests(unittest.TestCase):
             "production-workspace.png",
             "production-demo.gif",
             "social-preview.png",
+            "demo-video-poster.png",
         ):
             path = ROOT / "docs" / "images" / name
             self.assertGreater(path.stat().st_size, 10_000)
