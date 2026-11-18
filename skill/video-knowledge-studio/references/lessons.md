@@ -161,9 +161,25 @@
 - **Root cause:** The team treated “more animation” as sufficient without matching the
   reference's structure: no continuous voiceover, hard visual cuts, real state changes,
   and dense product examples after one complete workflow.
-- **Fix:** Analyze frames and audio first, then build a 92-second film with kinetic
-  typography, an original beat-driven score, cursor-led recordings, real AI output,
-  production gates and a full-screen rendered-video close.
+- **Fix:** Analyze frames and audio first, then build an 88-second film with kinetic
+  typography, a licensed stock score, cursor-led recordings, real AI output,
+  production gates and a purpose-built Raft lesson close.
 - **Verification:** Inspect 1–2 second contact sheets and full-resolution keyframes,
   confirm no clipped labels, verify 1920×1080 H.264/AAC, no clipped audio, output under
   10 MB, and replay the learning and production workflows through the public UI.
+
+## 2026-11-18 — Do not reuse an unrelated old render in a launch-video ending
+
+- **Symptom:** The final product showcase dropped into an older linear-algebra video
+  with unrelated pacing and visible letterboxing; the background cue also sounded
+  mechanically synthesized.
+- **Root cause:** The ending was assembled from an available file instead of a scene
+  designed for the current story, while the score was generated from low-level pulses
+  rather than a professionally arranged track.
+- **Fix:** Use a licensed Mixkit track with recorded attribution, and replace the old
+  ending with a purpose-built Raft log-replication lesson animation. The new ending
+  shows client request, leader fan-out, follower logs, majority acknowledgement and
+  commit, then hands off directly to the final product statement.
+- **Verification:** Inspect the last 15 seconds frame by frame, verify no overlap in
+  the Raft diagram, confirm approximately 88 seconds at 1920×1080/30 fps and under
+  10 MB, and compare the uploaded release asset hash with the local file.

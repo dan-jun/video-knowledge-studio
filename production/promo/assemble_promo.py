@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import math
 import subprocess
-import wave
+import urllib.request
 from pathlib import Path
-
-import numpy as np
 
 
 HERE = Path(__file__).resolve().parent
@@ -16,6 +13,8 @@ BUILD = HERE / "build"
 CLIPS = BUILD / "clips"
 FINAL = STUDIO / "docs" / "media" / "product-demo.mp4"
 POSTER = STUDIO / "docs" / "images" / "product-demo-poster.png"
+MUSIC_CACHE = HERE / "music" / "close-up.mp3"
+MUSIC_URL = "https://assets.mixkit.co/music/1167/1167.mp3"
 
 FFMPEG = "ffmpeg"
 FFPROBE = "ffprobe"
@@ -132,116 +131,18 @@ def duration(path: Path) -> float:
     return float(text)
 
 
-def make_original_score(total: float, target: Path) -> None:
-    sr = 48000
-    n = int(math.ceil(total * sr))
-    t = np.arange(n, dtype=np.float64) / sr
-    rng = np.random.default_rng(20261118)
-    mix = np.zeros(n, dtype=np.float64)
-
-    bpm = 110.0
-    beat = 60.0 / bpm
-    eighth = beat / 2.0
-
-    def add(signal: np.ndarray, at: float, gain: float = 1.0) -> None:
-        start = max(0, int(at * sr))
-        if start >= n:
-            return
-        count = min(len(signal), n - start)
-        mix[start:start + count] += signal[:count] * gain
-
-    # Warm four-note pad. The sequence changes slowly so cuts remain the focus.
-    chords = [
-        [55.00, 82.41, 110.00, 164.81],
-        [49.00, 73.42, 98.00, 146.83],
-        [43.65, 65.41, 87.31, 130.81],
-        [55.00, 82.41, 110.00, 164.81],
-    ]
-    pad_gain = np.interp(
-        t,
-        [0, 6, 18, 55, 70, total - 5, total],
-        [0.08, 0.24, 0.20, 0.14, 0.24, 0.30, 0.0],
-    )
-    for idx, freqs in enumerate(chords):
-        chord_t0 = idx * 4 * beat
-        while chord_t0 < total:
-            local_len = min(4 * beat, total - chord_t0)
-            local_n = int(local_len * sr)
-            if local_n <= 0:
-                break
-            local_t = np.arange(local_n) / sr
-            env = np.sin(np.pi * np.minimum(local_t / 0.45, 1.0))
-            env *= np.exp(-0.2 * local_t)
-            block = np.zeros(local_n)
-            for freq in freqs:
-                block += np.sin(2 * np.pi * freq * local_t)
-                block += 0.18 * np.sin(2 * np.pi * freq * 2.003 * local_t)
-            start = int(chord_t0 * sr)
-            count = min(local_n, n - start)
-            mix[start:start + count] += block[:count] * env[:count] * pad_gain[start:start + count] * 0.018
-            chord_t0 += 4 * beat
-
-    # Kick, sub pulse and tight high ticks carry the reference-like edit rhythm.
-    kick_t = 0.0
-    while kick_t < total:
-        local_n = int(0.34 * sr)
-        local_t = np.arange(local_n) / sr
-        freq = 47 + 25 * np.exp(-local_t * 24)
-        phase = 2 * np.pi * np.cumsum(freq) / sr
-        body = np.sin(phase) * np.exp(-local_t * 11)
-        section = 0.75 if kick_t < 55 else 1.0
-        add(body, kick_t, 0.165 * section)
-        kick_t += beat
-
-    tick_t = 3.0
-    while tick_t < total:
-        local_n = int(0.045 * sr)
-        local_t = np.arange(local_n) / sr
-        tick = rng.normal(0, 1, local_n) * np.exp(-local_t * 95)
-        # First difference gives a crisp, inexpensive high-pass.
-        tick = np.diff(np.r_[0.0, tick])
-        add(tick, tick_t, 0.025)
-        tick_t += eighth
-
-    # Short UI ticks through the real-product portions.
-    for sec in np.arange(43, total - 5, 0.67):
-        local_n = int(0.028 * sr)
-        local_t = np.arange(local_n) / sr
-        click = np.sin(2 * np.pi * 1850 * local_t) * np.exp(-local_t * 130)
-        add(click, float(sec), 0.012)
-
-    # Low impacts mark semantic transitions.
-    for at in [0.0, 5.6, 11.2, 17.4, 28.0, 49.5, 58.5, 72.5, 84.5, total - 4.0]:
-        local_n = int(0.8 * sr)
-        local_t = np.arange(local_n) / sr
-        freq = 38 + 35 * np.exp(-local_t * 6)
-        phase = 2 * np.pi * np.cumsum(freq) / sr
-        boom = np.sin(phase) * np.exp(-local_t * 4.2)
-        add(boom, at, 0.11)
-
-    # Airy rises under concept-to-screen transitions.
-    for at in [18.5, 55.0, 78.0]:
-        local_n = int(0.8 * sr)
-        local_t = np.arange(local_n) / sr
-        noise = rng.normal(0, 1, local_n)
-        phase = 2 * np.pi * (200 * local_t + 700 * local_t ** 2)
-        whoosh = 0.5 * noise + 0.5 * np.sin(phase)
-        whoosh *= np.sin(np.pi * local_t / 0.8) ** 2
-        add(whoosh, at, 0.018)
-
-    # Gentle global movement and a clean fade at both ends.
-    mix *= 0.86 + 0.14 * np.sin(2 * np.pi * 0.055 * t)
-    fade_in = np.clip(t / 0.7, 0, 1)
-    fade_out = np.clip((total - t) / 1.5, 0, 1)
-    mix *= fade_in * fade_out
-    peak = np.max(np.abs(mix)) or 1.0
-    stereo = np.column_stack([mix / peak * 0.78, mix / peak * 0.78])
-    pcm = (np.clip(stereo, -1, 1) * 32767).astype("<i2")
-    with wave.open(str(target), "wb") as handle:
-        handle.setnchannels(2)
-        handle.setsampwidth(2)
-        handle.setframerate(sr)
-        handle.writeframes(pcm.tobytes())
+def prepare_music(total: float, target: Path) -> None:
+    if not MUSIC_CACHE.is_file():
+        MUSIC_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(MUSIC_URL, MUSIC_CACHE)
+    fade_out_start = max(0.0, total - 1.8)
+    run([
+        FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
+        "-stream_loop", "-1", "-i", str(MUSIC_CACHE), "-t", f"{total:.3f}",
+        "-af",
+        f"afade=t=in:st=0:d=0.65,afade=t=out:st={fade_out_start:.3f}:d=1.8,volume=0.82",
+        "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(target),
+    ])
 
 
 def main() -> None:
@@ -268,7 +169,7 @@ def main() -> None:
     ordered.append(normalize_screen("production", 1.1, 13.1))
     ordered.append(freeze_crop("production-frames/t12.5.png", (1220, 300, 590, 332), 4.0))
     ordered.append(normalize_scene("ProductionStatement"))
-    ordered.append(normalize_screen("output", 1.5, 14.0, framed=False))
+    ordered.append(normalize_scene("RaftLesson"))
     ordered.append(normalize_scene("Finale"))
 
     concat_file = BUILD / "clips.txt"
@@ -284,8 +185,8 @@ def main() -> None:
         "-pix_fmt", "yuv420p", "-r", str(FPS), "-an", str(silent),
     ])
     total = duration(silent)
-    score = BUILD / "original-score.wav"
-    make_original_score(total, score)
+    score = BUILD / "licensed-score.wav"
+    prepare_music(total, score)
 
     run([
         FFMPEG, "-y", "-hide_banner", "-loglevel", "error",

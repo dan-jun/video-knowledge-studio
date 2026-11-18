@@ -1,12 +1,22 @@
 # Changelog
 
+## 0.2.3 - 2026-11-18
+
+- Replaced the synthesized rhythmic score with the licensed Mixkit track
+  “Close Up” by Michael Ramir C.
+- Replaced the weak final course clip with a generated Raft log-replication
+  lesson animation that shows client request, leader fan-out, follower logs,
+  majority acknowledgement and commit.
+- Shortened the launch film to about 88 seconds and rechecked full-resolution
+  frames, audio loudness, codec, file size and download integrity.
+
 ## 0.2.2 - 2026-11-18
 
 - Rebuilt the product launch video as a 92-second music-driven film with kinetic
   feature animation, real learning-workspace recording, contextual AI evidence,
   production-line operation, visible gate results and rendered output.
 - Removed the slow synthetic voiceover and replaced static slide pacing with hard
-  cuts, cursor-led interactions, product closeups and an original instrumental score.
+  cuts, cursor-led interactions, product closeups and licensed stock music.
 - Fixed the Codex tutor failing when Windows inherited an unusable temporary
   directory; AI subprocess scratch files now stay under the workspace data root.
 

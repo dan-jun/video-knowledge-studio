@@ -350,6 +350,107 @@ class ProductionStatement(Scene):
         self.wait(1.4)
 
 
+class RaftLesson(Scene):
+    def construct(self):
+        config.background_color = "#071018"
+        self.add(grid(opacity=0.055))
+
+        badge = label("SCIPOP  /  生成课程", 20, CYAN, weight=BOLD).move_to([-6.2, 4.45, 0])
+        title = label("只给 4 小时，怎么读懂 Raft 日志复制？", 38, WHITE, weight=BOLD)
+        title.move_to(UP * 3.45)
+        focus = VGroup(
+            label("目标拆解", 18, CYAN, weight=BOLD),
+            label("多源对照", 18, VIOLET, weight=BOLD),
+            label("关键动画", 18, AMBER, weight=BOLD),
+        ).arrange(RIGHT, buff=0.45).next_to(title, DOWN, buff=0.25)
+        self.play(FadeIn(badge), run_time=0.35)
+        self.play(Write(title), run_time=0.75)
+        self.play(FadeIn(focus, shift=UP * 0.12), run_time=0.45)
+
+        def server(name, pos, color):
+            box = RoundedRectangle(
+                corner_radius=0.16,
+                width=2.2,
+                height=0.95,
+                stroke_color=color,
+                stroke_width=2,
+                fill_color=color,
+                fill_opacity=0.09,
+            ).move_to(pos)
+            text = label(name, 24, WHITE, weight=BOLD).move_to(box)
+            return VGroup(box, text)
+
+        client = server("客户端", [-5.9, 0.4, 0], MUTED)
+        leader = server("Leader", [-2.7, 0.4, 0], CYAN)
+        follower_a = server("Follower A", [2.0, 1.8, 0], MINT)
+        follower_b = server("Follower B", [2.0, -1.2, 0], AMBER)
+        committed = server("已提交", [5.6, 0.35, 0], VIOLET)
+
+        self.play(
+            FadeIn(client), FadeIn(leader), FadeIn(follower_a),
+            FadeIn(follower_b), FadeIn(committed),
+            run_time=0.7,
+        )
+
+        route_in = Arrow(client.get_right(), leader.get_left(), buff=0.08, color="#6E8390",
+                         stroke_width=2, max_tip_length_to_length_ratio=0.16)
+        route_a = Arrow(leader.get_right() + UP * 0.12, follower_a.get_left(), buff=0.1,
+                        color="#5D7786", stroke_width=2, max_tip_length_to_length_ratio=0.15)
+        route_b = Arrow(leader.get_right() + DOWN * 0.12, follower_b.get_left(), buff=0.1,
+                        color="#5D7786", stroke_width=2, max_tip_length_to_length_ratio=0.15)
+        route_commit = Arrow(follower_a.get_right(), committed.get_top() + UP * 0.65,
+                             buff=0.08, color="#5D7786", stroke_width=2,
+                             max_tip_length_to_length_ratio=0.15)
+        self.play(Create(route_in), Create(route_a), Create(route_b), run_time=0.6)
+
+        packet = Dot(radius=0.10, color=AMBER).move_to(client.get_right())
+        self.play(packet.animate.move_to(leader.get_left()), run_time=0.55)
+        packet_a = Dot(radius=0.09, color=MINT).move_to(leader.get_right())
+        packet_b = Dot(radius=0.09, color=AMBER).move_to(leader.get_right())
+        self.play(
+            packet_a.animate.move_to(follower_a.get_left()),
+            packet_b.animate.move_to(follower_b.get_left()),
+            run_time=0.8,
+        )
+
+        log_a = VGroup(*[
+            Rectangle(width=0.24, height=0.12, stroke_width=0, fill_color=MINT, fill_opacity=0.9)
+            for _ in range(4)
+        ]).arrange(RIGHT, buff=0.05).move_to(follower_a.get_center() + DOWN * 0.48)
+        log_b = VGroup(*[
+            Rectangle(width=0.24, height=0.12, stroke_width=0, fill_color=AMBER, fill_opacity=0.9)
+            for _ in range(3)
+        ]).arrange(RIGHT, buff=0.05).move_to(follower_b.get_center() + DOWN * 0.48)
+        self.play(LaggedStart(*[GrowFromCenter(x) for x in log_a], lag_ratio=0.12),
+                  LaggedStart(*[GrowFromCenter(x) for x in log_b], lag_ratio=0.12),
+                  run_time=0.75)
+
+        majority = label("多数副本", 25, MINT, weight=BOLD).move_to([-0.55, -2.45, 0])
+        check = Circle(radius=0.24, color=MINT, stroke_width=3).move_to([-2.65, -2.45, 0])
+        check_mark = VGroup(
+            Line([-0.10, 0.02, 0], [-0.01, -0.10, 0], color=MINT, stroke_width=4),
+            Line([-0.01, -0.10, 0], [0.15, 0.12, 0], color=MINT, stroke_width=4),
+        ).move_to(check)
+        self.play(Create(check), Create(check_mark), FadeIn(majority), run_time=0.55)
+
+        note = RoundedRectangle(
+            corner_radius=0.16,
+            width=4.2,
+            height=0.82,
+            stroke_color=VIOLET,
+            stroke_width=2,
+            fill_color=VIOLET,
+            fill_opacity=0.09,
+        ).move_to([4.25, -2.45, 0])
+        note_text = label("确认后才允许提交", 24, WHITE, weight=BOLD).move_to(note)
+        self.play(FadeIn(note), FadeIn(note_text), run_time=0.45)
+        self.play(packet_a.animate.move_to(follower_a.get_left() + UP * 0.1), run_time=0.25)
+
+        slogan = label("先看见机制，再回到代码。", 34, WHITE, weight=BOLD).move_to(DOWN * 3.65)
+        self.play(FadeIn(slogan, shift=UP * 0.12), run_time=0.45)
+        self.wait(0.8)
+
+
 class Finale(Scene):
     def construct(self):
         config.background_color = INK

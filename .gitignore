@@ -24,6 +24,7 @@ production/promo/build/
 production/promo/recordings/
 production/promo/render/
 production/promo/media_test/
+production/promo/music/
 
 .DS_Store
 Thumbs.db
