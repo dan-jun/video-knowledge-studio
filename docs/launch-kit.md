@@ -43,8 +43,8 @@ self-hosted
 ## Launch sequence
 
 1. Publish a public GHCR image and release asset.
-2. Publish the reviewed launch demo and pin it at the top of the README.
-3. Publish one Chinese walkthrough video.
+2. Publish the reviewed English launch demo and pin it at the top of the README.
+3. Publish a Chinese walkthrough for Bilibili and other Chinese-language channels.
 4. Publish one technical article explaining the evidence-linked architecture.
 5. Post focused variants in Chinese and English communities.
 6. Turn repeated questions into FAQ and starter issues.
@@ -115,13 +115,15 @@ Use the same text only where self-promotion is allowed by the community rules.
 
 ## Demo assets
 
-- `docs/images/social-preview.png` — GitHub/social card;
-- `docs/images/product-demo-poster.png` — 73-second launch-video cover;
-- `docs/media/product-demo.mp4` — 73-second animation and real-product walkthrough;
-- `docs/images/demo.png` — learning workspace;
-- `docs/images/ai-tutor-demo.png` — evidence and revision workflow;
-- `docs/images/production-workspace.png` — creation workspace;
-- `docs/images/production-demo.gif` — real rendered output.
+- `docs/images/social-preview-en.png` — English GitHub/social card;
+- `docs/images/product-demo-poster-en.png` — English 73-second launch-video cover;
+- `docs/media/product-demo-en.mp4` — English animation and real-product walkthrough;
+- `docs/images/learning-workspace-en.png` — English learning workspace;
+- `docs/images/ai-tutor-demo-en.png` — evidence and revision workflow;
+- `docs/images/production-workspace-en.png` — English creation workspace;
+- `docs/images/production-demo-en.gif` — real rendered output.
+
+The previous Chinese-named demo assets remain in the repository for compatibility.
 
 ## Boundaries to state publicly
 

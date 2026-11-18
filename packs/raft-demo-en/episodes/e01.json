@@ -1,0 +1,87 @@
+{
+  "title": "Why Raft waits for a majority before committing",
+  "thesis": "Raft log replication is not finished when a request reaches one server. The Leader appends an ordered entry, followers persist it, and only a majority acknowledgement makes it safe to commit and apply.",
+  "objectives": [
+    "Trace a client write through the Leader and followers.",
+    "Distinguish “stored on one replica” from “committed history”.",
+    "Map majority acknowledgement to the replication code."
+  ],
+  "terms": [
+    {
+      "term": "Leader",
+      "plain": "The node that accepts writes and chooses the order of log entries.",
+      "example": "A client sends a write to the Leader, which appends the new entry.",
+      "first": "00:02"
+    },
+    {
+      "term": "Follower",
+      "plain": "A node that copies entries from the Leader and can vote in elections.",
+      "example": "Follower A persists the new entry in its local log.",
+      "first": "00:03"
+    },
+    {
+      "term": "Majority acknowledgement",
+      "plain": "More than half the cluster has durably stored the same entry.",
+      "example": "At least two of three nodes must acknowledge before commit.",
+      "first": "00:05"
+    },
+    {
+      "term": "Commit",
+      "plain": "The cluster accepts an entry as stable history that the state machine may apply.",
+      "example": "The Leader advances commit index after majority replication.",
+      "first": "00:06"
+    }
+  ],
+  "timeline": [
+    {"id": "raft-en:timeline:goal", "time": "00:00-00:01", "start": 0, "end": 1.2, "topic": "Start from the project goal", "must": "Do not learn Raft in general; learn enough to change replication code tomorrow."},
+    {"id": "raft-en:timeline:request", "time": "00:01-00:03", "start": 1.2, "end": 3.2, "topic": "A client reaches the Leader", "must": "The Leader, not an arbitrary follower, chooses the order of writes."},
+    {"id": "raft-en:timeline:replicate", "time": "00:03-00:05", "start": 3.2, "end": 5.2, "topic": "Entries replicate in parallel", "must": "One follower storing the entry does not make the entry safe."},
+    {"id": "raft-en:timeline:commit", "time": "00:05-00:07.6", "start": 5.2, "end": 7.6, "topic": "Majority acknowledgement advances commit", "must": "Commit index moves only after a majority persists the entry."}
+  ],
+  "core": [
+    {
+      "id": "raft-en:core:request",
+      "heading": "Writes begin at the Leader",
+      "time": "00:02",
+      "start": 2,
+      "body": "A client does not update every server directly. It sends the request to the Leader, which creates an ordered log entry and fans it out to followers."
+    },
+    {
+      "id": "raft-en:core:replicate",
+      "heading": "Replicated is not yet committed",
+      "time": "00:04",
+      "start": 4,
+      "body": "An entry on one follower exists on one replica only. It has not crossed the majority-confirmation boundary, so it is not yet stable history for the state machine."
+    },
+    {
+      "id": "raft-en:core:commit",
+      "heading": "Majority acknowledgement is the commit condition",
+      "time": "00:06",
+      "start": 6,
+      "body": "After a majority durably stores the entry, the Leader can advance commit index. Only committed entries may be applied in order by the state machine."
+    }
+  ],
+  "formula": "Client → Leader appends → replicate in parallel → majority ack → commit → apply",
+  "visuals": [
+    {"id": "raft-en:visual:commit", "file": "media/poster.png", "time": "00:06", "start": 6, "caption": "The check mark appears only after the entry reaches a majority of replicas."},
+    {"id": "raft-en:visual:flow", "file": "", "time": "00:04", "start": 4, "caption": "Follow the arrows: the client contacts the Leader, and the Leader fans out the log entry."}
+  ],
+  "visualThesis": "The animation separates replication from commit: log bars mean a replica stored the entry; the check mark means the cluster reached a majority.",
+  "visualRead": [
+    "Count the replicas before deciding whether an entry is committed.",
+    "In code, keep ordinary append state separate from commit index."
+  ],
+  "trap": "Do not treat “one follower received the entry” as “the entry is committed”. Before majority acknowledgement, the write is not safe to apply.",
+  "recall": [
+    {"q": "Why is one follower not enough?", "a": "A single replica does not represent a majority and may disappear when leadership changes."},
+    {"q": "Which two pieces of state should you inspect in the project code?", "a": "Where the Leader appends and replicates entries, and when commit index is allowed to advance."}
+  ],
+  "bridges": ["client request", "log matching", "majority ack", "commit index"],
+  "memoryHook": "Replication is a condition. Majority acknowledgement is the commit.",
+  "transcript": [
+    {"start": 0, "end": 1.2, "text": "The goal is to understand the replication code you need to change tomorrow."},
+    {"start": 1.2, "end": 3.2, "text": "A client sends its write to the Leader, which gives the log entry an order."},
+    {"start": 3.2, "end": 5.2, "text": "The Leader replicates to followers. One local copy is not yet a commit."},
+    {"start": 5.2, "end": 7.6, "text": "After a majority persists the entry, commit index advances and the state machine may apply it."}
+  ]
+}

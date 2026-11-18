@@ -234,6 +234,8 @@ def build_storyboard(spec, topic, cls_names):
     storyboard = {"topic": topic, "title": spec["title"],
                   "voice": spec.get("voice", "zh-CN-XiaoxiaoNeural"),
                   "parts": parts}
+    if spec.get("language"):
+        storyboard["language"] = spec["language"]
     if spec.get("sources"):
         storyboard["sources"] = spec["sources"]
     return storyboard
@@ -345,6 +347,7 @@ def main():
     aj = {"mode": mode_key, "title": spec["title"],
           "label": spec.get("label") or mode_cfg["label"],
           "stage": "transcribed",
+          "language": spec.get("language", "zh-CN"),
           "source": {"local": spec.get("source", "")},
           "sources": spec.get("sources", []),
           "params": params}

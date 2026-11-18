@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -7,12 +8,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STUDIO = HERE.parents[1]
-SCENES = HERE / "render" / "videos" / "manim_scenes" / "1080p30"
-RECORDINGS = HERE / "recordings"
-BUILD = HERE / "build"
+LANGUAGE = "en" if os.environ.get("VKS_PROMO_LANG") == "en" else "zh"
+SCENES = HERE / ("render_en" if LANGUAGE == "en" else "render") / "videos" / "manim_scenes" / "1080p30"
+RECORDINGS = HERE / ("recordings-en" if LANGUAGE == "en" else "recordings")
+BUILD = HERE / ("build-en" if LANGUAGE == "en" else "build")
 CLIPS = BUILD / "clips"
-FINAL = STUDIO / "docs" / "media" / "product-demo.mp4"
-POSTER = STUDIO / "docs" / "images" / "product-demo-poster.png"
+FINAL = STUDIO / "docs" / "media" / ("product-demo-en.mp4" if LANGUAGE == "en" else "product-demo.mp4")
+POSTER = STUDIO / "docs" / "images" / ("product-demo-poster-en.png" if LANGUAGE == "en" else "product-demo-poster.png")
 MUSIC_CACHE = HERE / "music" / "close-up.mp3"
 MUSIC_URL = "https://assets.mixkit.co/music/1167/1167.mp3"
 
@@ -82,17 +84,23 @@ def normalize_screen(
     return target
 
 
-def freeze_screen(name: str, seconds: float) -> Path:
+def freeze_screen(name: str, seconds: float, zoom: bool = True) -> Path:
     source = RECORDINGS / name
     target = CLIPS / f"{source.stem}_freeze.mp4"
     frames = int(seconds * FPS)
-    vf = (
+    scale = (
         f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=decrease,"
-        f"pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=#05070A,"
-        f"zoompan=z='min(zoom+0.00045,1.075)':"
-        f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-        f"d={frames}:s={WIDTH}x{HEIGHT}:fps={FPS},setsar=1"
+        f"pad={WIDTH}:{HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=#05070A"
     )
+    if zoom:
+        vf = (
+            f"{scale},"
+            f"zoompan=z='min(zoom+0.00045,1.075)':"
+            f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+            f"d={frames}:s={WIDTH}x{HEIGHT}:fps={FPS},setsar=1"
+        )
+    else:
+        vf = f"{scale},fps={FPS},setsar=1"
     run([
         FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
         "-loop", "1", "-i", str(source), "-t", str(seconds), "-vf", vf,
@@ -157,12 +165,16 @@ def main() -> None:
         ordered.append(normalize_scene(scene))
 
     ordered.append(normalize_screen("learning", 1.0, 12.6))
-    ordered.append(freeze_crop("learning-final.png", (1188, 676, 712, 400), 4.0))
+    learning_crop = (1188, 420, 712, 660) if LANGUAGE == "en" else (1188, 676, 712, 400)
+    ordered.append(freeze_crop("learning-final.png", learning_crop, 4.0))
     ordered.append(normalize_scene("KnowledgeNetwork"))
     ordered.append(normalize_scene("ContextStatement"))
     ordered.append(normalize_scene("ThreeModes"))
     ordered.append(normalize_screen("production", 1.1, 13.1))
-    ordered.append(freeze_crop("production-frames/t12.5.png", (1220, 300, 590, 332), 4.0))
+    if LANGUAGE == "en":
+        ordered.append(freeze_screen("production-final.png", 4.0, zoom=False))
+    else:
+        ordered.append(freeze_crop("production-frames/t12.5.png", (1220, 300, 590, 332), 4.0))
     ordered.append(normalize_scene("DifferenceBridge"))
     ordered.append(normalize_scene("RaftLesson"))
     ordered.append(normalize_scene("FinalRecap"))
@@ -197,6 +209,7 @@ def main() -> None:
         "-ss", "23.5", "-i", str(FINAL), "-frames:v", "1", str(POSTER),
     ])
     print({
+        "language": LANGUAGE,
         "final": str(FINAL),
         "poster": str(POSTER),
         "duration": duration(FINAL),

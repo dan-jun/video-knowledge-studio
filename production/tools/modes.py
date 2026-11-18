@@ -111,8 +111,12 @@ def est_sec(page):
     """按口播字数估时长（有实测时长优先用实测）。"""
     if page.get("dur"):
         return float(page["dur"])
-    n = len(re.sub(r"\s", "", page.get("narration", "")))
-    return max(3.0, n / CPS_PER_MIN * 60.0)
+    narration = str(page.get("narration", ""))
+    if re.search(r"[\u4e00-\u9fff]", narration):
+        n = len(re.sub(r"\s", "", narration))
+        return max(3.0, n / CPS_PER_MIN * 60.0)
+    words = len(re.findall(r"[A-Za-z0-9][A-Za-z0-9_.\-]*", narration))
+    return max(3.0, words / 2.5)
 
 
 def ptype(p):
@@ -199,7 +203,14 @@ def chk_recap(pages, mode):
     if ptype(last) != "recap":
         errs.append("最后一页不是复盘页")
     nar = last.get("narration", "")
-    if "我们回顾一下" not in nar:
+    lower = nar.lower()
+    if not (
+        "我们回顾一下" in nar
+        or "let us recap" in lower
+        or "let's recap" in lower
+        or "to recap" in lower
+        or "in summary" in lower
+    ):
         errs.append("复盘页口播没有「我们回顾一下」")
     items = pitems(last)
     lo, hi = LIMITS["recap_min_items"], LIMITS["recap_max_items"]
@@ -446,7 +457,9 @@ def chk_opening_hook(pages, mode):
     """科普开头：前 2 页至少出现一个问句或具体例子（自动粗判）。"""
     head = pages[:2]
     blob = " ".join(p.get("narration", "") for p in head)
-    if "？" not in blob and not any(p.get("type") == "kit" or p.get("kit") == "question" for p in head):
+    if "？" not in blob and "?" not in blob and not any(
+        p.get("type") == "kit" or p.get("kit") == "question" for p in head
+    ):
         return ["开头两页既没有问句也没有具体例子"], "未命中"
     return [], "命中"
 

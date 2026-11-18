@@ -1,255 +1,274 @@
 # Video Knowledge Studio
 
-### 从一个知识缺口，到一套真正学得会的课程
+### From a knowledge gap to a course you can actually use
 
-输入一个工作、科研或项目中的学习目标。Agent 帮你拆解知识点、搜索 B 站和 YouTube
-上的多个互补来源；工作台把内容整合成动画课程和结构化笔记。看不懂的地方，直接在
-右侧选中文字追问 AI。
+Describe what you need to learn for work, research, or a project. An Agent can break
+the goal into concepts, discover complementary Bilibili and YouTube sources, and use
+the local production pipeline to turn them into an animated course with structured
+notes. When a note is unclear, select it and ask the AI tutor for an explanation,
+an evidence check, or a reviewable edit.
 
 [![CI](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.2.7-56d8f5)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.8-56d8f5)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
 [![Container](https://img.shields.io/badge/GHCR-video--knowledge--studio-2496ED?logo=docker&logoColor=white)](https://github.com/dan-jun/video-knowledge-studio/pkgs/container/video-knowledge-studio)
 
-[观看 73 秒演示](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.7/video-knowledge-studio-product-demo-73s.mp4?download=1) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
+[Watch the English demo](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.8/video-knowledge-studio-product-demo-en.mp4?download=1) · [Why this is different](#why-another-video-tool-is-not-enough) · [Demand-driven learning](#demand-driven-learning) · [Learning workspace](#learning-workspace) · [Video production](#video-production) · [Quick start](#quick-start)
 
-> **本地优先**：课程、制作项目、批注和修订默认只保存在自己的电脑上。
+> **Local-first:** course packs, production projects, annotations, and revision
+> history stay on your machine unless you explicitly send a question to a model.
 
-[![播放 Video Knowledge Studio 73 秒演示](docs/images/product-demo-poster.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.7/video-knowledge-studio-product-demo-73s.mp4?download=1)
+[![Play the Video Knowledge Studio demo](docs/images/product-demo-poster-en.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.8/video-knowledge-studio-product-demo-en.mp4?download=1)
 
-<sub>73 秒发布片：完整交代项目、科研、转岗三种真实场景，用同一条工作流贯穿；以 Raft 任务演示原片证据、上下文 AI、知识网、三产线、门禁与生成课程。等待响应的空档已剪除，局部重点使用固定截图裁切。</sub>
+<sub>The English launch film follows a realistic Raft task through source discovery, a
+grounded learning workspace, evidence-aware AI, the three production modes, quality
+gates, and a generated lesson. Waiting states are cut out, and enlarged interface
+details use stable screenshots rather than moving zooms.</sub>
 
-![从知识缺口到真正学会](docs/images/workflow-overview.svg)
+![The end-to-end workflow](docs/images/workflow-overview-en.svg)
+
+## Key terms first
+
+These terms are used throughout the README. Read this table first; every later example
+assumes the plain-language meaning shown here.
+
+| Term | Plain-language meaning | Example | First occurrence | Self-assessment |
+| --- | --- | --- | --- | --- |
+| Knowledge gap | A specific thing you must understand to complete real work | "I need to understand Raft log replication before editing this service." | This table | Know / Unsure / Need work |
+| Course pack | A folder containing course metadata, video, and knowledge notes | `packs/raft-demo-en/` | This table | Know / Unsure / Need work |
+| Source | The original video, paper, or document used as evidence | One Bilibili lecture about Raft | This table | Know / Unsure / Need work |
+| Timestamp | The point in a video where a claim or explanation appears | `00:05-00:07` | This table | Know / Unsure / Need work |
+| Knowledge graph | Notes connected by directed prerequisite or causal links | `Leader → Majority ack → Commit` | This table | Know / Unsure / Need work |
+| Production mode | The rule set used to create a lesson | `remix`, `course`, or `scipop` | This table | Know / Unsure / Need work |
+| Spec | The editable source file that defines narration and visuals per page | `demo-math.json` | This table | Know / Unsure / Need work |
+| Gate | An automated delivery check that can block an unfinished or unsupported video | Source, citation, practice, and playback checks | This table | Know / Unsure / Need work |
+| AI tutor | A model request supplied with the selected note, nearby transcript, and current frame | "Why does this boundary hold?" | This table | Know / Unsure / Need work |
+| Local-first | The default architecture keeps private course data on the user's computer | The app listens on `127.0.0.1` | This table | Know / Unsure / Need work |
+
+## Why another video tool is not enough
+
+> **Core difference:** planning, source discovery, production, learning, and AI
+> questions share the same timestamps and knowledge record.
+
+![Disconnected tools versus one evidence-linked workspace](docs/images/before-after-en.svg)
+
+| Common option | Limitation | Video Knowledge Studio |
+| --- | --- | --- |
+| Video player | Watching, notes, and source evidence live in separate tools | Video, timestamps, and knowledge blocks stay synchronized |
+| AI summarizer | The answer often loses the exact source context | Questions include the current second, nearby transcript, and frame |
+| General AI chat | Proposed note edits are difficult to review or undo | Edits appear as a diff and require explicit acceptance |
+| Video generator | The finished video still needs a separate learning workflow | Generated videos, notes, and evidence return to one workspace |
+
+The result is a closed loop:
+
+```text
+learning goal → planning and source selection → animated course
+             → knowledge notes → grounded questions
+             → reviewable revisions → a stronger learning system
+```
+
+## Three practical uses
+
+| Situation | What you get |
+| --- | --- |
+| **Fill a work-related gap** | A focused short course for a project, paper, or role change |
+| **Study a structured course** | Video, notes, source evidence, a knowledge graph, and an AI tutor together |
+| **Remaster existing video** | A single-source remix, a multi-source course, or a compact sci-pop lesson |
+
+These are not disconnected modes. A generated video opens in the same learning
+workspace, and new learning notes can feed the next production pass.
+
+## Demand-driven learning
+
+![Demand-driven learning workflow](docs/images/demand-driven-flow-en.svg)
+
+Suppose you have four hours to understand Raft well enough to read the replication
+code in a real project:
+
+1. State the goal, your current knowledge, and the available time.
+2. Ask the Agent to separate must-learn concepts from useful context and later topics.
+3. Search Bilibili and YouTube for multiple complementary sources.
+4. Compare relevance, correctness, evidence quality, and coverage.
+5. Produce a learning path with time budgets and practice points.
+6. Use `course` for a longer synthesis or `scipop` for focused short lessons.
+7. Run the gates, render the animation, and generate synchronized notes.
+8. Open the local workspace and ask about the exact sentence you do not understand.
+
+Responsibilities are explicit:
+
+- **Agent:** decomposes the goal, searches sources, compares evidence, and plans the path.
+- **Video Knowledge Studio:** produces video, manages knowledge, and provides grounded,
+  local context for AI questions.
+- **You:** approve the goal and sources, then judge whether important conclusions hold.
 
 <details>
-<summary><strong>术语速查</strong></summary>
+<summary><strong>Example prompt you can give an Agent</strong></summary>
 
-| 术语 | 白话含义 | 例子 | 自评 |
-| --- | --- | --- | --- |
-| Agent | 能调用搜索、下载和本地工具的 AI 执行程序 | 查找多个讲解来源并调用制作流程 | 会 / 模糊 / 不会 |
-| 课程包 | 存放课程目录、视频和知识数据的目录 | `packs/my-course/` | 会 / 模糊 / 不会 |
-| 规格（spec） | 控制每页画面、口播和结构的源文件 | `demo-math.json` | 会 / 模糊 / 不会 |
-| 门禁 | 成片交付前自动执行的质量检查 | 检查来源、练习、覆盖率和视频 | 会 / 模糊 / 不会 |
-| 知识网 | 概念之间前后置关系的网络 | “函数 → 导数 → 优化” | 会 / 模糊 / 不会 |
+```text
+Build a demand-driven learning plan for "distributed consistency: from CAP to Raft."
+I understand HTTP and databases but have not studied distributed consensus.
+I have four hours and need to understand the Raft log replication code in a real project.
+Decompose the concepts, search multiple complementary Bilibili and YouTube sources,
+and use Video Knowledge Studio's course mode to create a sourced animated course
+with synchronized notes. Keep source and timestamp evidence for every important claim.
+Do not invent unavailable sources or evidence.
+```
 
 </details>
 
-## 为什么不是又一个视频工具
+## Learning workspace
 
-> **核心差异：规划、找资料、制作、学习和 AI 追问共享同一份时间戳与知识数据。**
+![The English learning workspace](docs/images/learning-workspace-en.png)
 
-![旧工作流与统一工作流](docs/images/before-after.svg)
-
-| 常见方案 | 局限 | Video Knowledge Studio |
-| --- | --- | --- |
-| 视频播放器 | 只能看，笔记和原片相互割裂 | 视频、时间戳和知识块双向同步 |
-| AI 总结工具 | 容易脱离原片，不知道你在看哪一段 | 追问时附带当前秒数、附近讲稿和关键画面 |
-| 普通 AI 聊天 | 修改笔记无法审阅、追踪或撤销 | 修改先显示 diff，由你接受、旁注或拒绝 |
-| 视频生成器 | 做完成片后还要另找学习工具 | 成片、知识数据和笔记进入同一个工作台 |
-
-它最终形成的是一条闭环：
-
-```text
-学习目标 → 规划与选源 → 动画课程 → 知识笔记
-        → 边看边问 → 修订与复习 → 新的学习资料
-```
-
-## 三种核心用法
-
-| 场景 | 你会得到什么 |
+| Area | Purpose |
 | --- | --- |
-| **按需补知识** | 为工作、科研、面试或项目缺口快速组织一门短课 |
-| **系统学课程** | 视频、笔记、画面证据、知识网和 AI 导师同屏学习 |
-| **重做已有视频** | 单源重制、多源整合或制作高密度科普短片 |
+| Course library | Find chapters and lessons, search titles, and inspect duration and knowledge-block counts |
+| Video player | Playback, speed, chapters, picture-in-picture, theater mode, screenshots, and fullscreen |
+| Knowledge notes | Terms, mechanisms, visual evidence, pitfalls, active recall, and the knowledge graph |
 
-三者不是独立功能：制作出的视频可以直接进入学习工作台；学习过程中产生的新笔记
-也可以继续用于下一轮制作。
+The timeline is the main connection between reading and watching:
 
-## 按需学习
+- Playback highlights the current knowledge block.
+- Selecting a note timestamp jumps to the corresponding video moment.
+- Selecting visual evidence returns to the source frame.
+- The AI tutor receives only the context needed for the current question.
 
-![按需学习完整流程](docs/images/demand-driven-flow.svg)
+### AI edits are reviewable, not silent
 
-例如你只有四小时，需要理解 Raft 才能阅读项目代码：
+An answer first exposes evidence, confidence, and a proposed change. The main text is
+not modified until you accept the edit. You can also keep a pale side note, reject the
+change, or undo an edit that has already been applied.
 
-1. 说清目标、基础和可投入时间。
-2. Agent 拆出必学、理解和暂缓内容。
-3. 到 B 站和 YouTube 搜索多个互补来源。
-4. 比较相关性、正确性、证据和覆盖范围。
-5. 生成学习路径、时间分配和练习点。
-6. 用 `course` 整合成长教学，或用 `scipop` 拆分多个短专题。
-7. 运行门禁、生成动画和笔记。
-8. 打开学习工作台，在右侧针对不懂的句子直接追问。
+![Context-aware AI tutor](docs/images/ai-tutor-demo-en.png)
 
-职责划分：
+<sub>An answer combines an explanation, timestamp evidence, confidence, and an editable diff.</sub>
 
-- **Agent**：拆目标、查资料、比较来源、编排路径。
-- **Video Knowledge Studio**：制作视频、管理知识、提供本地上下文和 AI 追问。
-- **你**：确认目标和来源，判断重要结论是否可靠。
+## Video production
 
-<details>
-<summary><strong>展开：可直接交给 Agent 的示例</strong></summary>
+![The production workspace](docs/images/production-workspace-en.png)
 
-```text
-为“分布式一致性：从 CAP 到 Raft”制定一份按需学习计划。
-我的基础是了解 HTTP 和数据库，但没系统学过分布式共识；
-可用时间是 4 小时，目标是能读懂项目里的 Raft 日志复制代码。
-请拆解知识点和优先级，搜索 B 站与 YouTube 的多个互补来源，
-使用 Video Knowledge Studio 的 course 模式整合成课程和笔记。
-保留每个结论的来源和时间戳，不要使用无法确认的内容。
-```
-
-</details>
-
-## 学习工作台
-
-![学习工作台实拍](docs/images/demo.png)
-
-| 分区 | 核心功能 |
-| --- | --- |
-| 左侧课程目录 | 按课程和章节找视频；搜索；查看时长与知识块数量 |
-| 中间播放器 | 播放、倍速、章节、画中画、全屏、剧场模式和截图 |
-| 右侧知识区 | 术语、机制、画面证据、易错点、主动回忆和知识网 |
-
-最关键的是时间轴：
-
-- 视频播放会高亮当前知识块。
-- 点击笔记时间戳会跳回对应视频。
-- 点击关键画面也会回到原片位置。
-- AI 只读取当前问题所需的选中文字、时间和附近上下文。
-
-### 不是“让 AI 随便改笔记”
-
-AI 的回答会先显示证据、置信度和建议修改。只有你确认后才会写入正文；也可以只留
-浅色旁注，已接受的修改还能撤销。
-
-![AI 导师结合证据回答](docs/images/ai-tutor-demo.png)
-
-<sub>示例回答：解释、时间证据、置信度和修改 diff 同时出现。</sub>
-
-## 视频制作
-
-![视频制作工作台](docs/images/production-workspace.png)
-
-| 模式 | 适合什么 | 质量标准 |
+| Mode | Best for | Delivery rules |
 | --- | --- | --- |
-| `remix` 视频涅槃 | 单源重制 | 信息守恒、出处、练习、复盘、动画密度 |
-| `course` 长教学 | 多来源整合 | 15–60 分钟、分章、多源、练习与严格出处 |
-| `scipop` 科普短片 | 单点概念 | 2–6 分钟、逐页设计、高视觉密度、片尾复盘 |
+| `remix` | Remastering one source | Preserve all substantive information; require citations, practice, recap, and animation density |
+| `course` | Integrating multiple sources | 15–60 minutes, chapters, at least two sources, practice, and strict citations |
+| `scipop` | Explaining one idea clearly | 2–6 minutes, page-specific visual design, high animation density, and a final recap |
 
 ```text
-规格 → 分镜 → 门禁 → Edge TTS → 动画渲染
-     → 字幕 → 成片预览 / 下载
+spec → storyboard → gates → Edge TTS → animation render
+     → captions → playable preview / download
 ```
 
-下面的片段由项目真实生成和渲染：
+The following sequence is generated and rendered by the project itself:
 
-![真实生成的动画讲解片段](docs/images/production-demo.gif)
+![A real generated lesson](docs/images/production-demo-en.gif)
 
-生成场景、音频、缓存和成片都在 `data/production/`，不会自动进入 Git，也不会覆盖
-已有课程与批注。
+Generated scenes, audio, caches, and final video files live under `data/production/`.
+They are excluded from Git and do not overwrite existing courses or annotations.
 
-详细规则见 [视频制作三产线](docs/video-production.md)。
+See [the production-mode guide](docs/video-production.md) for the complete workflow.
 
-## 快速开始
+## Quick start
 
-### 方式一：Docker（完整环境）
+### Option 1: Docker
 
-先安装 Docker Desktop（Windows/macOS）或 Docker Engine + Compose（Linux）。
+Install Docker Desktop on Windows or macOS, or Docker Engine with Compose on Linux.
 
 ```bash
 git clone https://github.com/dan-jun/video-knowledge-studio.git
 cd video-knowledge-studio
 ```
 
-Windows：
+Windows:
 
 ```powershell
 .\docker-up.ps1 -Open
 ```
 
-macOS / Linux：
+macOS / Linux:
 
 ```bash
 ./docker-up.sh
 ```
 
-脚本会自动选端口、生成密码，并安装完整学习与制作依赖。Docker 启动时也会顺手
-安装随仓库分发的 Agent Skill/Plugin。启动器会优先拉取
-`ghcr.io/dan-jun/video-knowledge-studio:latest`，拉取失败时才回退到本地构建。
+The launcher chooses a free port, generates a password, and installs the complete
+learning and production environment. It first tries the published
+`ghcr.io/dan-jun/video-knowledge-studio:latest` image and falls back to a local build.
 
-修改源码后需要构建本地版本：
+To test source changes with a local image:
 
 ```powershell
 .\docker-up.ps1 -Open -BuildFromSource
 ```
 
-### 方式二：Agent + Plugin
+### Option 2: Agent and Plugin
 
 ```bash
 git clone https://github.com/dan-jun/video-knowledge-studio.git
 cd video-knowledge-studio
 ```
 
-Windows：
+Windows:
 
 ```powershell
 .\install.ps1
 ```
 
-macOS / Linux：
+macOS / Linux:
 
 ```bash
 ./install.sh
 ```
 
-安装后会注册本地 Plugin marketplace，并安装：
+The installer registers the local Plugin marketplace and exposes:
 
 ```text
 $video-knowledge-studio
 $demand-driven-video-learning
 ```
 
-只安装 Agent 能力、不启动应用：
+To install only the Agent capabilities without launching the app:
 
 ```powershell
 .\install-agent.ps1
 ```
 
-重新打开 Codex 或新建对话后生效。详细说明见 [Agent Skill 与 Plugin](docs/plugin.md)。
+Reopen Codex or create a new chat after installation. See
+[Agent Skill and Plugin](docs/plugin.md) for details.
 
-### 方式三：本机 Python
+### Option 3: Local Python
 
-运行学习工作台只需要 Python 3.10+：
+The learning workspace needs Python 3.10 or newer:
 
 ```powershell
 python -m vks
 ```
 
-视频制作需要：
+Video production also needs the production dependencies:
 
 ```powershell
 python -m pip install -e ".[production]"
 python -m vks
 ```
 
-自动转录源视频还需要可选组件：
+Automatic transcription of source video is optional:
 
 ```powershell
 python -m pip install -e ".[transcription]"
 ```
 
-## 启用 AI
+## Enable AI
 
-未配置模型时是离线演示模式，只验证界面，不产生可信知识结论。
+Without a configured model, the app uses offline demo mode. This validates the
+interface and synchronization, but it does not generate trusted knowledge claims.
 
-本机 Codex：
+Local Codex:
 
 ```powershell
 $env:VKS_AI_PROVIDER="codex"
 python -m vks
 ```
 
-OpenAI-compatible：
+OpenAI-compatible endpoint:
 
 ```powershell
 $env:VKS_AI_PROVIDER="openai"
@@ -259,7 +278,7 @@ $env:VKS_MODEL="gpt-4.1-mini"
 python -m vks
 ```
 
-## 导入自己的课程
+## Import your own course
 
 ```text
 packs/my-course/
@@ -272,27 +291,32 @@ packs/my-course/
    └─ e02.json
 ```
 
-从视频目录生成起步结构：
+Create a starter structure from a video directory:
 
 ```powershell
-python scripts/import_course.py --input "D:\courses\my-course" --title "我的课程"
+python scripts/import_course.py --input "D:\courses\my-course" --title "My course"
 ```
 
-导入器只生成结构和真实时长，不会虚构笔记。详见
-[课程包格式](docs/course-pack.md) 和 [`packs/demo`](packs/demo)。
+The importer records the structure and real durations. It does not invent notes.
+See [course-pack format](docs/course-pack.md) and the
+[`raft-demo-en`](packs/raft-demo-en) example.
 
-## 隐私与边界
+## Privacy and boundaries
 
-- 默认只监听 `127.0.0.1`，每个人拥有自己的实例和本地数据。
-- 课程、制作项目和批注默认被 Git 忽略。
-- 只有主动提问时，才向模型发送当前问题所需的局部上下文。
-- 这不是带账号隔离的多租户 SaaS。
-- AI 结果仍需人工判断；重要结论应保留出处、画面和不确定性。
-- 外部视频、字幕、截图和讲义必须分别确认授权。
+- The app listens on `127.0.0.1` by default.
+- Every user owns a separate local instance and local data.
+- Courses, production projects, and annotations are excluded from Git by default.
+- Only the selected note, nearby transcript, current frame, and question are sent when
+  you explicitly invoke the model.
+- This is not a multi-tenant SaaS product with account isolation.
+- AI output still needs human judgment. Important claims should retain evidence,
+  source context, and uncertainty.
+- External videos, captions, screenshots, and handouts must be licensed independently.
 
-完整边界见 [当前限制](docs/limitations.md) 和 [部署模式](docs/deployment.md)。
+See [limitations](docs/limitations.md) and [deployment](docs/deployment.md) for the
+trust boundary and supported environments.
 
-## 开发与验证
+## Development and verification
 
 ```powershell
 python -m pip install -e ".[dev]"
@@ -300,43 +324,47 @@ python -m unittest discover -s tests -v
 node --check web/app.js
 node --check web/knowledge.js
 node --check web/production.js
+node --check web/i18n.js
 ```
 
-CI 会实际构建 Docker 镜像、启动容器、登录、检查制作页和生产依赖。
+CI builds the Docker image, starts the container, signs in, and verifies the production
+page and dependencies.
 
-## 文档
+## Documentation
 
-| 想了解 | 文档 |
+| Topic | Document |
 | --- | --- |
-| 全部功能 | [功能清单](docs/features.md) |
-| Agent Skill 与 Plugin | [能力包](docs/plugin.md) |
-| 按需学习与生产规则 | [三产线](docs/video-production.md) |
-| 课程数据格式 | [课程包](docs/course-pack.md) |
-| Docker | [一键运行](docs/docker.md) |
+| Full feature inventory | [Features](docs/features.md) |
+| Agent Skill and Plugin | [Plugin bundle](docs/plugin.md) |
+| Demand-driven learning and production rules | [Production modes](docs/video-production.md) |
+| Course data format | [Course packs](docs/course-pack.md) |
+| Docker | [One-command setup](docs/docker.md) |
 | HTTP API | [API](docs/api.md) |
-| 配置与 AI | [配置项](docs/configuration.md) |
-| 架构与信任边界 | [架构](docs/architecture.md) |
-| 部署与限制 | [部署](docs/deployment.md) · [限制](docs/limitations.md) |
-| 发布与推广素材 | [Launch kit](docs/launch-kit.md) |
+| AI providers and configuration | [Configuration](docs/configuration.md) |
+| Architecture and trust boundaries | [Architecture](docs/architecture.md) |
+| Deployment and limits | [Deployment](docs/deployment.md) · [Limitations](docs/limitations.md) |
+| Launch assets | [Launch kit](docs/launch-kit.md) |
 
 <details>
-<summary><strong>Roadmap（尚未实现）</strong></summary>
+<summary><strong>Roadmap (not implemented yet)</strong></summary>
 
-- 自动学习计划、时间预算和知识依赖图
-- 内置 B 站 / YouTube 搜索、字幕采集和来源评分
-- 自动选择制作模式并生成初版规格
-- Anki、间隔重复和学习统计
-- 流式 AI 回答
-- SRT、PDF、Obsidian 导出
-- 多人分享与逐段评论
+- Automatic learning plans, time budgets, and prerequisite graphs
+- Built-in Bilibili / YouTube search, caption collection, and source scoring
+- Automatic production-mode selection and initial spec generation
+- Anki, spaced repetition, and learning analytics
+- Streaming AI answers
+- SRT, PDF, and Obsidian export
+- Multi-user sharing and paragraph-level comments
 
 </details>
 
 ## Contributing
 
-请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [SECURITY.md](SECURITY.md)。功能建议最好
-附带最小课程包、复现步骤和预期行为。
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Bug reports and
+feature proposals are most useful with a minimal course pack, reproduction steps, and
+the expected behavior.
 
 ## License
 
-代码和仓库内演示内容使用 [MIT License](LICENSE)。外部课程包不会自动继承本仓库许可证。
+The code and repository demo content use the [MIT License](LICENSE). External course
+packs do not inherit this repository's license automatically.

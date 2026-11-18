@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.8 - 2026-11-19
+
+- Added a complete English product experience for the learning workspace,
+  production workspace, contextual AI output and the Raft demonstration course.
+- Added an English 73-second launch film and new English workflow, comparison,
+  demand-driven-learning and social-preview artwork.
+- Translated the public README in full while keeping the existing Chinese product
+  and technical documentation available for existing users.
+- Added language-aware source citation prompts for contextual AI so English answers
+  use the language of the active workspace.
+- Added language-aware duration estimation, recap checks and opening-hook checks for
+  English production specs.
+
 ## 0.2.7 - 2026-11-18
 
 - Fixed generated project metadata so `scipop` and `course` runs no longer inherit

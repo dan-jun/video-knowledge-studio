@@ -21,8 +21,11 @@ production/scenes/gen_*.py
 .record-demo/
 .record-test/
 production/promo/build/
+production/promo/build-en/
 production/promo/recordings/
+production/promo/recordings-en/
 production/promo/render/
+production/promo/render_en/
 production/promo/media_test/
 production/promo/music/
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from manim import *
 
 
@@ -15,13 +17,148 @@ AMBER = "#FFD166"
 VIOLET = "#A78BFA"
 RED = "#FF8C7D"
 
+EN = {
+    "认识一下": "INTRODUCING",
+    "明天要改 Raft 日志复制": "Tomorrow: ship a Raft log replication change",
+    "你只有 4 小时，却面对 9 个视频、3 篇文章和 2 份旧笔记": "You have four hours, nine videos, three articles and two old notebooks",
+    "接手陌生项目": "Take over a codebase",
+    "4 小时补齐关键机制": "Four hours to understand the core",
+    "论文复现卡住": "Reproduce a paper",
+    "多份资料串成一条线": "Turn scattered sources into one path",
+    "面试或转岗": "Interview or role change",
+    "零散时间形成体系": "Build a system in fragmented time",
+    "你缺的不是更多视频，": "The problem is not a lack of videos.",
+    "是一条能落到工作上的学习链。": "It is the missing path from information to real work.",
+    "一条完整学习链": "one complete learning chain",
+    "不是又一个": "Not another",
+    "视频总结器": "video summarizer",
+    "而是": "but",
+    "规划  →  选源  →  制作  →  学习  →  追问  →  体系": "plan → source → create → learn → ask → system",
+    "三个场景，一条工作流": "Three situations. One workflow.",
+    "目标": "Goal",
+    "选源": "Sources",
+    "成课": "Course",
+    "边学边问": "Learn + ask",
+    "用于工作": "Apply",
+    "项目接手": "Codebase",
+    "4 小时读懂 Raft": "Raft in 4 hours",
+    "多源视频": "Complementary videos",
+    "动画课程": "Animated course",
+    "日志问答": "Grounded Q&A",
+    "改复制代码": "Edit replication code",
+    "论文复现": "Paper",
+    "定位卡点": "Find the blocker",
+    "论文 + 视频": "Paper + video",
+    "推导动画": "Derivation animation",
+    "术语追问": "Ask about terms",
+    "复现实验": "Reproduce the result",
+    "面试转岗": "Career",
+    "时间有限": "Limited time",
+    "精选来源": "Curated sources",
+    "短课整合": "Focused course",
+    "主动回忆": "Active recall",
+    "形成体系": "Connected system",
+    "同一份课程数据，从输入一直走到使用": "One knowledge record follows the learner from input to application.",
+    "D I F F E R E N T I A T O R S": "D I F F E R E N T I A T O R S",
+    "不是功能更多，是数据不再断掉": "Not more features. A context that never breaks.",
+    "原片即证据": "Source video as evidence",
+    "时间戳 · 转录 · 画面": "Timestamp · transcript · frame",
+    "AI 有现场": "Context-aware AI",
+    "知道你正在看哪一秒": "It knows the exact moment you mean",
+    "笔记成网络": "Notes become a graph",
+    "节点 + 有方向的因果边": "Concepts + directed causal links",
+    "成片可继续学": "Generated courses stay learnable",
+    "回到同一个学习工作台": "They return to the same workspace",
+    "找资料 → 看懂 → 用来做事，中间不丢证据": "Find → understand → apply, without losing the evidence in between.",
+    "不懂，就停在那一秒问": "Ask at the exact second you are stuck",
+    "差异 01  /  问题不离开原片": "DIFFERENCE 01  /  Questions stay with the source",
+    "差异 02  /  AI 看到同一份证据": "DIFFERENCE 02  /  AI sees the same evidence",
+    "差异 03  /  笔记不是清单": "DIFFERENCE 03  /  Notes are not a flat list",
+    "差异 04  /  生产与学习不换上下文": "DIFFERENCE 04  /  Production and learning share context",
+    "当前视频": "Source video",
+    "原片画面 + 当前秒数 + 附近转录": "Frame + timestamp + nearby transcript",
+    "知识笔记": "Knowledge note",
+    "节点：可独立回答问题的判断": "A concept answers one question on its own",
+    "边：说明前后依赖的因果句": "An edge explains why one idea depends on another",
+    "“这里的边界为什么成立？”": "“Why does this boundary hold?”",
+    "解释 + 证据 + 修改建议": "Explanation + evidence + revision",
+    "当前秒数": "Timestamp",
+    "附近的转录": "Nearby transcript",
+    "正在看的画面": "Current frame",
+    "不是脱离视频的泛泛而谈": "Not a generic answer detached from the source",
+    "知识不是清单，是一张网": "Knowledge is a graph, not a checklist",
+    "同一份数据，贯穿每一步": "One context follows every step",
+    "学习缺口": "Learning gap",
+    "规划选源": "Plan + source",
+    "多个互补视频": "Multiple complementary sources",
+    "关键画面讲清机制": "Mechanism made visual",
+    "知识体系": "Knowledge system",
+    "术语 · 因果 · 易错点": "Terms · causality · pitfalls",
+    "边看边问": "Watch + ask",
+    "节点连成一张网": "Connect concepts into a graph",
+    "视频": "Video",
+    "笔记": "Notes",
+    "证据": "Evidence",
+    "共用同一份时间戳与知识数据": "One shared timestamp and knowledge record",
+    "客户端": "Client",
+    "追加日志": "Append log",
+    "多数确认": "Majority ack",
+    "项目代码": "Project code",
+    "节点要可回答，边要说明依赖": "Concepts answer questions. Edges explain dependencies.",
+    "三种产线，不是三个孤立按钮": "Three production paths, one connected system",
+    "视频涅槃": "Nirvana",
+    "单源重制": "Single-source remaster",
+    "信息守恒 · 严格出处 · 练习复盘": "Coverage · citations · practice · recap",
+    "长教学": "Course",
+    "多源整合": "Multi-source synthesis",
+    "15–60 分钟 · 分章 · 多来源": "15–60 min · chapters · multiple sources",
+    "科普短片": "Sci-pop",
+    "单点讲透": "One concept, explained",
+    "2–6 分钟 · 高动画密度": "2–6 min · high animation density",
+    "规格": "Spec",
+    "分镜": "Storyboard",
+    "门禁": "Gates",
+    "渲染": "Render",
+    "成片": "Video",
+    "从一句需求": "From one learning request",
+    "到一部可验证的成片": "To a verifiable lesson",
+    "普通生成器": "Typical generator",
+    "视频做完\n学习就结束": "Video generated.\nLearning ends.",
+    "视频 + 笔记 + 证据 + AI\n继续进入同一个工作台": "Video + notes + evidence + AI\ncontinue in one workspace",
+    "成片不是终点，是下一次学习的起点。": "The finished video is where the next learning loop begins.",
+    "SCIPOP  /  生成课程": "SCIPOP  /  GENERATED LESSON",
+    "只给 4 小时，怎么读懂 Raft 日志复制？": "Four hours to understand Raft log replication",
+    "目标拆解": "Goal decomposition",
+    "多源对照": "Source cross-check",
+    "关键动画": "Key animation",
+    "时间戳 + 转录 + 画面": "Timestamp + transcript + frame",
+    "矩阵": "Matrix",
+    "多数副本": "Majority replicas",
+    "已提交": "Committed",
+    "确认后才允许提交": "Ack first, commit second",
+    "先看见机制，再回到代码。": "See the mechanism, then return to the code.",
+    "同一套方法，三种现实结果": "One method. Three real outcomes.",
+    "4 小时读懂 Raft，直接回到复制代码": "Understand Raft in four hours, then edit replication code",
+    "多源推导串成一条可核对的因果线": "Turn multiple sources into one verifiable reasoning chain",
+    "零散知识形成可复习的知识体系": "Turn fragmented knowledge into a reviewable system",
+    "面试 / 转岗": "Interview / role change",
+    "知识不用收藏": "Do not just collect knowledge.",
+    "做成自己的体系": "Build your own system.",
+    "不是功能更多": "It is not about more features.",
+    "而是每一步都能回到同一份证据": "Every step can return to the same evidence.",
+}
+
+
+def tr(text: str) -> str:
+    return EN.get(text, text) if os.environ.get("PROMO_LANG") == "en" else text
+
 
 def label(text: str, size=36, color=WHITE, weight=BOLD, font=FONT):
-    return Text(text, font=font, font_size=size, color=color, weight=weight)
+    return Text(tr(text), font=font, font_size=size, color=color, weight=weight)
 
 
 def mono(text: str, size=24, color=MUTED):
-    return Text(text, font=MONO, font_size=size, color=color)
+    return Text(tr(text), font=MONO, font_size=size, color=color)
 
 
 def grid(opacity=0.08, color="#7FA4B8"):
@@ -74,8 +211,12 @@ class UseCaseIntro(Scene):
         self.play(FadeIn(mark), FadeIn(brand), FadeIn(time_badge), run_time=0.45)
 
         title = label("明天要改 Raft 日志复制", 51, WHITE, weight=BOLD).move_to(UP * 2.65)
+        if title.width > 13.55:
+            title.set_width(13.55)
         subtitle = label("你只有 4 小时，却面对 9 个视频、3 篇文章和 2 份旧笔记", 26, MUTED, weight=MEDIUM)
         subtitle.next_to(title, DOWN, buff=0.25)
+        if subtitle.width > 12.4:
+            subtitle.set_width(12.4)
         self.play(Write(title), run_time=0.8)
         self.play(FadeIn(subtitle, shift=UP * 0.1), run_time=0.45)
 
@@ -97,13 +238,19 @@ class UseCaseIntro(Scene):
             )
             c = mono(code, 17, color).move_to(box.get_corner(UL) + RIGHT * 0.68 + DOWN * 0.32)
             h = label(head, 28, WHITE, weight=BOLD).move_to(box.get_center() + UP * 0.34)
+            if h.width > 3.12:
+                h.set_width(3.12)
             d = label(desc, 20, MUTED, weight=MEDIUM).move_to(box.get_center() + DOWN * 0.42)
+            if d.width > 3.24:
+                d.set_width(3.24)
             cards.add(VGroup(box, c, h, d))
         cards.arrange(RIGHT, buff=0.43).move_to(DOWN * 0.55)
         self.play(LaggedStart(*[FadeIn(card, shift=UP * 0.18) for card in cards], lag_ratio=0.16), run_time=1.1)
 
-        insight = label("你缺的不是更多视频，", 31, MUTED, weight=MEDIUM).move_to(DOWN * 3.0)
-        punch = label("是一条能落到工作上的学习链。", 39, WHITE, weight=BOLD).move_to(DOWN * 3.75)
+        insight = label("你缺的不是更多视频，", 31, MUTED, weight=MEDIUM).move_to(DOWN * 2.82)
+        punch = label("是一条能落到工作上的学习链。", 39, WHITE, weight=BOLD).move_to(DOWN * 3.48)
+        if punch.width > 13.2:
+            punch.set_width(13.2)
         self.play(FadeIn(insight), run_time=0.35)
         self.play(Write(punch), run_time=0.65)
         self.wait(0.9)
@@ -161,7 +308,9 @@ class DifferenceOverview(Scene):
         config.background_color = "#071018"
         self.add(grid(opacity=0.055))
         eyebrow = label("D I F F E R E N T I A T O R S", 19, CYAN, weight=BOLD).to_edge(UP, buff=0.5)
-        title = label("不是功能更多，是数据不再断掉", 42, WHITE, weight=BOLD).to_edge(UP, buff=0.88)
+        title = label("不是功能更多，是数据不再断掉", 38, WHITE, weight=BOLD).to_edge(UP, buff=0.88)
+        if title.width > 13.2:
+            title.set_width(13.2)
         self.play(FadeIn(eyebrow), run_time=0.3)
         self.play(Write(title), run_time=0.7)
 
@@ -180,6 +329,8 @@ class DifferenceOverview(Scene):
             )
             n = mono(num, 18, color).move_to(box.get_corner(UL) + RIGHT * 0.48 + DOWN * 0.28)
             h = label(head, 25, WHITE, weight=BOLD).move_to(box.get_center() + UP * 0.15)
+            if h.width > 2.55:
+                h.set_width(2.55)
             d = label(desc, 17, MUTED, weight=MEDIUM)
             d.set_width(2.58)
             d.move_to(box.get_center() + DOWN * 0.52)
@@ -189,6 +340,8 @@ class DifferenceOverview(Scene):
         self.play(LaggedStart(*[FadeIn(item, shift=UP * 0.16) for item in items], lag_ratio=0.15), run_time=1.3)
 
         note = label("找资料 → 看懂 → 用来做事，中间不丢证据", 29, WHITE, weight=MEDIUM).move_to(DOWN * 3.2)
+        if note.width > 13.0:
+            note.set_width(13.0)
         self.play(FadeIn(note), run_time=0.45)
         self.wait(0.9)
 
@@ -379,7 +532,17 @@ class KnowledgeNetwork(Scene):
                                    stroke_color=color, stroke_width=2,
                                    fill_color=color, fill_opacity=0.09).move_to(pos)
             txt = label(name, 27, WHITE, weight=BOLD).move_to(box)
+            if txt.width > box.width - 0.22:
+                txt.set_width(box.width - 0.22)
             nodes[name] = VGroup(box, txt)
+
+        def anchor(node, toward):
+            center = node.get_center()
+            direction = toward - center
+            direction = direction / np.linalg.norm(direction)
+            x_limit = (node.width / 2) / abs(direction[0]) if abs(direction[0]) > 1e-6 else 1e9
+            y_limit = (node.height / 2) / abs(direction[1]) if abs(direction[1]) > 1e-6 else 1e9
+            return center + direction * min(x_limit, y_limit)
 
         edges = VGroup()
         links = [
@@ -393,10 +556,12 @@ class KnowledgeNetwork(Scene):
         ]
         all_nodes = {"矩阵": center_node, **nodes}
         for left, right in links:
+            start_center = all_nodes[left].get_center()
+            end_center = all_nodes[right].get_center()
             edges.add(Arrow(
-                all_nodes[left].get_right() if left == "矩阵" else all_nodes[left].get_center(),
-                all_nodes[right].get_left() if right == "矩阵" else all_nodes[right].get_center(),
-                buff=0.35,
+                anchor(all_nodes[left], end_center),
+                anchor(all_nodes[right], start_center),
+                buff=0.08,
                 color="#436276",
                 stroke_width=2,
                 max_tip_length_to_length_ratio=0.12,
@@ -509,7 +674,10 @@ class DifferenceBridge(Scene):
         ).move_to(RIGHT * 3.7)
         new_title = label("Video Knowledge Studio", 27, WHITE, weight=BOLD).move_to(new_box.get_center() + UP * 0.82)
         new_body = label("视频 + 笔记 + 证据 + AI\n继续进入同一个工作台", 30, CYAN, weight=BOLD)
-        new_body.set_line_spacing(0.8).move_to(new_box.get_center() + DOWN * 0.18)
+        new_body.set_line_spacing(0.8)
+        if new_body.width > 4.55:
+            new_body.set_width(4.55)
+        new_body.move_to(new_box.get_center() + DOWN * 0.18)
 
         arrow = Arrow(old_box.get_right(), new_box.get_left(), buff=0.24, color=CYAN,
                       stroke_width=3, max_tip_length_to_length_ratio=0.18)
@@ -647,8 +815,12 @@ class FinalRecap(Scene):
                 fill_opacity=0.07,
             )
             c = mono(code, 17, color).move_to(box.get_corner(UL) + RIGHT * 0.72 + DOWN * 0.28)
-            h = label(heading, 25, WHITE, weight=BOLD).move_to(box.get_left() + RIGHT * 2.25)
-            r = label(result, 24, "#D7E4EA", weight=MEDIUM).move_to(box.get_left() + RIGHT * 7.45)
+            h = label(heading, 21, WHITE, weight=BOLD).move_to(box.get_center() + LEFT * 3.45)
+            if h.width > 2.8:
+                h.set_width(2.8)
+            r = label(result, 20, "#D7E4EA", weight=MEDIUM).move_to(box.get_center() + RIGHT * 1.75)
+            if r.width > 6.2:
+                r.set_width(6.2)
             cards.add(VGroup(box, c, h, r))
         cards.arrange(DOWN, buff=0.35).move_to(UP * 0.4)
         self.play(LaggedStart(*[FadeIn(card, shift=RIGHT * 0.15) for card in cards], lag_ratio=0.18), run_time=1.2)

@@ -35,6 +35,21 @@ class ReadmeAssetTests(unittest.TestCase):
             root = ET.parse(path).getroot()
             self.assertEqual(root.tag, "{http://www.w3.org/2000/svg}svg")
 
+    def test_english_release_copy_contains_no_cjk(self):
+        paths = [
+            ROOT / "README.md",
+            ROOT / "docs" / "images" / "workflow-overview-en.svg",
+            ROOT / "docs" / "images" / "demand-driven-flow-en.svg",
+            ROOT / "docs" / "images" / "before-after-en.svg",
+            ROOT / "docs" / "images" / "social-preview-en.svg",
+        ]
+        pattern = re.compile(r"[\u3400-\u9fff]")
+        for path in paths:
+            self.assertIsNone(
+                pattern.search(path.read_text(encoding="utf-8")),
+                f"public English copy contains CJK text: {path}",
+            )
+
     def test_demo_media_are_present_and_bounded(self):
         for name in (
             "demo.png",
@@ -43,6 +58,12 @@ class ReadmeAssetTests(unittest.TestCase):
             "production-demo.gif",
             "social-preview.png",
             "product-demo-poster.png",
+            "learning-workspace-en.png",
+            "ai-tutor-demo-en.png",
+            "production-workspace-en.png",
+            "production-demo-en.gif",
+            "social-preview-en.png",
+            "product-demo-poster-en.png",
         ):
             path = ROOT / "docs" / "images" / name
             self.assertGreater(path.stat().st_size, 10_000)
@@ -50,6 +71,9 @@ class ReadmeAssetTests(unittest.TestCase):
         video = ROOT / "docs" / "media" / "product-demo.mp4"
         self.assertGreater(video.stat().st_size, 1_000_000)
         self.assertLess(video.stat().st_size, 10_000_000)
+        english_video = ROOT / "docs" / "media" / "product-demo-en.mp4"
+        self.assertGreater(english_video.stat().st_size, 1_000_000)
+        self.assertLess(english_video.stat().st_size, 10_000_000)
 
 
 if __name__ == "__main__":

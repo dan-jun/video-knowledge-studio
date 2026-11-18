@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "raft-demo-en",
+  "title": "Raft in Four Hours",
+  "description": "A short, evidence-linked Raft lesson built from a realistic project deadline.",
+  "license": "MIT",
+  "chapters": [
+    {
+      "id": "replication",
+      "title": "Chapter 1 · From request to commit",
+      "episodeIds": ["raft-en-e01"]
+    }
+  ],
+  "episodes": [
+    {
+      "id": "raft-en-e01",
+      "number": 1,
+      "title": "Why Raft waits for a majority before committing",
+      "chapterId": "replication",
+      "duration": 7.6,
+      "video": "media/lesson.mp4",
+      "knowledge": "episodes/e01.json"
+    }
+  ],
+  "network": {
+    "title": "Raft replication graph",
+    "nodes": [
+      {"id": "goal", "label": "Goal", "subtitle": "Work with the code in 4h", "episodeIds": ["raft-en-e01"]},
+      {"id": "request", "label": "Client request", "subtitle": "Where writes begin", "episodeIds": ["raft-en-e01"]},
+      {"id": "leader", "label": "Leader", "subtitle": "Orders and fans out", "episodeIds": ["raft-en-e01"]},
+      {"id": "majority", "label": "Majority ack", "subtitle": "The safety boundary", "episodeIds": ["raft-en-e01"]},
+      {"id": "commit", "label": "Commit", "subtitle": "Apply to state machine", "episodeIds": ["raft-en-e01"]},
+      {"id": "code", "label": "Project code", "subtitle": "Trace replication and truncation", "episodeIds": ["raft-en-e01"]}
+    ],
+    "edges": [
+      {"from": "goal", "to": "request", "label": "find the write path"},
+      {"from": "request", "to": "leader", "label": "route to leader"},
+      {"from": "leader", "to": "majority", "label": "append and replicate"},
+      {"from": "majority", "to": "commit", "label": "cross the safety boundary"},
+      {"from": "commit", "to": "code", "label": "return to implementation"}
+    ]
+  }
+}

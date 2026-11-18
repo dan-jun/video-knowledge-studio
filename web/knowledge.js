@@ -840,6 +840,7 @@
           kid: selected.kid || "",
           action: action,
           question: questionText,
+          language: window.VKS_LANG || "zh",
           time: current,
           history: S.history.slice(-4),
         }),

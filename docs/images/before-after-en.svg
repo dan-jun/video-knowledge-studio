@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="650" viewBox="0 0 1600 650" role="img" aria-labelledby="title desc">
+  <title id="title">Disconnected tools versus Video Knowledge Studio</title>
+  <desc id="desc">The old workflow spreads search, video, notes, screenshots, AI and production across disconnected tools. Video Knowledge Studio keeps them on one evidence-linked path.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071016"/>
+      <stop offset="1" stop-color="#0b1b24"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+    <style>
+      .title{font:700 31px "Segoe UI",sans-serif;fill:#eefaff}
+      .sub{font:14px "Cascadia Code",Consolas,monospace;fill:#7895a2;letter-spacing:1.3px}
+      .label{font:700 13px "Cascadia Code",Consolas,monospace;letter-spacing:1.6px}
+      .head{font:700 23px "Segoe UI",sans-serif;fill:#eefaff}
+      .item{font:15px "Segoe UI",sans-serif;fill:#b8d0d9}
+      .small{font:12px "Segoe UI",sans-serif;fill:#7795a1}
+    </style>
+  </defs>
+  <rect width="1600" height="650" fill="url(#bg)"/>
+  <path d="M0 90H1600M0 215H1600M0 340H1600M0 465H1600M0 590H1600" stroke="#17303b" opacity=".45"/>
+  <path d="M200 0V650M400 0V650M600 0V650M800 0V650M1000 0V650M1200 0V650M1400 0V650" stroke="#17303b" opacity=".25"/>
+  <text x="54" y="57" class="title">One learning task, two ways to work</text>
+  <text x="56" y="81" class="sub">DISCONNECTED TOOLS VS ONE EVIDENCE-LINKED WORKSPACE</text>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="126" width="650" height="452" rx="20" fill="#15181c" stroke="#573f33"/>
+    <text x="84" y="166" class="label" fill="#ffad74">BEFORE · FRAGMENTED TOOLS</text>
+    <text x="84" y="202" class="head">Dozens of tabs. Knowledge still escapes.</text>
+    <rect x="86" y="238" width="250" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="105" y="265" class="item">Bilibili, YouTube, web search</text>
+    <text x="105" y="286" class="small">scattered sources and duplicates</text>
+    <rect x="365" y="238" width="310" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="384" y="265" class="item">Player + notes app + screenshots</text>
+    <text x="384" y="286" class="small">time, frame and conclusion do not line up</text>
+    <rect x="86" y="321" width="240" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="105" y="348" class="item">Another AI chat window</text>
+    <text x="105" y="369" class="small">it does not know the current moment</text>
+    <rect x="355" y="321" width="320" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="374" y="348" class="item">Editor + voiceover + captions</text>
+    <text x="374" y="369" class="small">production is detached from learning</text>
+    <rect x="86" y="404" width="589" height="62" rx="12" fill="#221b18" stroke="#6c4934"/>
+    <text x="105" y="431" class="item">Result: loose videos, screenshots, Markdown and chats</text>
+    <text x="105" y="452" class="small">hard to verify and hard to review later</text>
+    <path d="M286 300C314 300 328 266 365 266M286 355C310 355 325 349 355 349M474 300C490 300 500 319 500 321" stroke="#a16042" stroke-width="2" stroke-dasharray="7 7"/>
+    <text x="86" y="525" class="small">The problem is not a lack of tools. The context never connects.</text>
+    <text x="86" y="551" fill="#ffad74" class="item">High learning cost · lost evidence · production disconnected</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="746" y="126" width="800" height="452" rx="20" fill="#0b2028" stroke="#24535d"/>
+    <text x="778" y="166" class="label" fill="#66e0b1">AFTER · ONE CLOSED LOOP</text>
+    <text x="778" y="202" class="head">Every conclusion returns to its video, second and frame</text>
+
+    <rect x="778" y="238" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="797" y="267" class="label" fill="#56d8f5">01</text>
+    <text x="797" y="296" class="item">Define the goal</text>
+    <rect x="1004" y="238" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1023" y="267" class="label" fill="#56d8f5">02</text>
+    <text x="1023" y="296" class="item">Find complementary sources</text>
+    <rect x="1230" y="238" width="286" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1249" y="267" class="label" fill="#56d8f5">03</text>
+    <text x="1249" y="296" class="item">Create an animated course</text>
+
+    <rect x="778" y="350" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="797" y="379" class="label" fill="#73e3a5">04</text>
+    <text x="797" y="408" class="item">Watch with notes</text>
+    <rect x="1004" y="350" width="188" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1023" y="379" class="label" fill="#73e3a5">05</text>
+    <text x="1023" y="408" class="item">Ask about selected text</text>
+    <rect x="1230" y="350" width="286" height="82" rx="13" fill="#0a1720" stroke="#24515d"/>
+    <text x="1249" y="379" class="label" fill="#73e3a5">06</text>
+    <text x="1249" y="408" class="item">Revise, review, connect</text>
+
+    <path d="M966 279H992M1192 279H1218M1373 320V338M1192 391H1218M966 391H992" stroke="#56d8f5" stroke-width="3"/>
+    <path d="M997 279L991 273L991 285Z" fill="#56d8f5"/>
+    <path d="M1223 279L1217 273L1217 285Z" fill="#56d8f5"/>
+    <path d="M1379 343L1373 337L1373 349Z" fill="#56d8f5"/>
+    <path d="M1223 391L1217 385L1217 397Z" fill="#56d8f5"/>
+    <path d="M997 391L991 385L991 397Z" fill="#56d8f5"/>
+
+    <rect x="778" y="468" width="738" height="62" rx="12" fill="#0a1720" stroke="#2a5c60"/>
+    <text x="798" y="495" class="item">Source · timestamp · frame · note · AI context · finished video</text>
+    <text x="798" y="516" class="small">All parts share one knowledge record, and production re-enters learning.</text>
+    <text x="778" y="551" fill="#73e3a5" class="item">Faster diagnosis · traceable evidence · production feeds learning</text>
+  </g>
+
+  <path d="M704 352H742" stroke="#56d8f5" stroke-width="4"/>
+  <path d="M742 341L756 352L742 363Z" fill="#56d8f5"/>
+</svg>

@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="660" viewBox="0 0 1600 660" role="img" aria-labelledby="title desc">
+  <title id="title">Video Knowledge Studio end-to-end workflow</title>
+  <desc id="desc">A learning goal or existing video becomes a sourced animated course, then synchronized notes and an AI tutor.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071016"/>
+      <stop offset="1" stop-color="#0b1b24"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#56d8f5"/>
+      <stop offset="1" stop-color="#73e3a5"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0L12 6L0 12Z" fill="#55c7dd"/>
+    </marker>
+    <style>
+      .title{font:700 32px "Segoe UI",sans-serif;fill:#eefaff}
+      .sub{font:14px "Cascadia Code",Consolas,monospace;fill:#7895a2;letter-spacing:2px}
+      .stage{font:700 19px "Segoe UI",sans-serif;fill:#eefaff}
+      .body{font:14px "Segoe UI",sans-serif;fill:#9eb7c2}
+      .small{font:12px "Cascadia Code",Consolas,monospace;fill:#6f8e9c}
+      .note{font:13px "Segoe UI",sans-serif;fill:#85a7b4}
+    </style>
+  </defs>
+  <rect width="1600" height="660" fill="url(#bg)"/>
+  <path d="M0 90H1600M0 210H1600M0 330H1600M0 450H1600M0 570H1600" stroke="#17303b" stroke-width="1" opacity=".55"/>
+  <path d="M100 0V660M300 0V660M500 0V660M700 0V660M900 0V660M1100 0V660M1300 0V660M1500 0V660" stroke="#17303b" stroke-width="1" opacity=".35"/>
+  <text x="54" y="58" class="title">From a knowledge gap to real understanding</text>
+  <text x="56" y="82" class="sub">ONE LOCAL WORKSPACE · VIDEO → EVIDENCE → NOTES → AI</text>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="140" width="258" height="230" rx="18" fill="#0d202a" stroke="#214653"/>
+    <rect x="54" y="140" width="258" height="6" rx="3" fill="#56d8f5"/>
+    <text x="78" y="177" class="small">01 · INPUT</text>
+    <text x="78" y="213" class="stage">Goal or source video</text>
+    <rect x="78" y="238" width="210" height="48" rx="10" fill="#0a1720" stroke="#244451"/>
+    <text x="92" y="260" class="body">Work / research / project gap</text>
+    <text x="92" y="277" class="small">concepts, budget, deadline</text>
+    <rect x="78" y="297" width="210" height="48" rx="10" fill="#0a1720" stroke="#244451"/>
+    <text x="92" y="319" class="body">Existing course video</text>
+    <text x="92" y="336" class="small">MP4, captions, key frames</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="366" y="140" width="258" height="230" rx="18" fill="#0d202a" stroke="#214653"/>
+    <rect x="366" y="140" width="258" height="6" rx="3" fill="#46c6a3"/>
+    <text x="390" y="177" class="small">02 · PLAN &amp; DISCOVER</text>
+    <text x="390" y="213" class="stage">Plan and choose sources</text>
+    <text x="390" y="248" class="body">Prioritize prerequisites</text>
+    <text x="390" y="276" class="body">Search Bilibili / YouTube</text>
+    <text x="390" y="304" class="body">Compare relevance and evidence</text>
+    <text x="390" y="332" class="body">Create a learning path</text>
+    <rect x="390" y="344" width="206" height="3" rx="1.5" fill="#244451"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="678" y="140" width="258" height="230" rx="18" fill="#0d202a" stroke="#214653"/>
+    <rect x="678" y="140" width="258" height="6" rx="3" fill="#ffb454"/>
+    <text x="702" y="177" class="small">03 · PRODUCE</text>
+    <text x="702" y="213" class="stage">Create an animated course</text>
+    <rect x="702" y="238" width="64" height="24" rx="12" fill="#143643"/>
+    <text x="716" y="255" class="small">remix</text>
+    <rect x="774" y="238" width="68" height="24" rx="12" fill="#143643"/>
+    <text x="787" y="255" class="small">course</text>
+    <rect x="850" y="238" width="64" height="24" rx="12" fill="#143643"/>
+    <text x="863" y="255" class="small">scipop</text>
+    <text x="702" y="291" class="body">spec → storyboard → gates</text>
+    <text x="702" y="319" class="body">TTS → animation → captions</text>
+    <text x="702" y="347" class="body">traceable MP4 output</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="990" y="140" width="258" height="230" rx="18" fill="#0d202a" stroke="#214653"/>
+    <rect x="990" y="140" width="258" height="6" rx="3" fill="#8d7dff"/>
+    <text x="1014" y="177" class="small">04 · LEARN</text>
+    <text x="1014" y="213" class="stage">Video and notes in sync</text>
+    <circle cx="1030" cy="252" r="7" fill="#56d8f5"/>
+    <text x="1046" y="257" class="body">Course library</text>
+    <circle cx="1030" cy="284" r="7" fill="#73e3a5"/>
+    <text x="1046" y="289" class="body">Synchronized player</text>
+    <circle cx="1030" cy="316" r="7" fill="#ffb454"/>
+    <text x="1046" y="321" class="body">Notes and AI tutor</text>
+    <text x="1014" y="350" class="small">TWO-WAY TIMELINE LINKS</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1302" y="140" width="244" height="230" rx="18" fill="#0d202a" stroke="#2b5d58"/>
+    <rect x="1302" y="140" width="244" height="6" rx="3" fill="#73e3a5"/>
+    <text x="1326" y="177" class="small">05 · MASTER</text>
+    <text x="1326" y="213" class="stage">Build a knowledge system</text>
+    <text x="1326" y="248" class="body">Ask about unclear text</text>
+    <text x="1326" y="278" class="body">annotate / revise / undo</text>
+    <text x="1326" y="308" class="body">graph / pitfalls / recall</text>
+    <text x="1326" y="338" class="body">reuse for the next task</text>
+  </g>
+
+  <path d="M312 255H348" stroke="#55c7dd" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M624 255H660" stroke="#55c7dd" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M936 255H972" stroke="#55c7dd" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M1248 255H1284" stroke="#55c7dd" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <rect x="54" y="422" width="1492" height="132" rx="16" fill="#09171f" stroke="#1d3b47"/>
+  <text x="78" y="454" class="small">WHY IT IS ONE PRODUCT</text>
+  <text x="78" y="486" class="stage">Production and learning share one evidence, timestamp and knowledge record</text>
+  <text x="78" y="516" class="body">A note returns to its second. A claim returns to its source frame. AI receives the current concept, nearby transcript and recent frame.</text>
+  <text x="78" y="539" class="note">The default runtime is local, with separate course, project, annotation and revision data for each user.</text>
+  <text x="1286" y="486" fill="url(#cyan)" class="stage">LOCAL-FIRST</text>
+  <text x="1286" y="516" class="body">127.0.0.1</text>
+  <text x="1286" y="539" class="small">PRIVATE BY DEFAULT</text>
+</svg>

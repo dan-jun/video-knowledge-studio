@@ -9,10 +9,12 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(playwrightPath);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const outputDir = path.join(here, "recordings");
+const language = process.env.VKS_PROMO_LANG === "en" ? "en" : "zh";
+const outputDir = path.join(here, language === "en" ? "recordings-en" : "recordings");
 fs.mkdirSync(outputDir, { recursive: true });
 
 const baseUrl = process.env.VKS_PROMO_URL || "http://127.0.0.1:17870";
+const suffix = language === "en" ? "?lang=en" : "";
 const executablePath =
   process.env.VKS_PROMO_BROWSER ||
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
@@ -78,7 +80,7 @@ async function openRecordedPage(browser, name) {
   });
   const page = await context.newPage();
   const started = Date.now();
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/${suffix}`, { waitUntil: "networkidle" });
   await addCursor(page);
   return { context, page, started, name };
 }
@@ -103,7 +105,8 @@ async function recordLearning(browser) {
   const { page } = session;
   await wait(1200);
 
-  const second = page.locator('.project[data-id="raft-e01"]');
+  const episodeId = language === "en" ? "raft-en-e01" : "raft-e01";
+  const second = page.locator(`.project[data-id="${episodeId}"]`);
   await moveTo(page, second, 500);
   await second.click();
   await wait(1200);
@@ -135,7 +138,7 @@ async function recordLearning(browser) {
   });
   await wait(900);
 
-  const explain = page.locator("#kselecttools button", { hasText: "解释" }).first();
+  const explain = page.locator("#kselecttools button").first();
   await moveTo(page, explain, 350);
   await explain.click();
   await wait(2200);
@@ -150,7 +153,7 @@ async function recordLearning(browser) {
   await wait(1700);
 
   const annotate = page.locator("#kaidock button", {
-    hasText: /设为浅色旁注|仅留旁注/,
+    hasText: /设为浅色旁注|仅留旁注|Add as pale note|Keep as note/,
   }).first();
   if (await annotate.count()) {
     await moveTo(page, annotate, 350);
@@ -165,7 +168,7 @@ async function recordLearning(browser) {
 async function recordProduction(browser) {
   const session = await openRecordedPage(browser, "production");
   const { page } = session;
-  await page.goto(`${baseUrl}/production.html`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/production.html${suffix}`, { waitUntil: "networkidle" });
   await wait(1200);
 
   for (const mode of await page.locator(".mode").all()) {
@@ -173,7 +176,9 @@ async function recordProduction(browser) {
   }
 
   await page.locator("#createMode").selectOption("scipop");
-  await page.locator("#createTitle").fill("把复杂知识讲成一张网");
+  await page.locator("#createTitle").fill(
+    language === "en" ? "Turn a complex idea into a connected lesson" : "把复杂知识讲成一张网",
+  );
   const create = page.locator("#createBtn");
   await moveTo(page, create, 350);
   await create.click();
@@ -200,15 +205,15 @@ async function recordProduction(browser) {
   await generate.click();
   await page.waitForFunction(
     () => {
-      const text = document.querySelector("#jobState")?.textContent || "";
-      return text && !text.includes("中");
+      const text = document.querySelector("#jobState")?.textContent?.trim() || "";
+      return text === "done" || text === "failed";
     },
     { timeout: 60000 },
   );
   await wait(1400);
 
   const existing = page.locator(".project", {
-    hasText: "4 小时读懂 Raft 日志复制",
+    hasText: language === "en" ? "Raft in Four Hours" : "4 小时读懂 Raft 日志复制",
   }).first();
   await moveTo(page, existing, 450);
   await existing.click();
@@ -219,8 +224,8 @@ async function recordProduction(browser) {
   await gates.click();
   await page.waitForFunction(
     () => {
-      const text = document.querySelector("#jobState")?.textContent || "";
-      return text && !text.includes("中");
+      const text = document.querySelector("#jobState")?.textContent?.trim() || "";
+      return text === "done" || text === "failed";
     },
     { timeout: 60000 },
   );
