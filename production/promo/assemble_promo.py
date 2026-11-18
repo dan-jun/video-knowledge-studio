@@ -153,7 +153,7 @@ def main() -> None:
 
     ordered: list[Path] = []
     for scene in (
-        "Opening",
+        "UseCaseIntro",
         "Promise",
         "LearningChain",
         "EvidenceLoop",
@@ -169,6 +169,7 @@ def main() -> None:
     ordered.append(normalize_screen("production", 1.1, 13.1))
     ordered.append(freeze_crop("production-frames/t12.5.png", (1220, 300, 590, 332), 4.0))
     ordered.append(normalize_scene("ProductionStatement"))
+    ordered.append(normalize_scene("DifferenceBridge"))
     ordered.append(normalize_scene("RaftLesson"))
     ordered.append(normalize_scene("Finale"))
 

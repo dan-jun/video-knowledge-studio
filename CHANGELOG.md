@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4 - 2026-11-18
+
+- Reworked the launch film around a concrete real-world scenario:
+  “明天要改 Raft 日志复制，但你只有四小时。”
+- Added project, research, and career entry examples before introducing the
+  end-to-end workflow.
+- Added explicit differentiation chapters: questions stay attached to source video,
+  AI receives timestamp/transcript/frame context, notes form a knowledge network, and
+  generated courses return to the same learning workspace.
+- Added a comparison bridge showing why “video finished” is not the end of learning,
+  then handed off to the generated Raft lesson and the unified evidence model.
+
 ## 0.2.3 - 2026-11-18
 
 - Replaced the synthesized rhythmic score with the licensed Mixkit track

@@ -161,7 +161,7 @@
 - **Root cause:** The team treated “more animation” as sufficient without matching the
   reference's structure: no continuous voiceover, hard visual cuts, real state changes,
   and dense product examples after one complete workflow.
-- **Fix:** Analyze frames and audio first, then build an 88-second film with kinetic
+- **Fix:** Analyze frames and audio first, then build a 93-second film with kinetic
   typography, a licensed stock score, cursor-led recordings, real AI output,
   production gates and a purpose-built Raft lesson close.
 - **Verification:** Inspect 1–2 second contact sheets and full-resolution keyframes,
@@ -181,5 +181,19 @@
   shows client request, leader fan-out, follower logs, majority acknowledgement and
   commit, then hands off directly to the final product statement.
 - **Verification:** Inspect the last 15 seconds frame by frame, verify no overlap in
-  the Raft diagram, confirm approximately 88 seconds at 1920×1080/30 fps and under
+  the Raft diagram, confirm approximately 93 seconds at 1920×1080/30 fps and under
   10 MB, and compare the uploaded release asset hash with the local file.
+
+## 2026-11-18 — Product demos need a real job-to-be-done opening
+
+- **Symptom:** A technically complete workflow demo still did not explain when a real
+  user would need the product or what made it structurally different.
+- **Root cause:** The opening led with category positioning, while differentiation was
+  spread across unrelated interface scenes and never named.
+- **Fix:** Open with “tomorrow's Raft log-replication change, only four hours,” show
+  project/research/career entry cases, then label the four core differences: questions
+  stay attached to source video, AI receives timestamp/transcript/frame context, notes
+  form a network, and production returns to the same learning workspace.
+- **Verification:** The 93-second cut matches every claim to a visible screen state or
+  generated lesson; contact-sheet review confirms the scenario, workflow, all four
+  differentiators, gate evidence and Raft lesson remain readable without narration.

@@ -63,6 +63,58 @@ class Opening(Scene):
         self.wait(0.8)
 
 
+class UseCaseIntro(Scene):
+    def construct(self):
+        config.background_color = INK
+        self.add(grid(opacity=0.065))
+
+        mark = brand_mark(0.32).move_to([-6.55, 3.62, 0])
+        brand = mono("VIDEO KNOWLEDGE STUDIO", 18, WHITE).next_to(mark, RIGHT, buff=0.18)
+        time_badge = label("23:47", 25, CYAN, weight=BOLD).move_to([6.0, 3.62, 0])
+        self.play(FadeIn(mark), FadeIn(brand), FadeIn(time_badge), run_time=0.45)
+
+        title = label("明天要改 Raft 日志复制", 51, WHITE, weight=BOLD).move_to(UP * 2.65)
+        subtitle = label("你只有 4 小时，却面对 9 个视频、3 篇文章和 2 份旧笔记", 26, MUTED, weight=MEDIUM)
+        subtitle.next_to(title, DOWN, buff=0.25)
+        self.play(Write(title), run_time=0.8)
+        self.play(FadeIn(subtitle, shift=UP * 0.1), run_time=0.45)
+
+        cases = [
+            ("01  /  PROJECT", "接手陌生项目", "4 小时补齐关键机制", CYAN),
+            ("02  /  RESEARCH", "论文复现卡住", "多份资料串成一条线", VIOLET),
+            ("03  /  CAREER", "面试或转岗", "零散时间形成体系", AMBER),
+        ]
+        cards = VGroup()
+        for code, head, desc, color in cases:
+            box = RoundedRectangle(
+                corner_radius=0.18,
+                width=3.75,
+                height=2.2,
+                stroke_color=color,
+                stroke_width=2,
+                fill_color=color,
+                fill_opacity=0.07,
+            )
+            c = mono(code, 17, color).move_to(box.get_corner(UL) + RIGHT * 0.68 + DOWN * 0.32)
+            h = label(head, 28, WHITE, weight=BOLD).move_to(box.get_center() + UP * 0.34)
+            d = label(desc, 20, MUTED, weight=MEDIUM).move_to(box.get_center() + DOWN * 0.42)
+            cards.add(VGroup(box, c, h, d))
+        cards.arrange(RIGHT, buff=0.43).move_to(DOWN * 0.55)
+        self.play(LaggedStart(*[FadeIn(card, shift=UP * 0.18) for card in cards], lag_ratio=0.16), run_time=1.1)
+
+        self.play(
+            cards[1:].animate.set_opacity(0.35),
+            cards[0][0].animate.set_stroke(width=4),
+            run_time=0.55,
+        )
+
+        insight = label("你缺的不是更多视频，", 31, MUTED, weight=MEDIUM).move_to(DOWN * 3.0)
+        punch = label("是一条能落到工作上的学习链。", 39, WHITE, weight=BOLD).move_to(DOWN * 3.75)
+        self.play(FadeIn(insight), run_time=0.35)
+        self.play(Write(punch), run_time=0.65)
+        self.wait(0.9)
+
+
 class Promise(Scene):
     def construct(self):
         config.background_color = INK
@@ -156,7 +208,9 @@ class EvidenceLoop(Scene):
     def construct(self):
         config.background_color = "#071018"
         self.add(grid(opacity=0.06))
-        header = label("不懂，就停在那一秒问", 42, WHITE, weight=BOLD).to_edge(UP, buff=0.72)
+        difference = label("差异 01  /  问题不离开原片", 20, CYAN, weight=BOLD).to_edge(UP, buff=0.42)
+        header = label("不懂，就停在那一秒问", 42, WHITE, weight=BOLD).to_edge(UP, buff=0.85)
+        self.play(FadeIn(difference), run_time=0.35)
         self.play(FadeIn(header), run_time=0.5)
 
         video = RoundedRectangle(corner_radius=0.18, width=7.8, height=4.35, stroke_width=2,
@@ -194,7 +248,7 @@ class ContextStatement(Scene):
         config.background_color = PAPER
         paper_bg = FullScreenRectangle(fill_color=PAPER, fill_opacity=1, stroke_width=0)
         self.add(paper_bg)
-        eyebrow = label("AI 导师看到的上下文", 23, "#586976", weight=MEDIUM).move_to(UP * 1.9)
+        eyebrow = label("差异 02  /  AI 看到同一份证据", 23, "#586976", weight=MEDIUM).move_to(UP * 1.9)
         rows = VGroup(
             label("当前秒数", 33, INK, weight=BOLD),
             label("附近的转录", 33, INK, weight=BOLD),
@@ -213,7 +267,9 @@ class KnowledgeNetwork(Scene):
     def construct(self):
         config.background_color = "#061018"
         self.add(grid(opacity=0.07))
-        title = label("知识不是清单，是一张网", 42, WHITE, weight=BOLD).to_edge(UP, buff=0.72)
+        difference = label("差异 03  /  笔记不是清单", 20, CYAN, weight=BOLD).to_edge(UP, buff=0.42)
+        title = label("知识不是清单，是一张网", 42, WHITE, weight=BOLD).to_edge(UP, buff=0.85)
+        self.play(FadeIn(difference), run_time=0.3)
         self.play(FadeIn(title), run_time=0.5)
 
         center = RoundedRectangle(corner_radius=0.18, width=2.0, height=0.9,
@@ -287,7 +343,9 @@ class ThreeModes(Scene):
     def construct(self):
         config.background_color = INK
         self.add(grid(opacity=0.055))
-        title = label("三种产线，不是三个孤立按钮", 40, WHITE, weight=BOLD).to_edge(UP, buff=0.72)
+        difference = label("差异 04  /  生产与学习不换上下文", 20, CYAN, weight=BOLD).to_edge(UP, buff=0.42)
+        title = label("三种产线，不是三个孤立按钮", 40, WHITE, weight=BOLD).to_edge(UP, buff=0.85)
+        self.play(FadeIn(difference), run_time=0.3)
         self.play(FadeIn(title), run_time=0.55)
 
         specs = [
@@ -348,6 +406,42 @@ class ProductionStatement(Scene):
         self.play(Write(line2), run_time=0.75)
         self.play(Create(rule), FadeIn(pipeline), run_time=0.6)
         self.wait(1.4)
+
+
+class DifferenceBridge(Scene):
+    def construct(self):
+        config.background_color = INK
+        self.add(grid(opacity=0.05))
+        eyebrow = label("WHY THIS IS DIFFERENT", 20, CYAN, weight=BOLD).to_edge(UP, buff=0.55)
+        self.play(FadeIn(eyebrow), run_time=0.35)
+
+        old_box = RoundedRectangle(
+            corner_radius=0.2, width=4.8, height=3.2,
+            stroke_color="#53616B", stroke_width=2,
+            fill_color="#53616B", fill_opacity=0.07,
+        ).move_to(LEFT * 3.8)
+        old_title = label("普通生成器", 30, MUTED, weight=BOLD).move_to(old_box.get_center() + UP * 0.82)
+        old_body = label("视频做完\n学习就结束", 42, "#91A0AA", weight=BOLD, font=FONT)
+        old_body.set_line_spacing(0.75).move_to(old_box.get_center() + DOWN * 0.18)
+
+        new_box = RoundedRectangle(
+            corner_radius=0.2, width=5.2, height=3.2,
+            stroke_color=CYAN, stroke_width=3,
+            fill_color=CYAN, fill_opacity=0.08,
+        ).move_to(RIGHT * 3.7)
+        new_title = label("Video Knowledge Studio", 27, WHITE, weight=BOLD).move_to(new_box.get_center() + UP * 0.82)
+        new_body = label("视频 + 笔记 + 证据 + AI\n继续进入同一个工作台", 30, CYAN, weight=BOLD)
+        new_body.set_line_spacing(0.8).move_to(new_box.get_center() + DOWN * 0.18)
+
+        arrow = Arrow(old_box.get_right(), new_box.get_left(), buff=0.24, color=CYAN,
+                      stroke_width=3, max_tip_length_to_length_ratio=0.18)
+        self.play(FadeIn(old_box), FadeIn(old_title), FadeIn(old_body), run_time=0.55)
+        self.play(Create(arrow), run_time=0.3)
+        self.play(FadeIn(new_box), FadeIn(new_title), FadeIn(new_body), run_time=0.55)
+
+        statement = label("成片不是终点，是下一次学习的起点。", 35, WHITE, weight=BOLD).move_to(DOWN * 3.0)
+        self.play(FadeIn(statement, shift=UP * 0.12), run_time=0.5)
+        self.wait(1.1)
 
 
 class RaftLesson(Scene):
@@ -455,15 +549,20 @@ class Finale(Scene):
     def construct(self):
         config.background_color = INK
         self.add(grid(opacity=0.05))
-        a = label("知识不用收藏", 60, WHITE, weight=BOLD).move_to(UP * 0.75)
-        b = label("做成自己的体系", 68, CYAN, weight=BOLD).move_to(DOWN * 0.18)
-        line = Line(LEFT * 5.4, RIGHT * 5.4, color="#3D5362", stroke_width=3).move_to(DOWN * 1.02)
-        self.play(FadeIn(a, shift=RIGHT * 0.25), run_time=0.7)
-        self.play(Write(b), run_time=0.9)
-        self.play(Create(line), run_time=0.45)
+        a = label("不是功能更多", 34, MUTED, weight=BOLD).move_to(UP * 2.25)
+        b = label("而是每一步都能回到同一份证据", 50, WHITE, weight=BOLD).move_to(UP * 1.1)
+        line = Line(LEFT * 5.4, RIGHT * 5.4, color="#3D5362", stroke_width=3).move_to(UP * 0.2)
+        c = label("知识不用收藏", 48, WHITE, weight=BOLD).move_to(DOWN * 0.75)
+        d = label("做成自己的体系", 58, CYAN, weight=BOLD).move_to(DOWN * 1.75)
+        self.play(FadeIn(a), run_time=0.35)
+        self.play(Write(b), run_time=0.7)
+        self.play(Create(line), run_time=0.35)
+        self.play(FadeIn(c, shift=UP * 0.12), run_time=0.35)
+        self.play(Write(d), run_time=0.65)
 
         mark = brand_mark(0.55).move_to(DOWN * 1.85)
-        name = label("VIDEO KNOWLEDGE STUDIO", 28, WHITE, weight=BOLD).next_to(mark, RIGHT, buff=0.35)
-        local = mono("LOCAL-FIRST · TEACHABLE · TRACEABLE", 18).next_to(name, DOWN, buff=0.15)
+        mark.move_to(DOWN * 3.05)
+        name = label("VIDEO KNOWLEDGE STUDIO", 27, WHITE, weight=BOLD).next_to(mark, RIGHT, buff=0.35)
+        local = mono("LOCAL-FIRST · TEACHABLE · TRACEABLE", 17).next_to(name, DOWN, buff=0.13)
         self.play(FadeIn(mark), FadeIn(name), FadeIn(local), run_time=0.8)
         self.wait(1.2)
