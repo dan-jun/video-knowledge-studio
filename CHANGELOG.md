@@ -6,8 +6,8 @@
 - Increased default TTS pacing and added an environment override for shorter videos.
 - Published a prebuilt public GHCR image and made launchers pull it before falling back
   to a local build.
-- Added a 54-second product walkthrough combining Manim feature animation with real
-  screen-recorded learning and production interactions.
+- Withdrew the rejected 54-second product walkthrough; a fully animated launch video
+  with cinematic real-product recording is being rebuilt separately.
 - Added a GitHub social preview, launch kit, public release asset and project discovery
   metadata.
 

@@ -11,13 +11,9 @@
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
 [![Container](https://img.shields.io/badge/GHCR-video--knowledge--studio-2496ED?logo=docker&logoColor=white)](https://github.com/dan-jun/video-knowledge-studio/pkgs/container/video-knowledge-studio)
 
-[观看 54 秒演示](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.1/video-knowledge-studio-product-demo-54s.mp4) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
+[核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
 
 > **本地优先**：课程、制作项目、批注和修订默认只保存在自己的电脑上。
-
-[![播放 Video Knowledge Studio 54 秒演示](docs/images/product-demo-poster.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.1/video-knowledge-studio-product-demo-54s.mp4)
-
-<sub>54 秒演示：Manim 功能动画 + 学习工作台真实操作 + AI 示例回答 + 视频制作与成片，使用 MiniMax 配音。</sub>
 
 ![从知识缺口到真正学会](docs/images/workflow-overview.svg)
 
