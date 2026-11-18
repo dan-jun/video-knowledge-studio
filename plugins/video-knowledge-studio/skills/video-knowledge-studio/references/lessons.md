@@ -111,3 +111,15 @@
 - **Verification:** Install the local Plugin in an isolated `CODEX_HOME`, confirm both
   Skills appear in its cache, exercise the `~/.agents/skills` fallback, and run packaging
   and synchronization tests.
+
+## 2026-11-18 — A visual product needs a visual README
+
+- **Symptom:** Even after reorganizing the text, the README still felt abstract because it
+  had only one screenshot and no purpose-built flow for demand-driven learning.
+- **Root cause:** The documentation explained interfaces and workflows in prose without
+  showing the actual product surface or the long multi-step path from a knowledge gap to
+  an integrated course and contextual follow-up questions.
+- **Fix:** Add an end-to-end vector workflow, a dedicated demand-driven vector flow,
+  screenshots of both live workspaces, and a short GIF rendered by the real pipeline.
+- **Verification:** Inspect the diagrams and screenshots visually, validate SVG XML,
+  check every local README link, and bound demo-asset sizes in automated tests.
