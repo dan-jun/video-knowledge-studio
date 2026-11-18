@@ -75,3 +75,5 @@ This file is the complete functional inventory for version 0.1.0.
 - Bootstrap installer copies the Codex skill and launches the local app.
 - Unit and HTTP integration tests cover auth, path traversal, course loading, media
   ranges, annotations, revisions and the AI job lifecycle.
+- Docker helper generates a password, picks a free port, builds and waits for health;
+  CI performs a real image build and container health check.

@@ -32,7 +32,8 @@ These are real product boundaries for version 0.1.0.
 - No built-in background job persistence or distributed workers.
 - No rate limiting or comprehensive audit trail.
 - Public deployment requires an additional authenticated HTTPS reverse proxy.
-- Docker files are provided, but automated container CI is not yet included.
+- Docker images are built locally or by GitHub Actions; no prebuilt registry image is
+  published yet.
 
 ## Browser and media
 

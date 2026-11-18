@@ -5,4 +5,5 @@ __pycache__
 data/state
 data/cache
 .env
+.env.docker
 *.log

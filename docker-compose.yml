@@ -2,7 +2,7 @@ services:
   studio:
     build: .
     ports:
-      - "7870:7870"
+      - "127.0.0.1:${VKS_DOCKER_PORT:-7870}:7870"
     environment:
       VKS_PASSWORD: "${VKS_PASSWORD:?set VKS_PASSWORD before starting the container}"
       VKS_AI_PROVIDER: "${VKS_AI_PROVIDER:-mock}"
@@ -12,4 +12,15 @@ services:
     volumes:
       - ./packs:/app/packs:ro
       - ./data:/app/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7870/login.html', timeout=3)"
+      interval: 20s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    init: true
     restart: unless-stopped

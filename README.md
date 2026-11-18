@@ -98,11 +98,22 @@ python scripts/import_course.py --input "D:\courses\my-course" --title "我的�
 
 ## Docker
 
-```bash
-docker compose up --build
+无需本机安装 Python 或 FFmpeg，也不需要手工设置密码：
+
+```powershell
+.\docker-up.ps1 -Open
 ```
 
-在 `docker-compose.yml` 或外部环境变量中设置强密码。课程包以只读方式挂载，个人状态写入独立 `data/` 卷。
+脚本会自动生成密码、构建镜像、启动容器并打印登录地址。完整说明见
+[Docker 使用文档](docs/docker.md)。
+
+macOS/Linux 使用：
+
+```bash
+./docker-up.sh
+```
+
+课程包以只读方式挂载，个人状态写入 `data/`。GitHub Actions 会在每次提交时实际构建镜像、启动容器并访问登录页，避免发布未经验证的 Docker 配置。
 
 ## 开发
 
@@ -138,6 +149,7 @@ data/             本地个人状态和帧缓存（不提交）
 - [HTTP API](docs/api.md)
 - [配置项](docs/configuration.md)
 - [部署模式](docs/deployment.md)
+- [Docker 一键运行](docs/docker.md)
 - [当前限制](docs/limitations.md)
 - [Agent 一键安装](docs/agent-install.md)
 - [架构与信任边界](docs/architecture.md)

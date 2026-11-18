@@ -1,0 +1,89 @@
+# Docker quick start
+
+Docker packages Python, FFmpeg and the application into one image, so users do
+not need to install Python or system dependencies manually.
+
+## One command
+
+Windows:
+
+```powershell
+.\docker-up.ps1 -Open
+```
+
+macOS/Linux:
+
+```bash
+./docker-up.sh
+```
+
+The helper:
+
+1. verifies Docker is installed;
+2. selects a free local port;
+3. generates a random login password and writes `.env.docker`;
+4. runs `docker compose up -d --build`;
+5. waits for `/login.html` to become healthy;
+6. prints the URL and password and optionally opens the browser.
+
+The generated password is shown only in command output and `.env.docker`.
+`.env.docker` is excluded from Git.
+
+## AI inside the container
+
+The container cannot use a Codex CLI installed on the host. Use an
+OpenAI-compatible endpoint by editing `.env.docker`:
+
+```text
+VKS_PASSWORD=<generated password>
+VKS_DOCKER_PORT=7870
+VKS_AI_PROVIDER=openai
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=<your key>
+VKS_MODEL=gpt-4.1-mini
+```
+
+Then rerun the Docker helper. For a model running on the host, use the Docker
+host address appropriate to your platform instead of `127.0.0.1`.
+
+## Manual Compose
+
+Create `.env.docker`:
+
+```text
+VKS_PASSWORD=choose-a-strong-password
+VKS_DOCKER_PORT=7870
+VKS_AI_PROVIDER=mock
+VKS_MODEL=gpt-4.1-mini
+```
+
+Then run:
+
+```bash
+docker compose --env-file .env.docker up -d --build
+```
+
+The host port binds to `127.0.0.1`, so this configuration is for one user on
+one computer. Do not change the binding to `0.0.0.0` for a public service
+without HTTPS, authentication review and a proper reverse proxy.
+
+## Data and course packs
+
+- `packs/` is mounted read-only.
+- `./data` holds annotations, revisions, frame cache and the session secret.
+- Stopping or replacing the container keeps `./data`.
+- The bundled demo is included in the image.
+
+## Operations
+
+```powershell
+.\docker-up.ps1 -Command logs
+.\docker-up.ps1 -Command down
+```
+
+## Verified by CI
+
+`.github/workflows/ci.yml` builds the image on every push and pull request,
+starts a container with a test password, waits for health and requests the
+login page. This catches Dockerfile and startup regressions even when a
+developer does not have Docker installed locally.

@@ -12,3 +12,4 @@
 - Codex Skill wrapper and one-command bootstrap for Agent-assisted local installs.
 - Complete feature, API, configuration, deployment and limitation documentation.
 - Runtime provider fallback in automatic AI mode.
+- One-command Docker launcher with generated password and CI container health test.
