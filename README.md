@@ -1,9 +1,16 @@
 # Video Knowledge Studio
 
-一个本地优先的课程视频学习与再创作工作台。
+## 从一个知识缺口，到一套真正学得会的课程。
 
-它把三件事放在同一条链路里：**把视频重制成更好懂的课程、边看视频边整理知识、
-让 AI 基于真实画面和讲稿辅助理解**。课程、笔记和制作结果都保存在自己的电脑上。
+Video Knowledge Studio 是一个 AI 驱动的学习与内容再创作工作台。
+
+你只需要提出一个工作、科研、面试或项目中的真实学习目标。Agent 可以帮你拆解
+知识点、规划学习路径，搜索 B 站和 YouTube 上多个互补的讲解来源，再把它们重新
+组织成动画课程和结构化笔记。观看时，视频、时间戳和知识内容双向同步；遇到
+不懂的地方，可以直接在右侧笔记中选中内容追问 AI，最后用知识网、练习和主动回忆
+形成真正可复习的体系。
+
+所有课程、制作项目和批注默认保存在自己的电脑上，每个人拥有独立空间。
 
 [![CI](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.2.0-56d8f5)](CHANGELOG.md)
