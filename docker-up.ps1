@@ -8,6 +8,12 @@ param(
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
+try {
+  & (Join-Path $PSScriptRoot "install-agent.ps1") *> $null
+} catch {
+  Write-Warning "Agent bundle installation failed; Docker startup will continue."
+}
+
 $dockerCommand = (Get-Command docker -ErrorAction SilentlyContinue).Source
 if (-not $dockerCommand) {
   $dockerCandidates = @(

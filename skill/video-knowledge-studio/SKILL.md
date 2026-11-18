@@ -24,6 +24,10 @@ Use this skill to:
 The default architecture is one instance per person. `127.0.0.1` means the current
 computer; never tell another person to use the same loopback URL as a shared service.
 
+For requests that start from a work, research, project or interview knowledge gap rather
+than an existing course, use the companion `$demand-driven-video-learning` Skill to plan
+the learning path, find multiple sources, render the integrated course, and create notes.
+
 ## First action
 
 Locate the repository root: the directory containing `pyproject.toml`, `vks/`,

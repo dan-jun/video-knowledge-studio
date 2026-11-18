@@ -18,7 +18,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_SOURCE = ROOT / "skill" / "video-knowledge-studio"
+SKILLS_SOURCE = ROOT / "skill"
+PLUGIN_SOURCE = ROOT / "plugins" / "video-knowledge-studio"
+MARKETPLACE_NAME = "video-knowledge-studio-local"
+PLUGIN_SELECTOR = f"video-knowledge-studio@{MARKETPLACE_NAME}"
 PID_FILE = ROOT / "data" / "studio.pid"
 
 
@@ -26,15 +29,118 @@ def codex_home() -> Path:
     return Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")).expanduser()
 
 
-def install_skill() -> Path:
-    if not (SKILL_SOURCE / "SKILL.md").is_file():
-        raise SystemExit(f"skill source is missing: {SKILL_SOURCE}")
-    destination = codex_home() / "skills" / "video-knowledge-studio"
-    if destination.exists():
-        shutil.copytree(SKILL_SOURCE, destination, dirs_exist_ok=True)
+def agent_skills_home() -> Path:
+    override = os.environ.get("VKS_AGENT_SKILLS_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+    preferred = Path.home() / ".agents" / "skills"
+    try:
+        preferred.mkdir(parents=True, exist_ok=True)
+        return preferred
+    except OSError:
+        fallback = codex_home() / "skills"
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+
+
+def bundled_skills() -> list[Path]:
+    return sorted(
+        path
+        for path in SKILLS_SOURCE.iterdir()
+        if path.is_dir() and (path / "SKILL.md").is_file()
+    )
+
+
+def install_skills() -> list[Path]:
+    installed = []
+    destination_root = agent_skills_home()
+    for source in bundled_skills():
+        destination = destination_root / source.name
+        if destination.exists():
+            shutil.copytree(source, destination, dirs_exist_ok=True)
+        else:
+            shutil.copytree(source, destination)
+        installed.append(destination)
+    return installed
+
+
+def sync_plugin_bundle() -> None:
+    try:
+        from sync_plugin import sync
+    except ModuleNotFoundError:
+        from scripts.sync_plugin import sync
+
+    sync()
+
+
+def install_codex_plugin() -> dict:
+    codex = shutil.which("codex")
+    if not codex:
+        return {"installed": False, "reason": "Codex CLI not found"}
+    attempts = []
+    marketplace = subprocess.run(
+        [codex, "plugin", "marketplace", "add", str(ROOT), "--json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    attempts.append({
+        "step": "marketplace",
+        "returncode": marketplace.returncode,
+        "output": (marketplace.stdout or marketplace.stderr or "").strip()[-1000:],
+    })
+    subprocess.run(
+        [codex, "plugin", "remove", PLUGIN_SELECTOR, "--json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    installation = subprocess.run(
+        [codex, "plugin", "add", PLUGIN_SELECTOR, "--json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    attempts.append({
+        "step": "plugin",
+        "returncode": installation.returncode,
+        "output": (installation.stdout or installation.stderr or "").strip()[-1000:],
+    })
+    combined_output = (installation.stdout or "") + (installation.stderr or "")
+    succeeded = installation.returncode == 0 or "already" in combined_output.lower()
+    return {
+        "installed": succeeded,
+        "selector": PLUGIN_SELECTOR,
+        "marketplace": str(ROOT),
+        "attempts": attempts,
+    }
+
+
+def install_agent_bundle(no_plugin: bool = False) -> dict:
+    if not (PLUGIN_SOURCE / "plugin.json").is_file():
+        raise SystemExit(f"plugin manifest is missing: {PLUGIN_SOURCE}")
+    sync_plugin_bundle()
+    if not no_plugin:
+        plugin = install_codex_plugin()
+        if plugin["installed"]:
+            return {
+                "method": "plugin",
+                "plugin": plugin,
+                "skills": [],
+                "restart_required": True,
+            }
     else:
-        shutil.copytree(SKILL_SOURCE, destination)
-    return destination
+        plugin = {"installed": False, "reason": "disabled by --no-plugin"}
+    skills = install_skills()
+    return {
+        "method": "skills",
+        "plugin": plugin,
+        "skills": [str(path) for path in skills],
+        "restart_required": True,
+    }
 
 
 def port_open(port: int) -> bool:
@@ -182,9 +288,15 @@ def main():
     parser.add_argument("--port", type=int, default=7870)
     parser.add_argument("--ai-provider", choices=["auto", "codex", "openai", "mock"], default="auto")
     parser.add_argument("--open", action="store_true", help="open the local URL after startup")
+    parser.add_argument(
+        "--no-plugin",
+        action="store_true",
+        help="install the bundled skills directly instead of registering the Codex plugin",
+    )
     args = parser.parse_args()
-    skill_path = install_skill()
-    result: dict = {"skill": str(skill_path)}
+    result: dict = {}
+    if args.command in {"install", "start"}:
+        result["agent_bundle"] = install_agent_bundle(args.no_plugin)
     if args.command == "start":
         result.update(start(args))
     elif args.command == "status":

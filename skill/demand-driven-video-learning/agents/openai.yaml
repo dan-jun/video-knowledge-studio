@@ -1,0 +1,4 @@
+interface:
+  display_name: "Demand-Driven Video Learning"
+  short_description: "Turn a knowledge gap into a sourced animated course"
+  default_prompt: "Use $demand-driven-video-learning to turn my knowledge gap into a sourced, animated learning course."

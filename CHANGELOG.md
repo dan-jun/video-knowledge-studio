@@ -10,6 +10,9 @@
 - Added optional `production` and `transcription` dependency groups.
 - Docker now includes Manim, Edge TTS, FFmpeg, Cairo/Pango and Noto CJK fonts by default.
 - Added production API, dependency, build-context and Docker CI verification.
+- Bundled the `video-knowledge-studio` and `demand-driven-video-learning` Agent Skills.
+- Added a portable Codex Plugin, repo-local marketplace and one-command Agent installer.
+- Added automatic Skill fallback when Codex Plugin installation is unavailable.
 
 ## 0.1.0 - 2026-11-18
 

@@ -158,7 +158,36 @@ B 站 / YouTube 多个互补来源
 
 ## 快速开始
 
-### 方式一：Docker（推荐）
+### 方式一：Agent + Plugin（推荐给 Codex 用户）
+
+```powershell
+git clone https://github.com/dan-jun/video-knowledge-studio.git
+cd video-knowledge-studio
+.\install.ps1
+```
+
+macOS/Linux：
+
+```bash
+git clone https://github.com/dan-jun/video-knowledge-studio.git
+cd video-knowledge-studio
+./install.sh
+```
+
+安装器会注册仓库内的本地 Plugin marketplace，安装
+`video-knowledge-studio` 与 `demand-driven-video-learning` 两个 Skill，并启动工作台。
+如果当前 Codex 不支持 Plugin，会自动把两个 Skill 安装到 `~/.agents/skills/`。
+
+只安装 Agent 能力、不启动应用：
+
+```powershell
+.\install-agent.ps1
+```
+
+安装后重新打开 Codex 或新建对话，让 Plugin 和 Skill 重新载入。完整说明见
+[Agent、Skill 与 Plugin](docs/plugin.md)。
+
+### 方式二：Docker（完整环境）
 
 先安装 Docker Desktop（Windows/macOS）或 Docker Engine + Compose（Linux）。
 
@@ -177,9 +206,10 @@ cd video-knowledge-studio
 ```
 
 脚本会自动选择空闲端口、生成登录密码并打开页面。默认镜像已经包含 Python、
-FFmpeg、Manim、Edge TTS 和中文字体，因此学习与视频制作可以一起使用。
+FFmpeg、Manim、Edge TTS 和中文字体，因此学习与视频制作可以一起使用，并会顺手
+安装 Agent Skill/Plugin。
 
-### 方式二：本机 Python
+### 方式三：本机 Python
 
 运行学习工作台只需要 Python 3.10+：
 
@@ -220,8 +250,6 @@ $env:OPENAI_API_KEY="..."
 $env:VKS_MODEL="gpt-4.1-mini"
 python -m vks
 ```
-
-也可以让 Agent 按 [安装说明](docs/agent-install.md) 自动部署。
 
 ## 加入自己的课程
 
@@ -282,6 +310,7 @@ CI 会实际构建 Docker 镜像、启动容器、登录、检查生产依赖并
 | HTTP 接口 | [API](docs/api.md) |
 | 架构与信任边界 | [架构](docs/architecture.md) |
 | Agent 自动安装 | [安装说明](docs/agent-install.md) |
+| Agent Skill 与 Plugin | [能力包说明](docs/plugin.md) |
 | 当前限制 | [限制](docs/limitations.md) |
 
 ## Roadmap（尚未实现）

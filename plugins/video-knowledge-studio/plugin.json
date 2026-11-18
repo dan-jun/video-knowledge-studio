@@ -1,0 +1,47 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "video-knowledge-studio",
+  "version": "0.2.0",
+  "description": "Turn a knowledge gap into sourced animated courses and synchronized study notes.",
+  "author": {
+    "name": "Video Knowledge Studio contributors",
+    "url": "https://github.com/dan-jun"
+  },
+  "homepage": "https://github.com/dan-jun/video-knowledge-studio",
+  "repository": "https://github.com/dan-jun/video-knowledge-studio",
+  "license": "MIT",
+  "keywords": [
+    "education",
+    "research",
+    "video-learning",
+    "knowledge-notes",
+    "bilibili",
+    "youtube"
+  ],
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/video-knowledge-studio/SKILL.md",
+      "interface": {
+        "displayName": "Video Knowledge Studio",
+        "shortDescription": "按需生成有来源的视频课程",
+        "longDescription": "Plan a work, research or project knowledge gap, find multiple Bilibili or YouTube explanations, integrate them into a sourced animated course, and create synchronized notes for contextual AI tutoring.",
+        "developerName": "Video Knowledge Studio contributors",
+        "category": "Education & Research",
+        "capabilities": [
+          "Generate a focused learning plan",
+          "Discover and compare multiple Bilibili or YouTube sources",
+          "Integrate sources into remix, course or scipop videos",
+          "Render captioned animated lessons",
+          "Create synchronized notes, evidence and knowledge networks",
+          "Explain selected notes with contextual AI"
+        ],
+        "websiteURL": "https://github.com/dan-jun/video-knowledge-studio",
+        "defaultPrompt": [
+          "Use Video Knowledge Studio to turn my project knowledge gap into a sourced animated course and study notes.",
+          "Plan what I should learn, find complementary Bilibili and YouTube explanations, and build the learning workspace."
+        ],
+        "brandColor": "#0E7490"
+      }
+    }
+  }
+}

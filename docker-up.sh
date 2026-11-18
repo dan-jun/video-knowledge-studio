@@ -2,6 +2,10 @@
 set -eu
 cd "$(dirname "$0")"
 
+if ! sh ./install-agent.sh >/dev/null 2>&1; then
+  echo "Warning: Agent bundle installation failed; Docker startup will continue." >&2
+fi
+
 DOCKER=$(command -v docker 2>/dev/null || true)
 if [ -z "$DOCKER" ]; then
   for candidate in "/Applications/Docker.app/Contents/Resources/bin/docker"; do

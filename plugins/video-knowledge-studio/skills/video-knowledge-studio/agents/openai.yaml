@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Knowledge Studio"
+  short_description: "Install and run the local video knowledge workspace"
+  default_prompt: "Install Video Knowledge Studio from this repository, configure my local course folder, and open the workspace."

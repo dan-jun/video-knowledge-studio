@@ -1,0 +1,20 @@
+{
+  "name": "video-knowledge-studio-local",
+  "interface": {
+    "displayName": "Video Knowledge Studio Local"
+  },
+  "plugins": [
+    {
+      "name": "video-knowledge-studio",
+      "source": {
+        "source": "local",
+        "path": "./plugins/video-knowledge-studio"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Education & Research"
+    }
+  ]
+}

@@ -107,3 +107,11 @@ learner accepts them, and accepted changes can be undone.
   ranges, annotations, revisions and the AI job lifecycle.
 - Docker helper generates a password, picks a free port, builds and waits for health;
   CI performs a real image build and container health check.
+
+## Agent distribution
+
+- Two bundled Skills cover local application operation and demand-driven learning.
+- A portable skills-only Plugin packages both workflows.
+- A repo-local marketplace supports `codex plugin marketplace add` and `codex plugin add`.
+- Installers prefer the Plugin and fall back to `~/.agents/skills`.
+- The plugin manifest, marketplace entry and generated skill copies are validated by tests.

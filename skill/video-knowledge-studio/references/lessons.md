@@ -96,3 +96,18 @@
   planning as Roadmap items rather than pretending they are built-in.
 - **Verification:** Recheck every current-versus-planned claim against the production
   UI and API, then validate all local links and Skill synchronization.
+
+## 2026-11-18 — Package Skills and Plugin as tested release artifacts
+
+- **Symptom:** A documentation-only workflow cannot reliably make a downloaded repository
+  expose reusable Agent behavior, and duplicating Skills into a Plugin can silently drift
+  from the canonical copies.
+- **Root cause:** Codex discovers reusable workflows through Skills and installable Plugin
+  bundles; the repository had one install-only Skill and no marketplace or packaging
+  consistency check.
+- **Fix:** Add a second demand-driven learning Skill, a portable skills-only Plugin,
+  repo-local marketplace metadata, a deterministic synchronizer and one-command installers
+  with direct-Skill fallback.
+- **Verification:** Install the local Plugin in an isolated `CODEX_HOME`, confirm both
+  Skills appear in its cache, exercise the `~/.agents/skills` fallback, and run packaging
+  and synchronization tests.
