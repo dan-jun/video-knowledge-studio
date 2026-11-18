@@ -24,7 +24,12 @@ class ReadmeAssetTests(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_readme_diagrams_are_valid_svg(self):
-        for name in ("workflow-overview.svg", "demand-driven-flow.svg", "before-after.svg"):
+        for name in (
+            "workflow-overview.svg",
+            "demand-driven-flow.svg",
+            "before-after.svg",
+            "social-preview.svg",
+        ):
             path = ROOT / "docs" / "images" / name
             self.assertLess(path.stat().st_size, 2_000_000)
             root = ET.parse(path).getroot()
@@ -36,10 +41,14 @@ class ReadmeAssetTests(unittest.TestCase):
             "ai-tutor-demo.png",
             "production-workspace.png",
             "production-demo.gif",
+            "social-preview.png",
         ):
             path = ROOT / "docs" / "images" / name
             self.assertGreater(path.stat().st_size, 10_000)
             self.assertLess(path.stat().st_size, 2_000_000)
+        video = ROOT / "docs" / "media" / "demo-60s.mp4"
+        self.assertGreater(video.stat().st_size, 100_000)
+        self.assertLess(video.stat().st_size, 10_000_000)
 
 
 if __name__ == "__main__":

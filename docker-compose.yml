@@ -1,5 +1,6 @@
 services:
   studio:
+    image: "${VKS_IMAGE:-ghcr.io/dan-jun/video-knowledge-studio:latest}"
     build: .
     ports:
       - "127.0.0.1:${VKS_DOCKER_PORT:-7870}:7870"

@@ -22,6 +22,7 @@ fi
 
 ENV_FILE=".env.docker"
 COMMAND=${1:-up}
+BUILD_FROM_SOURCE=${VKS_BUILD_FROM_SOURCE:-0}
 if [ "$COMMAND" = "down" ]; then
   "$DOCKER" compose --env-file "$ENV_FILE" down
   exit 0
@@ -57,10 +58,20 @@ VKS_PASSWORD=$PASSWORD
 VKS_DOCKER_PORT=$PORT
 VKS_AI_PROVIDER=mock
 VKS_MODEL=gpt-4.1-mini
+VKS_IMAGE=ghcr.io/dan-jun/video-knowledge-studio:latest
 EOF
 fi
 
-"$DOCKER" compose --env-file "$ENV_FILE" up -d --build
+IMAGE=$(sed -n 's/^VKS_IMAGE=//p' "$ENV_FILE" | tail -n 1)
+IMAGE=${IMAGE:-ghcr.io/dan-jun/video-knowledge-studio:latest}
+if [ "$BUILD_FROM_SOURCE" != "1" ] && "$DOCKER" pull "$IMAGE"; then
+  "$DOCKER" compose --env-file "$ENV_FILE" up -d --no-build
+else
+  if [ "$BUILD_FROM_SOURCE" != "1" ]; then
+    echo "Warning: prebuilt image pull failed; falling back to a local build." >&2
+  fi
+  VKS_IMAGE="$IMAGE" "$DOCKER" compose --env-file "$ENV_FILE" up -d --build
+fi
 
 PORT=$(sed -n 's/^VKS_DOCKER_PORT=//p' "$ENV_FILE" | tail -n 1)
 ATTEMPT=0

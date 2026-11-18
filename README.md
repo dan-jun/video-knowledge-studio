@@ -9,10 +9,13 @@
 [![CI](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.2.0-56d8f5)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
+[![Container](https://img.shields.io/badge/GHCR-video--knowledge--studio-2496ED?logo=docker&logoColor=white)](https://github.com/dan-jun/video-knowledge-studio/pkgs/container/video-knowledge-studio)
 
-[核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
+[观看演示](docs/media/demo-60s.mp4) · [核心差异](#为什么不是又一个视频工具) · [按需学习](#按需学习) · [学习工作台](#学习工作台) · [视频制作](#视频制作) · [快速开始](#快速开始)
 
 > **本地优先**：课程、制作项目、批注和修订默认只保存在自己的电脑上。
+
+[![观看 Video Knowledge Studio 80 秒演示](docs/images/social-preview.png)](docs/media/demo-60s.mp4)
 
 ![从知识缺口到真正学会](docs/images/workflow-overview.svg)
 
@@ -169,7 +172,14 @@ macOS / Linux：
 ```
 
 脚本会自动选端口、生成密码，并安装完整学习与制作依赖。Docker 启动时也会顺手
-安装随仓库分发的 Agent Skill/Plugin。
+安装随仓库分发的 Agent Skill/Plugin。启动器会优先拉取
+`ghcr.io/dan-jun/video-knowledge-studio:latest`，拉取失败时才回退到本地构建。
+
+修改源码后需要构建本地版本：
+
+```powershell
+.\docker-up.ps1 -Open -BuildFromSource
+```
 
 ### 方式二：Agent + Plugin
 
@@ -305,6 +315,7 @@ CI 会实际构建 Docker 镜像、启动容器、登录、检查制作页和生
 | 配置与 AI | [配置项](docs/configuration.md) |
 | 架构与信任边界 | [架构](docs/architecture.md) |
 | 部署与限制 | [部署](docs/deployment.md) · [限制](docs/limitations.md) |
+| 发布与推广素材 | [Launch kit](docs/launch-kit.md) |
 
 <details>
 <summary><strong>Roadmap（尚未实现）</strong></summary>

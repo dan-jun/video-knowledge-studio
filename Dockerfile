@@ -1,5 +1,9 @@
 FROM python:3.12-slim
 
+LABEL org.opencontainers.image.source="https://github.com/dan-jun/video-knowledge-studio"
+LABEL org.opencontainers.image.description="Local-first AI learning workspace with synchronized notes and video production"
+LABEL org.opencontainers.image.licenses="MIT"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     VKS_HOST=0.0.0.0 \

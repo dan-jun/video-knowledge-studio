@@ -13,6 +13,16 @@ larger than a viewer-only build, but enables all three production modes without
 a second manual dependency setup. Build a viewer-only image with
 `--build-arg VKS_INSTALL_PRODUCTION=0` when rendering is not needed.
 
+The launchers first pull the published image:
+
+```text
+ghcr.io/dan-jun/video-knowledge-studio:latest
+```
+
+If the pull fails, they fall back to a local source build. Use
+`.\docker-up.ps1 -BuildFromSource` on Windows or
+`VKS_BUILD_FROM_SOURCE=1 ./docker-up.sh` on macOS/Linux when testing local code.
+
 ## One command
 
 Windows:
