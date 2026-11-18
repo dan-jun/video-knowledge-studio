@@ -353,24 +353,24 @@ class KnowledgeNetwork(Scene):
         center = RoundedRectangle(corner_radius=0.18, width=2.0, height=0.9,
                                   stroke_color=CYAN, stroke_width=3,
                                   fill_color=CYAN, fill_opacity=0.14).move_to(ORIGIN)
-        center_text = label("矩阵", 36, WHITE, weight=BOLD).move_to(center)
+        center_text = label("Leader", 34, WHITE, weight=BOLD).move_to(center)
         center_node = VGroup(center, center_text)
 
         positions = {
-            "基向量": [-5.0, 1.55, 0],
-            "空间": [-2.8, -1.9, 0],
-            "行列式": [0.0, 2.15, 0],
-            "逆矩阵": [4.8, 1.6, 0],
-            "复合": [2.8, -1.9, 0],
-            "特征向量": [6.0, -0.55, 0],
+            "客户端": [-5.0, 1.55, 0],
+            "追加日志": [-2.8, -1.9, 0],
+            "Follower A": [0.0, 2.15, 0],
+            "多数确认": [4.8, 1.6, 0],
+            "Follower B": [2.8, -1.9, 0],
+            "项目代码": [6.0, -0.55, 0],
         }
         colors = {
-            "基向量": VIOLET,
-            "空间": MINT,
-            "行列式": AMBER,
-            "逆矩阵": RED,
-            "复合": CYAN,
-            "特征向量": AMBER,
+            "客户端": VIOLET,
+            "追加日志": MINT,
+            "Follower A": CYAN,
+            "多数确认": AMBER,
+            "Follower B": CYAN,
+            "项目代码": RED,
         }
         nodes = {}
         for name, pos in positions.items():
@@ -383,13 +383,13 @@ class KnowledgeNetwork(Scene):
 
         edges = VGroup()
         links = [
-            ("基向量", "矩阵"),
-            ("矩阵", "空间"),
-            ("空间", "行列式"),
-            ("矩阵", "逆矩阵"),
-            ("矩阵", "复合"),
-            ("复合", "特征向量"),
-            ("行列式", "逆矩阵"),
+            ("客户端", "矩阵"),
+            ("矩阵", "追加日志"),
+            ("追加日志", "Follower A"),
+            ("追加日志", "Follower B"),
+            ("Follower A", "多数确认"),
+            ("Follower B", "多数确认"),
+            ("多数确认", "项目代码"),
         ]
         all_nodes = {"矩阵": center_node, **nodes}
         for left, right in links:
@@ -406,7 +406,7 @@ class KnowledgeNetwork(Scene):
         self.play(LaggedStart(*[FadeIn(node, shift=UP * 0.18) for node in nodes.values()], lag_ratio=0.12), run_time=1.2)
         self.play(LaggedStart(*[Create(edge) for edge in edges], lag_ratio=0.08), run_time=1.2)
 
-        highlight = VGroup(center_node, nodes["基向量"], nodes["空间"], nodes["行列式"])
+        highlight = VGroup(center_node, nodes["追加日志"], nodes["多数确认"])
         self.play(
             *[node[0].animate.set_stroke(width=5, color=WHITE) for node in highlight],
             run_time=0.65,

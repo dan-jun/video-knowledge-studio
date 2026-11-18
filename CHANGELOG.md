@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.6 - 2026-11-18
+
+- Removed the AI response waiting interval from the final cut instead of speeding up
+  the spinner; the selection action now cuts directly to the completed answer.
+- Changed all enlarged interface details to fixed screenshots with stable local crops,
+  removing live zooming and scroll-induced jitter.
+- Captured a clean answer screenshot with the selection toolbar and cursor removed.
+
 ## 0.2.5 - 2026-11-18
 
 - Replaced the mixed metaphor opening with a three-scenario matrix: project handoff,

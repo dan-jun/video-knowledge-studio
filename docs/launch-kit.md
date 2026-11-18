@@ -116,8 +116,8 @@ Use the same text only where self-promotion is allowed by the community rules.
 ## Demo assets
 
 - `docs/images/social-preview.png` — GitHub/social card;
-- `docs/images/product-demo-poster.png` — 80-second launch-video cover;
-- `docs/media/product-demo.mp4` — 80-second animation and real-product walkthrough;
+- `docs/images/product-demo-poster.png` — 73-second launch-video cover;
+- `docs/media/product-demo.mp4` — 73-second animation and real-product walkthrough;
 - `docs/images/demo.png` — learning workspace;
 - `docs/images/ai-tutor-demo.png` — evidence and revision workflow;
 - `docs/images/production-workspace.png` — creation workspace;

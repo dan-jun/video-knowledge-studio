@@ -123,7 +123,7 @@ RUNTIME: Runtime
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "VideoKnowledgeStudio/0.2.5"
+    server_version = "VideoKnowledgeStudio/0.2.6"
 
     def log_message(self, fmt, *args):
         print(f"[{time.strftime('%H:%M:%S')}] {fmt % args}", flush=True)

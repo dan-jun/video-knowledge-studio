@@ -209,3 +209,15 @@
 - **Verification:** Review the script as a promise-to-proof checklist: each intro card
   now reappears in the workflow matrix and in the closing recap, while every middle
   screen uses the same Raft task shown in the intro.
+
+## 2026-11-18 — Cut waits and freeze evidence before cropping
+
+- **Symptom:** Speeding up the AI spinner still left a visible waiting beat, while
+  magnifying a live scrolling interface made the detail shots jitter.
+- **Root cause:** Waiting was treated as compressible footage rather than removable
+  state, and the crop source kept animating during the zoom.
+- **Fix:** Cut directly from the submit action to the completed answer, capture a clean
+  answer screenshot with selection handles and cursor removed, and crop that still image
+  to the relevant panel. Do not use `zoompan` for interface closeups.
+- **Verification:** The final cut contains no AI waiting spinner; answer, evidence and
+  gate logs are shown from fixed cropped screenshots with no scroll or cursor drift.

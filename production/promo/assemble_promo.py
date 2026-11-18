@@ -106,13 +106,10 @@ def freeze_crop(name: str, crop: tuple[int, int, int, int], seconds: float) -> P
     source = RECORDINGS / name
     x, y, width, height = crop
     target = CLIPS / f"{source.stem}_crop.mp4"
-    frames = int(seconds * FPS)
     vf = (
         f"crop={width}:{height}:{x}:{y},"
         f"scale={WIDTH}:{HEIGHT}:flags=lanczos,"
-        f"zoompan=z='min(zoom+0.00025,1.035)':"
-        f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-        f"d={frames}:s={WIDTH}x{HEIGHT}:fps={FPS},setsar=1"
+        f"fps={FPS},setsar=1"
     )
     run([
         FFMPEG, "-y", "-hide_banner", "-loglevel", "error",
@@ -159,8 +156,7 @@ def main() -> None:
     ):
         ordered.append(normalize_scene(scene))
 
-    ordered.append(normalize_screen("learning", 1.0, 13.5))
-    ordered.append(normalize_screen("learning", 13.5, 27.1, speed=2.2))
+    ordered.append(normalize_screen("learning", 1.0, 12.6))
     ordered.append(freeze_crop("learning-final.png", (1188, 676, 712, 400), 4.0))
     ordered.append(normalize_scene("KnowledgeNetwork"))
     ordered.append(normalize_scene("ContextStatement"))
