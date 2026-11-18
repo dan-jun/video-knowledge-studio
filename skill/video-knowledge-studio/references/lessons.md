@@ -46,9 +46,9 @@
 - **Root cause:** The repository publishes the downstream knowledge workspace, while
   the production pipeline lives in a separate internal toolchain with additional
   Manim, TTS, rendering, and gate dependencies.
-- **Fix:** Add the production-mode definitions and selection guide, but state
-  explicitly that the production pipeline is upstream and not bundled as a
-  ready-to-use feature.
+- **Fix:** Start with an explicit production/learning boundary and document the
+  modes. This was the interim state before the pipeline was migrated into the public
+  repository later the same day.
 - **Verification:** Cross-check names, labels, duration ranges, source-count rules,
   chapter and practice constraints, and recap requirements against
   `tools/modes.py` in the production workspace.
@@ -69,3 +69,17 @@
   confirm 1920×1080 output, numeric drift 0.0, inspect a mid-page frame, then repeat
   generation and rendering inside the production Docker image and verify a ranged MP4
   response.
+
+## 2026-11-18 — Lead the README with end-to-end outcomes
+
+- **Symptom:** The README grew by appending production modes after the learning
+  workspace, leaving setup, capabilities, privacy, deployment and roadmap mixed
+  together.
+- **Root cause:** The document was organized as cumulative feature inventory rather
+  than around what a learner can accomplish from source video to review.
+- **Fix:** Put terminology and the end-to-end value near the top, connect production
+  and learning with one flow, then move interfaces, installation, privacy, development
+  and roadmap into separate sections.
+- **Verification:** Check every local Markdown link and image, keep modes consistent
+  with `production/tools/modes.py`, and re-run the test, syntax and Skill validation
+  suite after the documentation edit.
