@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Turn course videos into synchronized, evidence-linked knowledge notes.">
+<title>Video Knowledge Studio</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/player.css">
+<link rel="stylesheet" href="/knowledge.css">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body class="knowledge-mode">
+<div class="ambient"></div>
+<div class="wrap">
+  <aside class="col left">
+    <header class="brand">
+      <span class="brandmark">V</span>
+      <span><b>Video Knowledge</b><small>VIDEO → EVIDENCE → MASTERY</small></span>
+      <i class="live-dot"></i>
+    </header>
+    <div class="intro">
+      <p>课程视频与结构化笔记同屏。选中任意内容，让 AI 解释、查错或给出可撤销的修改建议。</p>
+      <div class="intro-tags"><span>视频同步</span><span>关键帧</span><span>知识网</span></div>
+    </div>
+    <label class="search">
+      <span>⌕</span>
+      <input id="search" placeholder="搜索课程、章节或视频…" autocomplete="off">
+    </label>
+    <div class="listhead"><span>课程目录</span><em id="projectCount">0 讲</em></div>
+    <div id="list" class="project-list"><div class="empty">正在载入课程包…</div></div>
+  </aside>
+
+  <main class="col mid">
+    <header class="player-head">
+      <div>
+        <span id="courseLabel" class="kicker">选择一讲开始</span>
+        <h1 id="title">Video Knowledge Studio</h1>
+      </div>
+      <div class="player-actions">
+        <span id="aiBadge" class="badge">AI 检测中</span>
+        <button id="theaterBtn" type="button">剧场模式</button>
+      </div>
+    </header>
+    <section class="stage">
+      <div id="player"></div>
+    </section>
+    <div id="thumbs" class="thumbs"></div>
+    <footer class="source-note">
+      <b>本地优先</b>
+      <span>视频与课程包不离开你的机器；只有点击 AI 提问时，才会把当前选中的笔记、相关转录与关键画面发送给已配置的模型提供方。</span>
+    </footer>
+  </main>
+
+  <aside class="col right">
+    <nav class="tabs">
+      <button class="tab on" data-tab="knowledge" type="button">知识点整理</button>
+      <button class="tab" data-tab="about" type="button">使用说明</button>
+    </nav>
+    <div id="hint" class="tip">视频与笔记同屏 · 点时间跳转 · 选中文字问 AI</div>
+    <section id="knowledge" class="pane on"></section>
+    <section id="about" class="pane about" hidden>
+      <h2>怎样使用</h2>
+      <ol>
+        <li>在左侧选择章节和视频。</li>
+        <li>播放时，右侧时间轴会自动高亮当前知识块。</li>
+        <li>拖动选中不懂的笔记，使用浮动工具条提问。</li>
+        <li>AI 修改建议只有在你点击“接受修改”后才会写入本地历史。</li>
+      </ol>
+      <h2>快捷键</h2>
+      <table>
+        <tr><td><kbd>K</kbd> / <kbd>Space</kbd></td><td>播放或暂停</td></tr>
+        <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>后退或前进 5 秒</td></tr>
+        <tr><td><kbd>J</kbd> / <kbd>L</kbd></td><td>后退或前进 10 秒</td></tr>
+        <tr><td><kbd>F</kbd></td><td>全屏</td></tr>
+        <tr><td><kbd>T</kbd></td><td>剧场模式</td></tr>
+      </table>
+      <h2>课程包</h2>
+      <p>把视频、知识 JSON 和 <code>course.json</code> 放进 <code>packs/&lt;id&gt;/</code>，重启或调用重新载入即可。课程内容与平台代码可以分别授权。</p>
+      <h2>AI 提供方</h2>
+      <p id="providerText">正在检测…</p>
+      <p class="muted">未配置模型时使用“离线演示模式”，只验证交互，不生成知识结论。</p>
+    </section>
+  </aside>
+</div>
+
+<script src="/player.js"></script>
+<script src="/knowledge.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "demo",
+  "title": "证据驱动学习",
+  "description": "三讲演示课：从证据和结构，到核对与主动回忆。视频与文字均为本项目生成，可随 MIT 许可自由分发。",
+  "license": "MIT",
+  "chapters": [
+    {
+      "id": "from-evidence",
+      "title": "第1章 从信息到结构",
+      "episodeIds": ["demo-e01", "demo-e02"]
+    },
+    {
+      "id": "from-structure",
+      "title": "第2章 从理解到掌握",
+      "episodeIds": ["demo-e03"]
+    }
+  ],
+  "episodes": [
+    {
+      "id": "demo-e01",
+      "number": 1,
+      "title": "为什么好笔记必须保留证据",
+      "chapterId": "from-evidence",
+      "duration": 40,
+      "video": "media/demo.mp4",
+      "knowledge": "episodes/e01.json"
+    },
+    {
+      "id": "demo-e02",
+      "number": 2,
+      "title": "从线性清单到因果知识网",
+      "chapterId": "from-evidence",
+      "duration": 40,
+      "video": "media/demo.mp4",
+      "knowledge": "episodes/e02.json"
+    },
+    {
+      "id": "demo-e03",
+      "number": 3,
+      "title": "用主动回忆检验理解",
+      "chapterId": "from-structure",
+      "duration": 40,
+      "video": "media/demo.mp4",
+      "knowledge": "episodes/e03.json"
+    }
+  ],
+  "network": {
+    "title": "证据驱动学习知识网",
+    "nodes": [
+      {
+        "id": "evidence",
+        "label": "证据",
+        "subtitle": "画面 · 时间 · 原文",
+        "episodeIds": ["demo-e01"]
+      },
+      {
+        "id": "structure",
+        "label": "结构",
+        "subtitle": "定义 → 机制 → 边界",
+        "episodeIds": ["demo-e01", "demo-e02"]
+      },
+      {
+        "id": "verify",
+        "label": "核对",
+        "subtitle": "把笔记放回视频",
+        "episodeIds": ["demo-e02"]
+      },
+      {
+        "id": "recall",
+        "label": "回忆",
+        "subtitle": "脱离资料重建因果链",
+        "episodeIds": ["demo-e03"]
+      }
+    ],
+    "edges": [
+      {"from": "evidence", "to": "structure", "label": "事实进入结构"},
+      {"from": "structure", "to": "verify", "label": "形成可核对主张"},
+      {"from": "verify", "to": "recall", "label": "确认后再练习"},
+      {"from": "recall", "to": "evidence", "label": "发现漏洞再取证", "dash": true}
+    ]
+  }
+}

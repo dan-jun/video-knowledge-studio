@@ -1,0 +1,15 @@
+services:
+  studio:
+    build: .
+    ports:
+      - "7870:7870"
+    environment:
+      VKS_PASSWORD: "${VKS_PASSWORD:?set VKS_PASSWORD before starting the container}"
+      VKS_AI_PROVIDER: "${VKS_AI_PROVIDER:-mock}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      VKS_MODEL: "${VKS_MODEL:-gpt-4.1-mini}"
+    volumes:
+      - ./packs:/app/packs:ro
+      - ./data:/app/data
+    restart: unless-stopped

@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+import dataclasses
+import json
+import tempfile
+import threading
+import time
+import unittest
+import urllib.request
+from http.server import ThreadingHTTPServer
+from pathlib import Path
+
+from vks import server
+from vks.config import load_settings
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class ServerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory()
+        settings = dataclasses.replace(
+            load_settings(),
+            packs_dir=ROOT / "packs",
+            data_dir=Path(cls.temp.name),
+            password="",
+            session_secret="test-secret",
+            ai_provider="mock",
+        )
+        server.RUNTIME = server.Runtime(settings)
+        cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        cls.thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.base = f"http://127.0.0.1:{cls.httpd.server_port}"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.httpd.server_close()
+        cls.temp.cleanup()
+
+    def get_json(self, path):
+        with urllib.request.urlopen(self.base + path, timeout=20) as response:
+            return response.status, json.loads(response.read())
+
+    def post_json(self, path, body):
+        request = urllib.request.Request(
+            self.base + path,
+            data=json.dumps(body, ensure_ascii=False).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return response.status, json.loads(response.read())
+
+    def test_projects_and_knowledge(self):
+        status, projects = self.get_json("/api/projects")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(projects), 3)
+        status, payload = self.get_json("/api/knowledge?id=demo-e01")
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["episode"]["id"], "demo-e01")
+        self.assertTrue(payload["episode"]["timeline"])
+
+    def test_video_range(self):
+        request = urllib.request.Request(
+            self.base + "/media/video?id=demo-e01",
+            headers={"Range": "bytes=0-255"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            body = response.read()
+            self.assertEqual(response.status, 206)
+            self.assertEqual(len(body), 256)
+
+    def test_mock_ai_job(self):
+        status, start = self.post_json("/api/ai/ask", {
+            "id": "demo-e01",
+            "selected": "可信笔记需要保留证据",
+            "kid": "E01:core:1",
+            "action": "explain",
+            "time": 12,
+        })
+        self.assertEqual(status, 202)
+        for _ in range(20):
+            _, row = self.get_json("/api/ai/job?id=" + start["job"])
+            if row.get("status") == "done":
+                self.assertEqual(row["result"]["provider"], "offline-demo")
+                return
+            time.sleep(0.05)
+        self.fail("mock AI job did not finish")
+
+
+if __name__ == "__main__":
+    unittest.main()

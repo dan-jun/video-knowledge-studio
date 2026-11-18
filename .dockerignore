@@ -1,0 +1,8 @@
+.git
+.github
+.venv
+__pycache__
+data/state
+data/cache
+.env
+*.log
