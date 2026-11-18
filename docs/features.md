@@ -1,6 +1,6 @@
 # Feature reference
 
-This file is the complete functional inventory for version 0.1.0.
+This file is the complete functional inventory for version 0.2.0.
 
 ## Three-pane workspace
 
@@ -61,6 +61,20 @@ learner accepts them, and accepted changes can be undone.
 - Options are accept, annotation only or reject.
 - Accepted revisions can be undone.
 - Side annotations can be inserted next to a stable note-block ID and deleted later.
+
+## Video production
+
+- The learning workspace links directly to `/production.html`.
+- Three modes share one project lifecycle: `remix`, `course` and `scipop`.
+- Projects expose an editable source-of-truth spec JSON and redistribution-safe templates.
+- Generation writes a storyboard and Manim scene module from the spec.
+- Mode-specific gates check duration, sources, chapters, citations, exercises, recap,
+  visual density, terminology, pronunciation risk and final artifact presence.
+- Rendering performs per-page TTS, Manim/slide composition, exact segment assembly,
+  subtitle generation and hard-subtitle burn-in.
+- Long jobs run in the background and stream bounded logs to the browser.
+- Final videos can be previewed and downloaded from the same page.
+- Production state lives under `data/production/`; it is ignored by Git and Docker build context.
 
 ## AI providers
 

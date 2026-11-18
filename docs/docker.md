@@ -7,6 +7,12 @@ Install Docker Desktop for Windows or macOS, or Docker Engine with the Compose
 plugin on Linux, before running the commands below. Docker Desktop requires a
 one-time graphical setup and cannot be silently installed by this repository.
 
+The default image also includes the optional video-production environment:
+Manim, Edge TTS, Cairo/Pango, FFmpeg and Noto CJK fonts. This makes the image
+larger than a viewer-only build, but enables all three production modes without
+a second manual dependency setup. Build a viewer-only image with
+`--build-arg VKS_INSTALL_PRODUCTION=0` when rendering is not needed.
+
 ## One command
 
 Windows:
@@ -76,6 +82,7 @@ without HTTPS, authentication review and a proper reverse proxy.
 
 - `packs/` is mounted read-only.
 - `./data` holds annotations, revisions, frame cache and the session secret.
+- `data/production/` holds generated storyboards, audio, slides and final videos.
 - Stopping or replacing the container keeps `./data`.
 - The bundled demo is included in the image.
 

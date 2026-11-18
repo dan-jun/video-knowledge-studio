@@ -6,12 +6,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     VKS_PORT=7870
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends \
+       build-essential \
+       ffmpeg \
+       fonts-noto-cjk \
+       libcairo2-dev \
+       libgl1 \
+       libpango1.0-dev \
+       pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . /app
-RUN python -m pip install --no-cache-dir .
+ARG VKS_INSTALL_PRODUCTION=1
+RUN if [ "$VKS_INSTALL_PRODUCTION" = "1" ]; then \
+      python -m pip install --no-cache-dir ".[production]"; \
+    else \
+      python -m pip install --no-cache-dir .; \
+    fi
 
 EXPOSE 7870
 VOLUME ["/app/data"]

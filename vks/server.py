@@ -20,6 +20,7 @@ from .ai import TutorService
 from .auth import Auth
 from .config import Settings, load_settings
 from .courses import CourseStore, safe_child
+from .production import ProductionError, ProductionService
 from .state import StateStore
 
 
@@ -30,6 +31,7 @@ class Runtime:
         self.state = StateStore(settings.data_dir)
         self.auth = Auth(settings.password, settings.session_secret)
         self.tutor = TutorService(settings)
+        self.production = ProductionService(settings.root, settings.data_dir)
         self.jobs: dict[str, dict[str, Any]] = {}
         self.jobs_lock = threading.Lock()
         self.cache = settings.data_dir / "cache"
@@ -121,7 +123,7 @@ RUNTIME: Runtime
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "VideoKnowledgeStudio/0.1"
+    server_version = "VideoKnowledgeStudio/0.2"
 
     def log_message(self, fmt, *args):
         print(f"[{time.strftime('%H:%M:%S')}] {fmt % args}", flush=True)
@@ -282,8 +284,30 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/reload":
                 RUNTIME.courses.reload()
                 return self._send_json({"ok": True, "projects": len(RUNTIME.courses.episodes)})
+            if path == "/api/production/create":
+                row = RUNTIME.production.create(
+                    str(body.get("mode") or ""),
+                    str(body.get("title") or ""),
+                    str(body.get("spec") or ""),
+                )
+                return self._send_json({"ok": True, "project": row})
+            if path == "/api/production/save":
+                row = RUNTIME.production.save_spec(
+                    str(body.get("id") or ""),
+                    body.get("spec"),
+                )
+                return self._send_json({"ok": True, "project": row})
+            if path == "/api/production/action":
+                job = RUNTIME.production.start_job(
+                    str(body.get("id") or ""),
+                    str(body.get("action") or ""),
+                )
+                return self._send_json({"ok": True, "job": job}, 202)
+            if path == "/api/production/cancel":
+                ok = RUNTIME.production.cancel(str(body.get("job") or ""))
+                return self._send_json({"ok": ok})
             return self._send_json({"ok": False, "error": "not found"}, 404)
-        except (ValueError, KeyError) as exc:
+        except (ValueError, KeyError, ProductionError) as exc:
             return self._send_json({"ok": False, "error": str(exc)}, 400)
 
     def do_GET(self):
@@ -294,12 +318,20 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/login.html":
             return self._send_file(RUNTIME.settings.web_dir / "login.html", "text/html; charset=utf-8")
         if path in {"/app.css", "/app.js", "/knowledge.css", "/knowledge.js",
-                    "/player.css", "/player.js", "/favicon.svg"}:
+                    "/player.css", "/player.js", "/production.css", "/production.js",
+                    "/favicon.svg"}:
             return self._send_file(RUNTIME.settings.web_dir / path.lstrip("/"))
         if path in {"/", "/index.html"}:
             if not self._guard():
                 return
             return self._send_file(RUNTIME.settings.web_dir / "index.html", "text/html; charset=utf-8")
+        if path == "/production.html":
+            if not self._guard():
+                return
+            return self._send_file(
+                RUNTIME.settings.web_dir / "production.html",
+                "text/html; charset=utf-8",
+            )
         if path.startswith("/media/") or path.startswith("/api/"):
             if not self._guard(api=True):
                 return
@@ -308,6 +340,30 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json(RUNTIME.courses.projects())
         if path == "/api/ai/status":
             return self._send_json({"ok": True, **RUNTIME.tutor.status()})
+        if path == "/api/production/modes":
+            payload = RUNTIME.production.modes_payload()
+            payload["templates"] = RUNTIME.production.templates()
+            return self._send_json(payload)
+        if path == "/api/production/template":
+            return self._send_json({
+                "ok": True,
+                "spec": RUNTIME.production.template((query.get("name") or [""])[0]),
+            })
+        if path == "/api/production/projects":
+            return self._send_json({
+                "ok": True,
+                "projects": RUNTIME.production.list_projects(),
+            })
+        if path == "/api/production/project":
+            return self._send_json({
+                "ok": True,
+                "project": RUNTIME.production.project((query.get("id") or [""])[0]),
+            })
+        if path == "/api/production/job":
+            row = RUNTIME.production.job((query.get("id") or [""])[0])
+            if not row:
+                return self._send_json({"ok": False, "error": "job not found"}, 404)
+            return self._send_json({"ok": True, "job": row})
         if path == "/api/ai/job":
             row = RUNTIME.job((query.get("id") or [""])[0])
             if not row:
@@ -328,6 +384,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/media/video":
             ep = RUNTIME.courses.get((query.get("id") or [""])[0])
             return self._send_file(ep["videoPath"] if ep else None, "video/mp4")
+        if path == "/media/production":
+            project = RUNTIME.production.project((query.get("id") or [""])[0])
+            video = (
+                RUNTIME.production.projects
+                / project["id"]
+                / "build"
+                / "final_hardsub.mp4"
+            )
+            return self._send_file(video if video.is_file() else None, "video/mp4")
         if path == "/media/frame":
             ep = RUNTIME.courses.get((query.get("id") or [""])[0])
             if not ep:

@@ -91,6 +91,23 @@ class ServerTests(unittest.TestCase):
             time.sleep(0.05)
         self.fail("mock AI job did not finish")
 
+    def test_production_modes_and_project_creation(self):
+        status, payload = self.get_json("/api/production/modes")
+        self.assertEqual(status, 200)
+        self.assertEqual({row["id"] for row in payload["modes"]}, {"remix", "course", "scipop"})
+        self.assertIn("dependencies", payload)
+        status, created = self.post_json("/api/production/create", {
+            "mode": "scipop",
+            "title": "Production smoke test",
+            "spec": "",
+        })
+        self.assertEqual(status, 200)
+        project = created["project"]
+        self.assertEqual(project["mode"], "scipop")
+        self.assertTrue(project["spec"]["pages"])
+        status, _ = self.get_json("/api/production/project?id=" + project["id"])
+        self.assertEqual(status, 200)
+
 
 if __name__ == "__main__":
     unittest.main()

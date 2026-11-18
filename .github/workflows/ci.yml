@@ -51,6 +51,18 @@ jobs:
           done
           docker logs vks-test
           exit 1
+      - name: Verify production mode UI and dependencies
+        run: |
+          docker exec vks-test python -c \
+            'import manim, edge_tts, matplotlib, fontTools; print("production dependencies OK")'
+          curl -fsS -c cookies.txt \
+            -H 'Content-Type: application/json' \
+            -d '{"password":"test-password"}' \
+            http://127.0.0.1:17870/api/login >/dev/null
+          curl -fsS -b cookies.txt http://127.0.0.1:17870/production.html \
+            | grep -q '视频制作'
+          curl -fsS -b cookies.txt http://127.0.0.1:17870/api/production/modes \
+            | grep -q '"scipop"'
       - name: Container logs on failure
         if: failure()
         run: docker logs vks-test || true

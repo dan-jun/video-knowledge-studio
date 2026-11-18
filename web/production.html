@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Local remix, course and scipop video production workspace.">
+<title>视频制作 · Video Knowledge Studio</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/production.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark">V</span>
+    <div><b>视频制作</b><small>REMIX · COURSE · SCIPOP</small></div>
+  </div>
+  <div class="top-actions">
+    <span id="dependency" class="badge">检查生产依赖…</span>
+    <a href="/">返回学习工作台</a>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="sidebar">
+    <section>
+      <h2>选择产线</h2>
+      <div id="modes" class="modes"><div class="muted">正在载入…</div></div>
+    </section>
+
+    <section>
+      <h2>新建项目</h2>
+      <label>模式
+        <select id="createMode"></select>
+      </label>
+      <label>标题
+        <input id="createTitle" maxlength="120" placeholder="例如：TCP 为什么需要三次握手">
+      </label>
+      <label>起始规格
+        <select id="template">
+          <option value="">空白骨架</option>
+        </select>
+      </label>
+      <button id="createBtn" class="primary">创建项目</button>
+    </section>
+
+    <section class="projects-section">
+      <div class="section-head"><h2>制作项目</h2><button id="refreshBtn" class="ghost">刷新</button></div>
+      <div id="projects" class="projects"><div class="muted">还没有制作项目</div></div>
+    </section>
+  </aside>
+
+  <section class="workspace">
+    <header class="workspace-head">
+      <div>
+        <small id="projectMode">未选择项目</small>
+        <h1 id="projectTitle">从左侧选择模式并创建项目</h1>
+      </div>
+      <div class="actions">
+        <button id="saveBtn" class="ghost" disabled>保存规格</button>
+        <button data-action="generate" class="primary" disabled>生成分镜</button>
+        <button data-action="gates" class="ghost" disabled>运行门禁</button>
+        <button data-action="render" class="amber" disabled>渲染成片</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="editor-card">
+        <div class="section-head">
+          <h2>规格 JSON</h2>
+          <span id="pageCount" class="muted">0 页</span>
+        </div>
+        <p class="help">这里编辑唯一源规格。生成分镜会写入 <code>storyboard.json</code>，渲染会产出带硬字幕 MP4。</p>
+        <textarea id="specEditor" spellcheck="false" placeholder="创建项目后在这里编辑规格…"></textarea>
+      </section>
+
+      <section class="status-card">
+        <div class="section-head">
+          <h2>生产状态</h2>
+          <span id="jobState" class="badge">待机</span>
+        </div>
+        <div id="stage" class="stage">尚未生成</div>
+        <pre id="logs">选择项目后，在这里查看生成、门禁和渲染日志。</pre>
+      </section>
+    </div>
+
+    <section id="videoCard" class="video-card" hidden>
+      <div class="section-head">
+        <h2>成片预览</h2>
+        <a id="downloadVideo" href="#">下载 MP4</a>
+      </div>
+      <video id="video" controls playsinline></video>
+    </section>
+  </section>
+</main>
+<script src="/production.js"></script>
+</body>
+</html>

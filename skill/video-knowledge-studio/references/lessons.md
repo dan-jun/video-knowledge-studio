@@ -52,3 +52,20 @@
 - **Verification:** Cross-check names, labels, duration ranges, source-count rules,
   chapter and practice constraints, and recap requirements against
   `tools/modes.py` in the production workspace.
+
+## 2026-11-18 — Migrating the production pipeline requires portability proofs
+
+- **Symptom:** The production toolchain initially depended on local drive letters,
+  Windows font files and an external virtual environment; its first migrated render
+  also failed on a font-constant naming mismatch.
+- **Root cause:** The original scripts were optimized for one workstation rather than
+  distribution, and a comment-only migration check cannot prove that Manim, TTS,
+  FFmpeg and subtitle rendering still compose.
+- **Fix:** Add a portable runtime module for FFmpeg, output roots and CJK fonts;
+  expose the three modes through `/production.html`; install optional production
+  dependencies in Docker; ignore generated projects and scenes; and add CI checks for
+  the production page and packages.
+- **Verification:** Render a two-page H.264/AAC project with Manim and Edge TTS,
+  confirm 1920×1080 output, numeric drift 0.0, inspect a mid-page frame, then repeat
+  generation and rendering inside the production Docker image and verify a ranged MP4
+  response.

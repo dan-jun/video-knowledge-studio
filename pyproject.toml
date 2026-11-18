@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "video-knowledge-studio"
-version = "0.1.0"
+version = "0.2.0"
 description = "Turn course videos into synchronized, evidence-linked knowledge notes."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,6 +26,16 @@ vks = "vks.server:main"
 [project.optional-dependencies]
 demo = ["Pillow>=10"]
 dev = ["Pillow>=10"]
+production = [
+  "manim>=0.18",
+  "edge-tts>=6.1",
+  "Pillow>=10",
+  "matplotlib>=3.8",
+  "fonttools>=4.50",
+  "numpy>=1.26",
+  "opencc-python-reimplemented>=0.1.7",
+]
+transcription = ["faster-whisper>=1.1"]
 
 [tool.setuptools]
 packages = ["vks"]

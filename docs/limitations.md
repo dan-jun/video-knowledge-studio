@@ -1,6 +1,6 @@
 # Current limitations
 
-These are real product boundaries for version 0.1.0.
+These are real product boundaries for version 0.2.0.
 
 ## Multi-user and cloud
 
@@ -14,6 +14,10 @@ These are real product boundaries for version 0.1.0.
 - The importer creates skeletons; it does not generate verified notes by itself.
 - Automated ASR, subtitle acquisition, key-frame selection, OCR and semantic review are
   not bundled as a one-click pipeline.
+- The `remix`, `course` and `scipop` renderers are integrated, but they require the
+  optional production environment and system FFmpeg/fonts outside Docker.
+- Long course renders can take much longer than they do to watch and are not
+  distributed across workers.
 - No built-in SRT, PDF, Obsidian or Anki exporter yet.
 - No automatic source-license verification.
 

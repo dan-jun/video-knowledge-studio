@@ -10,9 +10,13 @@ htmlcov/
 
 data/state/
 data/cache/
+data/production/
 data/.session_secret
 data/studio.pid
 *.log
+production/projects/
+production/.mathtex_cache/
+production/scenes/gen_*.py
 
 .DS_Store
 Thumbs.db

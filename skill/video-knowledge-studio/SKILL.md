@@ -15,6 +15,9 @@ Use this skill to:
 - install the app and Codex skill on the current computer;
 - start or stop the private local server;
 - import a folder of videos into a starter course pack;
+- open `/production.html` and use the bundled `remix`, `course` or `scipop`
+  production mode;
+- validate, render and preview locally generated videos;
 - configure local Codex, OpenAI-compatible or offline-demo AI;
 - diagnose startup, media, FFmpeg or course-pack problems.
 
@@ -63,6 +66,15 @@ Locate the repository root: the directory containing `pyproject.toml`, `vks/`,
    python scripts/bootstrap.py stop
    ```
 
+7. For video production, install the optional environment and open the production page:
+
+   ```text
+   python -m pip install -e ".[production]"
+   ```
+
+   Then open `http://127.0.0.1:<actual-port>/production.html`. The default Docker
+   image already includes production dependencies.
+
 The bootstrap chooses another free local port if 7870 is occupied. Always report the
 URL it actually returns.
 
@@ -84,7 +96,11 @@ After an install or code change:
 python -m unittest discover -s tests -v
 node --check web/app.js
 node --check web/knowledge.js
+node --check web/production.js
 ```
+
+For production changes, also render at least one short project and inspect its output
+with `ffprobe` and a mid-page frame.
 
 For startup, permission, AI or course-pack failures, read
 [references/operations.md](references/operations.md).

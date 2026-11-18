@@ -1,0 +1,200 @@
+# 专业术语读音表：TTS 容易念错的缩写/专名
+# 格式：术语 | 推荐口播写法（写进 narration 里，让 TTS 读对）
+# 规则：narration 里出现「术语」原样时，term_reading 检查会要求它已登记
+CUDA | CUDA
+GPU | GPU
+CPU | CPU
+vLLM | v LLM
+LLM | LLM
+KV | KV
+QKV | Q K V
+MoE | MoE
+RoPE | RoPE
+HBM | H B M
+SM | SM
+GEMM | GEMM
+SGEMM | S GEMM
+FLOPS | flops
+FP16 | FP 十六
+FP32 | FP 三十二
+BF16 | BF 十六
+INT8 | int 八
+INT4 | int 四
+TensorRT | Tensor RT
+FlashAttention | Flash Attention
+PagedAttention | Paged Attention
+NVENC | NV ENC
+PCIe | PCI e
+TPU | TPU
+Transformer | Transformer
+BERT | BERT
+GPT | GPT
+API | API
+JSON | JSON
+YAML | YAML
+HTTP | HTTP
+TCP | TCP
+UDP | UDP
+# ── 2026-11-15 批量补登（按全库出现频次）──────────────────
+VGG | VGG
+GB | GB
+KB | KB
+MB | MB
+CUTLASS | CUTLASS
+AWQ | A W Q
+RAG | RAG
+W8A8 | W 八 A 八
+AI | AI
+GPTQ | G P T Q
+RNN | R N N
+PTX | P T X
+L2 | L 二
+L1 | L 一
+FP8 | FP 八
+P-EAGLE | P EAGLE
+EAGLE | EAGLE
+SGD | S G D
+MNIST | MNIST
+NAS | NAS
+W4A16 | W 四 A 十六
+PDF | PDF
+B200 | B 两百
+XOR | XOR
+ID | ID
+SYN | SYN
+ACK | ACK
+BA | BA
+AWS | AWS
+Adam | Adam
+BatchNorm | Batch Norm
+AutoML | Auto ML
+SSD | SSD
+LSTM | L S T M
+CNN |C N N
+NLP | N L P
+RL | R L
+YOLO | YOLO
+K8s | K 八 s
+AB | A B
+p1x | p1 乘 x
+p2y | p2 乘 y
+p3z | p3 乘 z
+BP | 反向传播
+V2 | V 二
+V3 | V 三
+V4 | V 四
+b1 | b 一
+b2 | b 二
+b3 | b 三
+b4 | b 四
+b5 | b 五
+relu | relu
+padding | padding
+l2_penalty | l2 penalty
+SIFT | SIFT
+SVM | S V M
+AlexNet | Alex Net
+LeNet | Le Net
+ReLU | ReLU
+ImageNet | Image Net
+Sequential | Sequential
+dropout | dropout
+CSV | CSV
+RGB | R G B
+float32 | float 三十二
+float | float
+dim | dim
+cat | cat
+arange | a range
+reshape | re shape
+numel | num el
+pandas | pandas
+numpy | numpy
+torch | torch
+NaN | NaN
+item | item
+id | id
+zeros | zeros
+ones | ones
+NCHW | N C H W
+NHWC | N H W C
+BLAS | BLAS
+im2col | im 二 col
+AdaptiveAvgPool2d | Adaptive Avg Pool 二 d
+VGG11 | VGG 十一
+VGG13 | VGG 十三
+VGG16 | VGG 十六
+VGG19 | VGG 十九
+Conv2d | Conv 二 d
+MaxPool2d | Max Pool 二 d
+NiN | NiN
+Fashion-MNIST | Fashion MNIST
+BatchNorm2d | Batch Norm 二 d
+moving_mean | moving mean
+moving_var | moving var
+gamma | gamma
+beta | beta
+use_1x1conv | use 一乘一 conv
+resnet_block | resnet block
+first_block | first block
+strides | strides
+LayerNorm | Layer Norm
+GroupNorm | Group Norm
+ResNet18 | ResNet 十八
+ResNet50 | ResNet 五十
+bias | bias
+epoch | epoch
+BN | B N
+GRU | G R U
+seq2seq | seq to seq
+Kaggle | Kaggle
+Inception | Inception
+ResNet | ResNet
+state_dict | state dict
+named_parameters | named parameters
+add_module | add module
+nn.Parameter | Parameter
+Parameter | Parameter
+OrderedDict | Ordered Dict
+apply | apply
+load_state_dict | load state dict
+requires_grad | requires grad
+Module | Module
+REPL | R E P L
+Linear | Linear
+N(0, 0.01) | N 零 零点零一
+Xavier | Xavier
+tanh | tanh
+He | He
+Leaky ReLU | Leaky ReLU
+6e-4 | 六乘十的负四次方
+6e4 | 六乘十的四次方
+1.5^100 | 一点五的一百次方
+0.8^100 | 零点八的一百次方
+F1 | F one
+Huber | Huber
+dense | dense
+mini-batch | mini batch
+batch | batch
+MLP | M L P
+W1 | W one
+W2 | W two
+Flatten | Flatten
+init_weights | init weights
+W1x | W 一 x
+x1 | x 一
+x2 | x 二
+Top-5 | Top five
+softmax | softmax
+log | log
+Top-1 | Top one
+GAE | G A E
+RLVR | R L V R
+MDP | M D P
+TD | T D
+KV | K V
+PPO | P P O
+KL | K L
+CSP | C S P
+CCF | C C F
+DP | D P
