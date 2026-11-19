@@ -37,7 +37,9 @@ class WorkflowTests(unittest.TestCase):
     def test_review_checkpoints_and_persistence(self):
         flow = self.flow.create(self.project)
         with patch.object(self.production, "dependencies", return_value={"ready": True, "missing": []}), \
-             patch.object(self.production, "_command", return_value=[sys.executable, "-c", "print('ok')"]):
+             patch.object(self.production, "_command", return_value=[sys.executable, "-c", "print('ok')"]), \
+             patch("vks.workflows.shutil.which", return_value="ffprobe"), \
+             patch("vks.workflows.subprocess.run", return_value=type("ProbeResult", (), {"returncode": 0, "stdout": "1.0"})()):
             for action in ("generate", "gates", "render"):
                 if action == "generate":
                     storyboard = self.production._project(self.project) / "storyboard.json"

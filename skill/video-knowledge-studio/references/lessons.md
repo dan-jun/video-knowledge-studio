@@ -1,5 +1,16 @@
 # Lessons
 
+## 2026-11-19 — Keep unit tests independent of optional media binaries
+
+- **Symptom:** The workflow success test passed locally but failed in GitHub CI after
+  rendering, while the Docker build and service health checks passed.
+- **Root cause:** A unit test called the optional system `ffprobe` executable directly;
+  the CI test runner does not promise production media tools.
+- **Fix:** Mock the probe lookup and successful probe result in the workflow unit test;
+  reserve real FFmpeg/ffprobe checks for environments that explicitly install them.
+- **Verification:** Run the complete suite in a clean Python 3.12 container without
+  FFmpeg/ffprobe, as well as the normal local suite and plugin sync check.
+
 ## 2026-11-19 — Persist production checkpoints and use UTF-8 for Agent stdio
 
 - **Symptom:** Production jobs disappeared on restart, cancellation left child
