@@ -26,6 +26,8 @@ production/promo/recordings/
 production/promo/recordings-en/
 production/promo/render/
 production/promo/render_en/
+production/promo/render-motion/
+production/promo/build-motion/
 production/promo/media_test/
 production/promo/music/
 

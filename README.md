@@ -13,17 +13,17 @@ ask questions tied to the relevant moment.
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
 [![Container](https://img.shields.io/badge/GHCR-video--knowledge--studio-2496ED?logo=docker&logoColor=white)](https://github.com/dan-jun/video-knowledge-studio/pkgs/container/video-knowledge-studio)
 
-[Watch the English demo](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.8/video-knowledge-studio-product-demo-en.mp4?download=1) · [Why this is different](#why-another-video-tool-is-not-enough) · [Demand-driven learning](#demand-driven-learning) · [Learning workspace](#learning-workspace) · [Video production](#video-production) · [Quick start](#quick-start)
+[Watch the English demo](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.8/video-knowledge-studio-product-demo-en-motion.mp4?download=1) · [Why this is different](#why-another-video-tool-is-not-enough) · [Demand-driven learning](#demand-driven-learning) · [Learning workspace](#learning-workspace) · [Video production](#video-production) · [Quick start](#quick-start)
 
 > **Local-first:** course packs, production projects, annotations, and revision
 > history stay on your machine unless you explicitly send a question to a model.
 
-[![Play the Video Knowledge Studio demo](docs/images/product-demo-poster-en.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.8/video-knowledge-studio-product-demo-en.mp4?download=1)
+[![Play the Video Knowledge Studio demo](docs/images/product-demo-poster-en.png)](https://github.com/dan-jun/video-knowledge-studio/releases/download/v0.2.8/video-knowledge-studio-product-demo-en-motion.mp4?download=1)
 
-<sub>The English launch film follows a realistic Raft task through source discovery, a
-grounded learning workspace, evidence-aware AI, the three production modes, quality
-gates, and a generated lesson. Waiting states are cut out, and enlarged interface
-details use stable screenshots rather than moving zooms.</sub>
+<sub>The English demo follows a realistic Raft task through assisted planning, a
+learning workspace, contextual AI, a knowledge map, production modes, and an example
+lesson. Animated diagrams alternate with real product footage; waiting states are cut
+out and interface details use stable screenshots.</sub>
 
 ![The end-to-end workflow](docs/images/workflow-overview-en.svg)
 
