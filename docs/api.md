@@ -110,6 +110,26 @@ previous block text and supports undo.
 
 Reloads course packs without restarting the process.
 
+## Reviewable production workflows
+
+A workflow runs a reviewed production spec through `generate`, `gates`, and
+`render`. Each successful step pauses for review; `resume` starts the next step.
+Search, transcription, source review and note creation are not included. State and
+completed step logs are saved under `data/production/workflows/`.
+
+- `POST /api/workflows/create`: `{"project":"<project-id>"}` creates a workflow.
+- `GET /api/workflows?project=<project-id>` lists workflows.
+- `GET /api/workflows/item?id=<workflow-id>` reads status and steps.
+- `POST /api/workflows/resume`: `{"id":"<workflow-id>"}` starts or retries the next step.
+- `POST /api/workflows/cancel`: `{"id":"<workflow-id>"}` stops the current process tree.
+- `POST /api/workflows/abandon`: `{"id":"<workflow-id>"}` ends an idle workflow so its spec can be changed.
+- After a server restart interrupts a running step, inspect and stop the old process
+  tree. Only then send `POST /api/workflows/acknowledge-stopped` with
+  `{"id":"<workflow-id>","confirmed":true}` and create a new workflow. The stored
+  `activePid` is a diagnostic hint; process IDs can be reused and must not be killed
+  blindly. A spec or generated storyboard change requires a new workflow. Render success includes an ffprobe
+  playback check, but visual and source review remain manual.
+
 ## Authentication endpoints
 
 - `POST /api/login` with `{"password":"..."}` returns a token and cookie.

@@ -22,6 +22,7 @@ from .config import Settings, load_settings
 from .courses import CourseStore, safe_child
 from .production import ProductionError, ProductionService
 from .state import StateStore
+from .workflows import WorkflowService
 
 
 class Runtime:
@@ -32,6 +33,7 @@ class Runtime:
         self.auth = Auth(settings.password, settings.session_secret)
         self.tutor = TutorService(settings)
         self.production = ProductionService(settings.root, settings.data_dir)
+        self.workflows = WorkflowService(self.production, settings.data_dir)
         self.jobs: dict[str, dict[str, Any]] = {}
         self.jobs_lock = threading.Lock()
         self.cache = settings.data_dir / "cache"
@@ -307,6 +309,18 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/production/cancel":
                 ok = RUNTIME.production.cancel(str(body.get("job") or ""))
                 return self._send_json({"ok": ok})
+            if path == "/api/workflows/create":
+                return self._send_json({"ok": True, "workflow": RUNTIME.workflows.create(str(body.get("project") or ""))}, 201)
+            if path == "/api/workflows/resume":
+                return self._send_json({"ok": True, "workflow": RUNTIME.workflows.resume(str(body.get("id") or ""))}, 202)
+            if path == "/api/workflows/cancel":
+                return self._send_json({"ok": True, "workflow": RUNTIME.workflows.cancel(str(body.get("id") or ""))}, 202)
+            if path == "/api/workflows/abandon":
+                return self._send_json({"ok": True, "workflow": RUNTIME.workflows.abandon(str(body.get("id") or ""))})
+            if path == "/api/workflows/acknowledge-stopped":
+                if body.get("confirmed") is not True:
+                    raise ProductionError("explicit confirmation is required")
+                return self._send_json({"ok": True, "workflow": RUNTIME.workflows.acknowledge_stopped(str(body.get("id") or ""))})
             return self._send_json({"ok": False, "error": "not found"}, 404)
         except (ValueError, KeyError, ProductionError) as exc:
             return self._send_json({"ok": False, "error": str(exc)}, 400)
@@ -365,6 +379,13 @@ class Handler(BaseHTTPRequestHandler):
             if not row:
                 return self._send_json({"ok": False, "error": "job not found"}, 404)
             return self._send_json({"ok": True, "job": row})
+        if path == "/api/workflows":
+            return self._send_json({"ok": True, "workflows": RUNTIME.workflows.list((query.get("project") or [""])[0])})
+        if path == "/api/workflows/item":
+            row = RUNTIME.workflows.get((query.get("id") or [""])[0])
+            if not row:
+                return self._send_json({"ok": False, "error": "workflow not found"}, 404)
+            return self._send_json({"ok": True, "workflow": row})
         if path == "/api/ai/job":
             row = RUNTIME.job((query.get("id") or [""])[0])
             if not row:

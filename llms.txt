@@ -1,0 +1,17 @@
+# Video Knowledge Studio
+
+> Local video learning workspace and Agent-assisted animation production. Search
+> Bilibili/YouTube with external tools, organize sources, render from a reviewed
+> spec, and study timestamped notes with contextual AI questions.
+
+- [README](README.md): installation, supported workflow, and current limits.
+- [Chinese quick start](docs/quickstart-zh.md): local setup and first steps.
+- [Agent MCP bridge](docs/agent-mcp.md): named tools and local connection details.
+- [HTTP API](docs/api.md): application endpoints and workflow recovery.
+- [Course pack format](docs/course-pack.md): required data and evidence structure.
+- [Limitations](docs/limitations.md): features not implemented and operational limits.
+
+Optional `search_sources` uses yt-dlp and may be rejected by the platform. Do not
+claim one-click transcription, sourced spec generation, or verified
+note creation: these require external tools or human work. The production workflow
+begins with a reviewed spec and pauses between stages.

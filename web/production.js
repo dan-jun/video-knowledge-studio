@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const S = { modes: [], templates: [], projects: [], current: null, job: null };
+const S = { modes: [], templates: [], projects: [], current: null, job: null, workflow: null, workflowPoll: null };
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -101,6 +101,10 @@ async function loadProject(id) {
     updatePageCount();
     setActions(true);
     renderProjects();
+    const workflows = await api("/api/workflows?project=" + encodeURIComponent(id));
+    S.workflow = workflows.workflows[0] || null;
+    renderWorkflow();
+    if (S.workflow && ["running", "cancelling"].includes(S.workflow.status)) pollWorkflow(S.workflow.id);
   } catch (error) {
     $("logs").textContent = error.message;
   }
@@ -113,7 +117,7 @@ async function loadProjects() {
 }
 
 async function saveSpec() {
-  if (!S.current) return;
+  if (!S.current) return false;
   try {
     const spec = JSON.parse($("specEditor").value);
     const data = await api("/api/production/save", {
@@ -123,8 +127,10 @@ async function saveSpec() {
     S.current = data.project;
     $("stage").textContent = "规格已保存。下一步：生成分镜。";
     await loadProjects();
+    return true;
   } catch (error) {
     $("logs").textContent = "保存失败：" + error.message;
+    return false;
   }
 }
 
@@ -176,7 +182,7 @@ async function pollJob(id) {
 
 async function runAction(action) {
   if (!S.current) return;
-  if (action === "generate") await saveSpec();
+  if (action === "generate" && !await saveSpec()) return;
   try {
     const data = await api("/api/production/action", {
       method: "POST",
@@ -191,10 +197,107 @@ async function runAction(action) {
   }
 }
 
+function renderWorkflow() {
+  const flow = S.workflow;
+  const running = flow && ["running", "cancelling"].includes(flow.status);
+  const blocked = flow && ["running", "cancelling", "interrupted", "waiting_review"].includes(flow.status);
+  setActions(!blocked);
+  $("workflowStart").disabled = !S.current || !!blocked;
+  $("workflowResume").disabled = !flow || running || ["done", "abandoned", "interrupted"].includes(flow.status);
+  $("workflowCancel").disabled = !flow || flow.status !== "running";
+  $("workflowAbandon").disabled = !flow || !["ready", "waiting_review", "failed", "cancelled"].includes(flow.status);
+  $("workflowConfirmStopped").disabled = !flow || flow.status !== "interrupted";
+  if (!flow) {
+    $("workflowStatus").textContent = "流程依次执行生成分镜、检查、渲染；每步完成后等待确认。来源搜索和笔记生成仍需外部协助。";
+    return;
+  }
+  const zhStatus = {ready:"待开始", running:"执行中", cancelling:"正在取消", waiting_review:"等待检查确认", done:"已完成", failed:"失败", cancelled:"已取消", interrupted:"服务中断", abandoned:"已结束", pending:"待执行"};
+  const zhAction = {generate:"生成分镜", gates:"检查", render:"渲染"};
+  const actionNames = {generate:"生成分镜", gates:"检查", render:"渲染"};
+  const current = flow.steps.find(s => s.status === "running") || [...flow.steps].reverse().find(s => s.status !== "pending");
+  const zhMessage = flow.status === "waiting_review" ? `${actionNames[current?.action] || "当前步骤"}完成，请检查后继续。`
+    : flow.status === "interrupted" ? `服务中断，请先检查并停止旧进程及其子进程（进程号：${flow.activePid || "未知"}），再确认。`
+    : flow.status === "done" ? "渲染已完成，请检查播放、画面和来源。"
+    : flow.message;
+  $("workflowStatus").textContent = window.VKS_LANG === "en"
+    ? `${flow.status}: ${flow.steps.map(s => `${s.action}=${s.status}`).join(" → ")} · ${flow.message}`
+    : `${zhStatus[flow.status] || flow.status}：${flow.steps.map(s => `${zhAction[s.action] || s.action}=${zhStatus[s.status] || s.status}`).join(" → ")} · ${zhMessage}`;
+  const latest = [...flow.steps].reverse().find(s => s.logs?.length);
+  if (flow.status === "running") {
+    const current = flow.steps.find(s => s.status === "running");
+    if (current?.job) api("/api/production/job?id=" + encodeURIComponent(current.job))
+      .then(data => { if (S.workflow?.id === flow.id) $("logs").textContent = data.job.logs.join("\n"); }).catch(() => {});
+  } else if (latest) $("logs").textContent = latest.logs.join("\n");
+}
+
+async function pollWorkflow(id) {
+  if (S.workflowPoll === id) return;
+  S.workflowPoll = id;
+  try {
+    while (S.workflow?.id === id) {
+      const data = await api("/api/workflows/item?id=" + encodeURIComponent(id));
+      if (S.workflow?.id !== id) break;
+      S.workflow = data.workflow;
+      renderWorkflow();
+      if (!["running", "cancelling"].includes(S.workflow.status)) {
+        if (S.current?.id === S.workflow.project) {
+          const project = await api("/api/production/project?id=" + encodeURIComponent(S.workflow.project));
+          if (S.current?.id === S.workflow.project) {
+            S.current = project.project;
+            $("stage").textContent = `阶段：${S.current.stage} · 分镜：${S.current.hasStoryboard ? "已生成" : "未生成"} · 成片：${S.current.hasVideo ? "已生成" : "未生成"}`;
+            if (S.current.hasVideo) {
+              $("videoCard").hidden = false;
+              $("video").src = "/media/production?id=" + encodeURIComponent(S.current.id) + "&v=" + Date.now();
+              $("downloadVideo").href = $("video").src;
+            }
+            await loadProjects();
+          }
+        }
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } catch (error) { $("logs").textContent = error.message; }
+  finally { if (S.workflowPoll === id) S.workflowPoll = null; }
+}
+
+async function workflowAction(action) {
+  try {
+    if (action === "create") {
+      if (!await saveSpec()) return;
+      const data = await api("/api/workflows/create", {method: "POST", body: JSON.stringify({project: S.current.id})});
+      S.workflow = data.workflow;
+      action = "resume";
+    }
+    if (action === "resume" && S.workflow?.steps.find(step => step.status !== "done")?.action === "render") {
+      const message = window.VKS_LANG === "en"
+        ? "Rendering may take significant time and may use an online voice service or a configured paid provider. Continue?"
+        : "渲染可能耗时较长，并可能使用在线配音或已配置的付费服务。是否继续？";
+      if (!confirm(message)) return;
+    }
+    const data = await api("/api/workflows/" + action, {method: "POST", body: JSON.stringify({id: S.workflow.id})});
+    S.workflow = data.workflow;
+    renderWorkflow();
+    pollWorkflow(S.workflow.id);
+  } catch (error) { $("logs").textContent = error.message; }
+}
+
 async function boot() {
   $("saveBtn").onclick = saveSpec;
   $("createBtn").onclick = createProject;
   $("refreshBtn").onclick = loadProjects;
+  $("workflowStart").onclick = () => workflowAction("create");
+  $("workflowResume").onclick = () => workflowAction("resume");
+  $("workflowCancel").onclick = () => workflowAction("cancel");
+  $("workflowAbandon").onclick = () => workflowAction("abandon");
+  $("workflowConfirmStopped").onclick = async () => {
+    if (!S.workflow || !confirm(`请先检查并停止之前的制作进程及其子进程（记录的进程号：${S.workflow.activePid || "未知"}）。确定它们已经停止吗？`)) return;
+    try {
+      const data = await api("/api/workflows/acknowledge-stopped", {method: "POST", body: JSON.stringify({id: S.workflow.id, confirmed: true})});
+      S.workflow = data.workflow;
+      renderWorkflow();
+    } catch (error) { $("logs").textContent = error.message; }
+  };
   $("specEditor").addEventListener("input", updatePageCount);
   document.querySelectorAll("[data-action]").forEach((button) => {
     button.onclick = () => runAction(button.dataset.action);

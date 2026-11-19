@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -102,9 +105,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual({row["id"] for row in payload["modes"]}, {"remix", "course", "scipop"})
         self.assertIn("dependencies", payload)
         status, created = self.post_json("/api/production/create", {
-            "mode": "scipop",
-            "title": "Production smoke test",
-            "spec": "",
+            "mode": "scipop", "title": "Production smoke test", "spec": "",
         })
         self.assertEqual(status, 200)
         project = created["project"]
@@ -112,6 +113,34 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(project["spec"]["pages"])
         status, _ = self.get_json("/api/production/project?id=" + project["id"])
         self.assertEqual(status, 200)
+
+    def test_workflow_http_creation_and_resume(self):
+        _, created = self.post_json("/api/production/create", {"mode": "scipop", "title": "HTTP workflow", "spec": ""})
+        status, result = self.post_json("/api/workflows/create", {"project": created["project"]["id"]})
+        self.assertEqual(status, 201)
+        workflow = result["workflow"]
+        self.assertEqual(workflow["status"], "ready")
+        _, fetched = self.get_json("/api/workflows/item?id=" + workflow["id"])
+        self.assertEqual(fetched["workflow"]["id"], workflow["id"])
+        status, started = self.post_json("/api/workflows/resume", {"id": workflow["id"]})
+        self.assertEqual(status, 202)
+        for _ in range(100):
+            _, state = self.get_json("/api/workflows/item?id=" + workflow["id"])
+            if state["workflow"]["status"] != "running":
+                self.assertEqual(state["workflow"]["status"], "waiting_review")
+                self.assertEqual(state["workflow"]["steps"][0]["status"], "done")
+                return
+            time.sleep(.05)
+        self.fail("generate step did not finish")
+
+    def test_mcp_bridge_calls_real_http_service(self):
+        env = dict(os.environ, VKS_MCP_URL=self.base)
+        request = {"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "list_courses", "arguments": {}}}
+        result = subprocess.run([sys.executable, "-m", "vks.mcp_server"], input=json.dumps(request) + "\n", text=True, encoding="utf-8", capture_output=True, env=env, check=True, timeout=10)
+        response = json.loads(result.stdout)
+        self.assertFalse(response["result"]["isError"])
+        episodes = json.loads(response["result"]["content"][0]["text"])
+        self.assertIn("demo-e01", {item["id"] for item in episodes})
 
 
 if __name__ == "__main__":

@@ -8,6 +8,11 @@ tools for multi-step tasks), select sources and
 build a learning path; then use the workspace to study videos alongside notes and
 ask questions tied to the relevant moment.
 
+**For people and Agents:** find Bilibili or YouTube learning sources with external
+search tools, organize multiple sources into an animation plan, render a lesson,
+and study timestamped notes with contextual questions. [Chinese quick start](docs/quickstart-zh.md)
+· [Agent MCP tools](docs/agent-mcp.md) · [Capability boundaries](#what-works-today)
+
 [![CI](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.2.8-56d8f5)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-73e3a5)](LICENSE)
@@ -47,6 +52,21 @@ assumes the plain-language meaning shown here.
 | AI tutor | A model request supplied with the selected note, nearby transcript, and current frame | "Why does this boundary hold?" | This table | Know / Unsure / Need work |
 | Local-first | The default architecture keeps private course data on the user's computer | The app listens on `127.0.0.1` | This table | Know / Unsure / Need work |
 | FFmpeg / ffprobe | Tools for working with video and reading its metadata | Extract a frame / read a video's duration | Quick start / Import your own course | Know / Unsure / Need work |
+| yt-dlp | An optional tool for retrieving video-site metadata | Find video titles and links | What works today | Know / Unsure / Need work |
+
+## What works today
+
+| Task | Current status |
+| --- | --- |
+| Play local courses, timed notes and contextual AI questions | Built into the app; a configured model is required for real AI answers |
+| Generate, check and render from a reviewed production spec | Built in; the persistent workflow pauses between stages for review |
+| Search Bilibili / YouTube | Optional Agent tool using `yt-dlp`; platform access can fail and results need review |
+| Select sources and author a sourced spec | Requires an Agent or a person |
+| Import videos into a course pack | Creates placeholder notes; transcripts and evidence still need preparation |
+| Input a topic and automatically produce a verified course and notes | Not implemented |
+
+The [MCP bridge](docs/agent-mcp.md) exposes existing course, question, production and
+workflow operations and optional metadata search; it does not download or verify sources.
 
 ## Why another video tool is not enough
 
@@ -177,6 +197,12 @@ The following sequence is generated and rendered by the project itself:
 
 Generated scenes, audio, caches, and final video files live under `data/production/`.
 They are excluded from Git and do not overwrite existing courses or annotations.
+
+The production page can run a persistent, reviewable workflow: generate a storyboard,
+review it, run checks, review again, and render. A failed or cancelled stage can be
+retried. After a server restart interrupts a running process, inspect and stop the old
+process tree before confirming it stopped and starting a new workflow. This is a
+production workflow from an existing spec, not automatic source-to-course creation.
 
 See [the production-mode guide](docs/video-production.md) for the complete workflow.
 
@@ -383,8 +409,9 @@ page and dependencies.
 <summary><strong>Roadmap (not implemented yet)</strong></summary>
 
 - Automatic learning plans, time budgets, and prerequisite graphs
-- Built-in Bilibili / YouTube search, caption collection, and source scoring
+- In-app Bilibili / YouTube search, caption collection, and source scoring
 - Automatic production-mode selection and initial spec generation
+- Persistent production workflow recovery without manual process inspection after a server restart
 - Anki, spaced repetition, and learning analytics
 - Streaming AI answers
 - SRT, PDF, and Obsidian export

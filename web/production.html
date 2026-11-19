@@ -79,6 +79,14 @@
           <span id="jobState" class="badge">待机</span>
         </div>
         <div id="stage" class="stage">尚未生成</div>
+        <div class="actions">
+          <button id="workflowStart" class="primary" disabled>创建并开始流程</button>
+          <button id="workflowResume" class="ghost" disabled>继续下一步 / 重试</button>
+          <button id="workflowCancel" class="ghost" disabled>取消当前步骤</button>
+          <button id="workflowAbandon" class="ghost" disabled>结束流程以修改规格</button>
+          <button id="workflowConfirmStopped" class="ghost" disabled>确认旧进程已停止</button>
+        </div>
+        <p id="workflowStatus" class="help">流程依次执行生成分镜、检查、渲染；每步完成后等待确认。来源搜索和笔记生成仍需外部协助。</p>
         <pre id="logs">选择项目后，在这里查看生成、门禁和渲染日志。</pre>
       </section>
     </div>

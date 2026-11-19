@@ -1,5 +1,61 @@
 # Lessons
 
+## 2026-11-19 — Persist production checkpoints and use UTF-8 for Agent stdio
+
+- **Symptom:** Production jobs disappeared on restart, cancellation left child
+  processes alive, and a Windows MCP response containing Chinese text failed UTF-8
+  decoding in an actual client.
+- **Root cause:** Job state existed only in memory, termination targeted the parent
+  alone, and Windows redirected standard output used the system code page.
+- **Fix:** Save reviewable stage checkpoints, terminate the process tree, mark
+  restart-interrupted steps explicitly, and configure MCP stdio as UTF-8.
+- **Verification:** Exercise real HTTP and stdio calls, cancel a subprocess with a
+  child, restart the service state, retry a failed step, and run the test suite and
+  plugin synchronization check.
+
+## 2026-11-19 — Do not accept stale or unverified renders
+
+- **Symptom:** A successful exit code or pre-existing video could make a failed
+  production run appear complete.
+- **Root cause:** Some commands report failure in structured output even when the
+  process exits normally; output files can survive earlier attempts.
+- **Fix:** Require an explicit successful command result and a newly written,
+  ffprobe-readable video before completing a render stage.
+- **Verification:** Automated tests exercise a zero-exit command with an old video,
+  successful fresh output, and full workflow checkpoint persistence.
+
+## 2026-11-19 — Bind review checkpoints to their actual inputs
+
+- **Symptom:** A reviewed check could be reused after the storyboard or spec changed.
+- **Root cause:** A workflow stored only step statuses, not the files that were checked.
+- **Fix:** Record hashes for the spec and generated storyboard and require a new
+  workflow if either changes; reject resuming an older workflow after a newer one exists.
+- **Verification:** Tests edit the storyboard after review and confirm resume is
+  refused; the normal generate-check-render checkpoint sequence still succeeds.
+
+## 2026-11-19 — Treat platform search failures as platform failures
+
+- **Symptom:** A Bilibili search failed with HTTP 412 while the same metadata-only
+  search approach returned YouTube results.
+- **Root cause:** Platform access can reject automated requests even when the local
+  search executable is installed and working.
+- **Fix:** Expose optional metadata search with a clear failure response; do not use
+  fabricated results or bypass platform access controls.
+- **Verification:** Live YouTube search returned results; Bilibili 412 was reported,
+  and tests cover failed searches, unverified metadata and URL filtering.
+
+## 2026-11-19 — Preserve incomplete Bilibili search results
+
+- **Symptom:** A successful Bilibili flat search appeared empty despite returning
+  video links; another query returned HTTP 412.
+- **Root cause:** The extractor returned bare HTTP Bilibili URLs with no title,
+  while the initial filter accepted only HTTPS.
+- **Fix:** Upgrade known Bilibili URLs to HTTPS and keep missing metadata explicitly
+  empty; preserve platform errors without inventing titles or results.
+- **Verification:** A captured real response contained HTTP video URLs; automated
+  tests cover normalization and unknown fields. A live Agent call correctly reported
+  a subsequent HTTP 412 without returning invented results.
+
 ## 2026-11-19 — Verify import and AI setup against actual defaults
 
 - **Symptom:** The README's import example did not make an external pack discoverable,

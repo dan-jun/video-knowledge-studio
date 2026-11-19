@@ -25,7 +25,9 @@ These are real product boundaries for version 0.2.8.
 
 - AI output can be wrong; uncertainty must remain visible.
 - Vision quality depends on the configured model and attached frame.
-- Jobs are kept in memory and disappear after process restart.
+- AI question jobs are kept in memory and disappear after process restart. Production
+  workflow checkpoints persist, but an active step is marked interrupted after restart;
+  it is not automatically reattached or restarted.
 - Answers are returned after job completion; token streaming is not implemented.
 - No cost estimator or hard per-user AI budget.
 
@@ -33,7 +35,8 @@ These are real product boundaries for version 0.2.8.
 
 - State files are not encrypted at rest; rely on operating-system disk protection.
 - No database migration layer; state is JSON on disk.
-- No built-in background job persistence or distributed workers.
+- Production workflow state persists locally; there are no distributed workers or
+  automatic continuation of a subprocess after a server restart.
 - No rate limiting or comprehensive audit trail.
 - Public deployment requires an additional authenticated HTTPS reverse proxy.
 - The launcher tries the published registry image and falls back to a local build if

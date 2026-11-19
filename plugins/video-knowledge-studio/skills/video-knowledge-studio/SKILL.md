@@ -18,6 +18,7 @@ Use this skill to:
 - open `/production.html` and use the bundled `remix`, `course` or `scipop`
   production mode;
 - validate, render and preview locally generated videos;
+- use the local MCP bridge for course, production and workflow operations;
 - configure local Codex, OpenAI-compatible or offline-demo AI;
 - diagnose startup, media, FFmpeg or course-pack problems.
 
@@ -108,3 +109,10 @@ with `ffprobe` and a mid-page frame.
 
 For startup, permission, AI or course-pack failures, read
 [references/operations.md](references/operations.md).
+
+The production workflow starts from a reviewed spec, saves stage checkpoints and
+pauses for review after generation and checks. It does not search or transcribe
+sources. After a server restart interrupts a step, inspect and stop the previous
+process tree before explicitly confirming it stopped; never kill a saved PID blindly.
+See `docs/agent-mcp.md` and `docs/api.md` in the repository for the MCP bridge and
+workflow recovery.

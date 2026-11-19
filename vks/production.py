@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -210,10 +211,16 @@ class ProductionService:
         path = self._project(project_id)
         if not isinstance(spec, dict):
             raise ProductionError("spec must be an object")
-        spec["topic"] = project_id
-        (path / "spec.json").write_text(
-            json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        guard = getattr(self, "mutation_guard", None)
+        if guard:
+            guard(project_id)
+        with self.lock:
+            if any(row["project"] == project_id and row["status"] == "running" for row in self.jobs.values()):
+                raise ProductionError("cannot edit a spec while a production job is running")
+            spec["topic"] = project_id
+            (path / "spec.json").write_text(
+                json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
         return self.project(project_id)
 
     def _starter_spec(self, mode: str, title: str) -> dict[str, Any]:
@@ -302,7 +309,10 @@ class ProductionService:
             ]
         raise ProductionError("unsupported production action")
 
-    def start_job(self, project_id: str, action: str) -> dict[str, Any]:
+    def start_job(self, project_id: str, action: str, *, from_workflow: bool = False) -> dict[str, Any]:
+        guard = getattr(self, "workflow_guard", None)
+        if guard and not from_workflow:
+            guard(project_id)
         path = self._project(project_id)
         dependencies = self.dependencies()
         if action in {"gates", "render", "qa", "verify"} and not dependencies["ready"]:
@@ -336,35 +346,62 @@ class ProductionService:
         env["PYTHONPATH"] = os.pathsep.join(
             [str(self.tools), env.get("PYTHONPATH", "")]
         ).strip(os.pathsep)
-        proc = subprocess.Popen(
-            command,
-            cwd=str(self.root),
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            bufsize=1,
-        )
+        try:
+            proc = subprocess.Popen(
+                command, cwd=str(self.root), env=env, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", bufsize=1,
+                start_new_session=(os.name != "nt"),
+                creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0,
+            )
+        except OSError as exc:
+            with self.lock:
+                self.jobs[jid].update(status="failed", ended=time.time(), returncode=-1)
+                self.jobs[jid]["logs"].append(f"Failed to start: {exc}")
+            raise ProductionError(f"failed to start job: {exc}") from exc
         with self.lock:
             self.processes[jid] = proc
+            self.jobs[jid]["pid"] = proc.pid
 
         def collect() -> None:
             try:
                 assert proc.stdout is not None
+                captured = []
+                captured_size = 0
                 for line in proc.stdout:
+                    captured.append(line)
+                    captured_size += len(line)
+                    if captured_size > 1_000_000:
+                        captured = captured[-1000:]
+                        captured_size = sum(map(len, captured))
                     with self.lock:
                         logs = self.jobs[jid]["logs"]
                         logs.append(line.rstrip())
                         if len(logs) > 500:
                             del logs[:100]
                 code = proc.wait()
+                output = "".join(captured)
+                structured_ok = None
+                if action in {"render", "qa", "verify"}:
+                    decoder = json.JSONDecoder()
+                    parsed_until = 0
+                    for match in re.finditer(r"\{", output):
+                        if match.start() < parsed_until:
+                            continue
+                        try:
+                            value, consumed = decoder.raw_decode(output[match.start():])
+                        except json.JSONDecodeError:
+                            continue
+                        parsed_until = match.start() + consumed
+                        if isinstance(value, dict) and isinstance(value.get("ok"), bool):
+                            structured_ok = value["ok"]
                 with self.lock:
                     self.jobs[jid]["returncode"] = code
-                    self.jobs[jid]["status"] = "done" if code == 0 else "failed"
+                    success = code == 0 and (action not in {"render", "qa", "verify"} or structured_ok is True)
+                    self.jobs[jid]["status"] = "cancelled" if self.jobs[jid].get("cancelRequested") else ("done" if success else "failed")
+                    if code == 0 and not success:
+                        self.jobs[jid]["logs"].append("Production command did not report a successful structured result.")
                     self.jobs[jid]["ended"] = time.time()
-                if code == 0 and action == "generate":
+                if code == 0 and action == "generate" and not self.jobs[jid].get("cancelRequested"):
                     agent_path = path / "agent.json"
                     try:
                         meta = json.loads(agent_path.read_text(encoding="utf-8"))
@@ -382,6 +419,8 @@ class ProductionService:
                     self.jobs[jid]["logs"].append(f"{type(exc).__name__}: {exc}")
                     self.jobs[jid]["ended"] = time.time()
             finally:
+                if proc.stdout:
+                    proc.stdout.close()
                 with self.lock:
                     self.processes.pop(jid, None)
 
@@ -399,5 +438,15 @@ class ProductionService:
             row = self.jobs.get(job_id)
             if not proc or not row or row["status"] != "running":
                 return False
-            proc.terminate()
+            row["cancelRequested"] = True
+            try:
+                if os.name == "nt":
+                    result = subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=10)
+                    if result.returncode and proc.poll() is None:
+                        row["cancelRequested"] = False
+                        raise ProductionError("could not stop the process tree")
+                else:
+                    os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
             return True
