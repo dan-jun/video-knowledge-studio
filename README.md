@@ -1,12 +1,12 @@
 # Video Knowledge Studio
 
-### From a knowledge gap to a course you can actually use
+### From a learning goal to a course you can actually use
 
-Describe what you need to learn for work, research, or a project. An Agent can break
-the goal into concepts, discover complementary Bilibili and YouTube sources, and use
-the local production pipeline to turn them into an animated course with structured
-notes. When a note is unclear, select it and ask the AI tutor for an explanation,
-an evidence check, or a reviewable edit.
+Need to understand an unfamiliar codebase, reproduce a paper, or prepare for a new
+role? Bring your goal and available time. With an Agent (an assistant that can use
+tools for multi-step tasks), select sources and
+build a learning path; then use the workspace to study videos alongside notes and
+ask questions tied to the relevant moment.
 
 [![CI](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/dan-jun/video-knowledge-studio/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.2.8-56d8f5)](CHANGELOG.md)
@@ -34,6 +34,8 @@ assumes the plain-language meaning shown here.
 
 | Term | Plain-language meaning | Example | First occurrence | Self-assessment |
 | --- | --- | --- | --- | --- |
+| Agent | An assistant that can carry out a multi-step task using available tools | Find sources and propose a study plan | Introduction | Know / Unsure / Need work |
+| Raft | An algorithm that helps servers agree on an ordered history of changes | A leader replicates a request to other servers | This table | Know / Unsure / Need work |
 | Knowledge gap | A specific thing you must understand to complete real work | "I need to understand Raft log replication before editing this service." | This table | Know / Unsure / Need work |
 | Course pack | A folder containing course metadata, video, and knowledge notes | `packs/raft-demo-en/` | This table | Know / Unsure / Need work |
 | Source | The original video, paper, or document used as evidence | One Bilibili lecture about Raft | This table | Know / Unsure / Need work |
@@ -44,6 +46,7 @@ assumes the plain-language meaning shown here.
 | Gate | An automated delivery check that can block an unfinished or unsupported video | Source, citation, practice, and playback checks | This table | Know / Unsure / Need work |
 | AI tutor | A model request supplied with the selected note, nearby transcript, and current frame | "Why does this boundary hold?" | This table | Know / Unsure / Need work |
 | Local-first | The default architecture keeps private course data on the user's computer | The app listens on `127.0.0.1` | This table | Know / Unsure / Need work |
+| FFmpeg / ffprobe | Tools for working with video and reading its metadata | Extract a frame / read a video's duration | Quick start / Import your own course | Know / Unsure / Need work |
 
 ## Why another video tool is not enough
 
@@ -75,8 +78,10 @@ learning goal → planning and source selection → animated course
 | **Study a structured course** | Video, notes, source evidence, a knowledge graph, and an AI tutor together |
 | **Remaster existing video** | A single-source remix, a multi-source course, or a compact sci-pop lesson |
 
-These are not disconnected modes. A generated video opens in the same learning
-workspace, and new learning notes can feed the next production pass.
+Each use follows the same path: define a goal, select sources, build or import a
+course, study and ask questions, then apply what you learned. The detailed example
+below follows a project task; the same path can lead to a reproducible research
+explanation or a focused interview review.
 
 ## Demand-driven learning
 
@@ -93,6 +98,13 @@ code in a real project:
 6. Use `course` for a longer synthesis or `scipop` for focused short lessons.
 7. Run the gates, render the animation, and generate synchronized notes.
 8. Open the local workspace and ask about the exact sentence you do not understand.
+
+Source search and learning-plan creation in this example are **Agent-assisted**:
+the Agent needs suitable search tools and access to the sources. They are not
+one-click features built into the app. The supplied Raft pack is a short product
+demo, not a complete four-hour course. Evaluate sources and check claims yourself.
+Generated videos must be prepared as course packs before they appear in the learning
+workspace; importing creates placeholders that need completed notes.
 
 Responsibilities are explicit:
 
@@ -131,7 +143,8 @@ The timeline is the main connection between reading and watching:
 - Playback highlights the current knowledge block.
 - Selecting a note timestamp jumps to the corresponding video moment.
 - Selecting visual evidence returns to the source frame.
-- The AI tutor receives only the context needed for the current question.
+- When available, the AI tutor receives the selected note, nearby transcript,
+  timestamp and a relevant video frame with your question.
 
 ### AI edits are reviewable, not silent
 
@@ -190,9 +203,12 @@ macOS / Linux:
 ./docker-up.sh
 ```
 
-The launcher chooses a free port, generates a password, and installs the complete
-learning and production environment. It first tries the published
+The launcher chooses a free port, generates a password, prints the URL and password,
+and starts the learning and production environment. It first tries the published
 `ghcr.io/dan-jun/video-knowledge-studio:latest` image and falls back to a local build.
+Open the printed URL and sign in with the printed password. The default Docker
+configuration uses the offline demo AI; see [Docker AI setup](docs/docker.md#ai-inside-the-container)
+to configure a model.
 
 To test source changes with a local image:
 
@@ -243,6 +259,10 @@ The learning workspace needs Python 3.10 or newer:
 python -m vks
 ```
 
+Run this from the cloned repository, then open `http://127.0.0.1:7870/` unless
+you configured a different address or port. The bundled demo is available on startup.
+Install FFmpeg separately for frame extraction.
+
 Video production also needs the production dependencies:
 
 ```powershell
@@ -258,8 +278,12 @@ python -m pip install -e ".[transcription]"
 
 ## Enable AI
 
-Without a configured model, the app uses offline demo mode. This validates the
-interface and synchronization, but it does not generate trusted knowledge claims.
+Local Python defaults to `auto`: it tries the Codex CLI, then a configured
+OpenAI-compatible provider, then offline demo mode. The response identifies the
+provider actually used; check it if a request falls back. Offline demo mode tests the
+interface and synchronization but does not generate trusted knowledge claims.
+Docker defaults to offline demo mode and cannot use the host's Codex CLI directly.
+Configure Docker separately as described in [Docker AI setup](docs/docker.md#ai-inside-the-container).
 
 Local Codex:
 
@@ -291,13 +315,22 @@ packs/my-course/
    └─ e02.json
 ```
 
-Create a starter structure from a video directory:
+For a local Python installation, create a starter structure in your existing video
+directory (the importer writes files there and leaves the videos in place):
 
 ```powershell
 python scripts/import_course.py --input "D:\courses\my-course" --title "My course"
+$env:VKS_PACKS="D:\courses\my-course"
+python -m vks
 ```
 
-The importer records the structure and real durations. It does not invent notes.
+Install `ffprobe` on PATH before importing to record durations; otherwise they are
+stored as zero. The importer creates placeholder notes, not verified teaching
+content. Complete them from transcripts and visual evidence before relying on them.
+If `course.json` already exists, importing stops unless `--force` is supplied;
+`--force` rewrites the manifest and generated note files. For Docker, put the pack
+under the mounted `packs/` directory, or adjust the mount; a host-only `VKS_PACKS`
+path is not automatically visible inside the container.
 See [course-pack format](docs/course-pack.md) and the
 [`raft-demo-en`](packs/raft-demo-en) example.
 
@@ -306,8 +339,9 @@ See [course-pack format](docs/course-pack.md) and the
 - The app listens on `127.0.0.1` by default.
 - Every user owns a separate local instance and local data.
 - Courses, production projects, and annotations are excluded from Git by default.
-- Only the selected note, nearby transcript, current frame, and question are sent when
-  you explicitly invoke the model.
+- When you invoke the tutor, its request includes selected text, lesson details,
+  recent conversation, timestamp, question, and any available nearby transcript and
+  frame. A configured model provider receives that context; offline demo mode stays local.
 - This is not a multi-tenant SaaS product with account isolation.
 - AI output still needs human judgment. Important claims should retain evidence,
   source context, and uncertainty.

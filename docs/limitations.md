@@ -36,8 +36,8 @@ These are real product boundaries for version 0.2.8.
 - No built-in background job persistence or distributed workers.
 - No rate limiting or comprehensive audit trail.
 - Public deployment requires an additional authenticated HTTPS reverse proxy.
-- Docker images are built locally or by GitHub Actions; no prebuilt registry image is
-  published yet.
+- The launcher tries the published registry image and falls back to a local build if
+  pulling it fails; network and registry availability affect the first option.
 
 ## Browser and media
 

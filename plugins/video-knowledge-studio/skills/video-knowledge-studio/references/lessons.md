@@ -1,5 +1,17 @@
 # Lessons
 
+## 2026-11-19 — Verify import and AI setup against actual defaults
+
+- **Symptom:** The README's import example did not make an external pack discoverable,
+  overstated duration detection, and blurred Docker and local AI defaults; the
+  limitations page also contradicted the documented published image.
+- **Root cause:** Documentation omitted `VKS_PACKS` and ffprobe prerequisites and
+  retained outdated deployment claims after the launcher and registry changed.
+- **Fix:** Show the pack path and startup command, explain zero-duration fallback and
+  overwrite behavior, distinguish Docker from local AI setup, and align image wording.
+- **Verification:** Check the importer, configuration, Compose mounts and launchers;
+  validate local Markdown links and run the plugin synchronization check.
+
 ## 2026-11-18 — Docker Desktop can be running without `docker` on PATH
 
 - **Symptom:** Docker Desktop and its Linux engine were healthy, but the launcher

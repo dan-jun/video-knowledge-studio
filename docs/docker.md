@@ -43,7 +43,7 @@ The helper:
    `docker` is not yet available on the current terminal's PATH;
 2. selects a free local port;
 3. generates a random login password and writes `.env.docker`;
-4. runs `docker compose up -d --build`;
+4. starts the pulled image, or builds locally if the pull fails;
 5. waits for `/login.html` to become healthy;
 6. prints the URL and password and optionally opens the browser.
 
