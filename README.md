@@ -191,9 +191,9 @@ spec → storyboard → gates → Edge TTS → animation render
      → captions → playable preview / download
 ```
 
-The following sequence is generated and rendered by the project itself:
+The English demo includes this animated Raft log replication scene:
 
-![A real generated lesson](docs/images/production-demo-en.gif)
+![Animated Raft log replication scene from the English demo](docs/images/production-demo-en-raft.gif)
 
 Generated scenes, audio, caches, and final video files live under `data/production/`.
 They are excluded from Git and do not overwrite existing courses or annotations.

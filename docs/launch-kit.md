@@ -121,7 +121,8 @@ Use the same text only where self-promotion is allowed by the community rules.
 - `docs/images/learning-workspace-en.png` — English learning workspace;
 - `docs/images/ai-tutor-demo-en.png` — evidence and revision workflow;
 - `docs/images/production-workspace-en.png` — English creation workspace;
-- `docs/images/production-demo-en.gif` — real rendered output.
+- `docs/images/production-demo-en-raft.gif` — animated Raft log replication scene
+  from the English product demo.
 
 The previous Chinese-named demo assets remain in the repository for compatibility.
 

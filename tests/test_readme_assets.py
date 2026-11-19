@@ -61,7 +61,7 @@ class ReadmeAssetTests(unittest.TestCase):
             "learning-workspace-en.png",
             "ai-tutor-demo-en.png",
             "production-workspace-en.png",
-            "production-demo-en.gif",
+            "production-demo-en-raft.gif",
             "social-preview-en.png",
             "product-demo-poster-en.png",
         ):
