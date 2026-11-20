@@ -1,5 +1,19 @@
 # Lessons
 
+## 2026-11-20 — Distinguish package readiness from account eligibility
+
+- **Symptom:** A schema-valid plugin package passed local validation, but the Platform
+  blocked the upload behind verified developer identity and then an organization
+  payment-method requirement; mainland China is not in the supported-country list.
+- **Root cause:** Submission checks covered metadata, skills, assets, and review links
+  but not the publisher's supported-region, identity-verification, and billing status.
+- **Fix:** Add platform eligibility to the preflight. Require a supported territory and
+  an accepted payment method, and treat direct GitHub marketplace installation as the
+  fallback when universal-directory eligibility is unavailable.
+- **Verification:** Observe the Platform identity modal and required-payment modal, then
+  check mainland China and Hong Kong against the official supported-countries page
+  before deciding whether submission can continue.
+
 ## 2026-11-20 — Local marketplace validity is not public-directory readiness
 
 - **Symptom:** The plugin installed from the repository marketplace, but its final listing
