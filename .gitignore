@@ -20,6 +20,8 @@ production/.mathtex_cache/
 production/scenes/gen_*.py
 .record-demo/
 .record-test/
+dist/
+.workflow/
 production/promo/build/
 production/promo/build-en/
 production/promo/recordings/

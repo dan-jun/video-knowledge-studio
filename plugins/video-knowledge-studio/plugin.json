@@ -23,24 +23,33 @@
       "onboardingSkill": "./skills/video-knowledge-studio/SKILL.md",
       "interface": {
         "displayName": "Video Knowledge Studio",
-        "shortDescription": "Create sourced video courses on demand",
-        "longDescription": "Plan a work, research or project knowledge gap, find multiple Bilibili or YouTube explanations, integrate them into a sourced animated course, and create synchronized notes for contextual AI tutoring.",
+        "shortDescription": "Turn gaps into video courses",
+        "longDescription": "Turn a work, research, project or interview knowledge gap into a sourced learning plan and animated course. The bundled Skills help an Agent compare Bilibili or YouTube sources when suitable search tools are available, integrate selected sources, render captioned lessons, and create synchronized notes for contextual study. The Video Knowledge Studio application runs locally and is installed separately; this Skills-only plugin does not provide a hosted search, storage or AI service. Source access, captions and licenses can limit results, and generated claims and media require review.",
         "developerName": "Video Knowledge Studio contributors",
         "category": "Education & Research",
         "capabilities": [
-          "Generate a focused learning plan",
-          "Discover and compare multiple Bilibili or YouTube sources",
-          "Integrate sources into remix, course or scipop videos",
+          "Plan a focused learning path from a stated knowledge gap",
+          "Compare Bilibili or YouTube sources when Agent search tools are available",
+          "Author remix, course or scipop lessons from selected sources",
           "Render captioned animated lessons",
           "Create synchronized notes, evidence and knowledge networks",
-          "Explain selected notes with contextual AI"
+          "Guide installation and troubleshooting of the local workspace"
         ],
         "websiteURL": "https://github.com/dan-jun/video-knowledge-studio",
+        "supportURL": "https://github.com/dan-jun/video-knowledge-studio/issues",
+        "privacyPolicyURL": "https://github.com/dan-jun/video-knowledge-studio/blob/main/docs/plugin-privacy.md",
+        "termsOfServiceURL": "https://github.com/dan-jun/video-knowledge-studio/blob/main/docs/plugin-terms.md",
         "defaultPrompt": [
-          "Use Video Knowledge Studio to turn my project knowledge gap into a sourced animated course and study notes.",
-          "Plan what I should learn, find complementary Bilibili and YouTube explanations, and build the learning workspace."
+          "Turn my project knowledge gap into a sourced course and study notes.",
+          "Plan what I should learn, then build a local workspace with synchronized notes."
         ],
-        "brandColor": "#0E7490"
+        "brandColor": "#0E7490",
+        "composerIcon": "./assets/icon.svg",
+        "logo": "./assets/icon.svg"
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "Initial public submission candidate. Bundles two Skills; the local application remains a separate installation."
       }
     }
   }

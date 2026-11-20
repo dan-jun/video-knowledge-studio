@@ -1,5 +1,21 @@
 # Lessons
 
+## 2026-11-20 — Local marketplace validity is not public-directory readiness
+
+- **Symptom:** The plugin installed from the repository marketplace, but its final listing
+  copy exceeded the public short-description limit and the package had no square icon,
+  support URL, or published privacy policy.
+- **Root cause:** The repository validated local installability and manifest structure,
+  while public submission also enforces directory metadata, branding, legal, and
+  review requirements.
+- **Fix:** Add a deterministic submission validator and ZIP packager, correct the
+  short description, add square branding, and publish privacy, terms, and support
+  destinations. Keep repository-marketplace distribution distinct from the universal
+  public directory.
+- **Verification:** Run the packager in check and package modes, inspect the ZIP root
+  layout and manifest, validate every referenced asset and HTTPS URL, and run the
+  full plugin test and synchronization gates.
+
 ## 2026-11-19 — Keep unit tests independent of optional media binaries
 
 - **Symptom:** The workflow success test passed locally but failed in GitHub CI after
