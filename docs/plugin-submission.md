@@ -53,17 +53,17 @@ The listing must continue to state that:
 
 ## Submission blockers that require a human
 
-1. Push the updated privacy policy, terms, support destination, icon, and manifest so
-   all four HTTPS listing URLs resolve from the repository's default branch.
-2. Sign in to the OpenAI Platform with an organization that owns the submission and
+1. Sign in to the OpenAI Platform with an organization that owns the submission and
    complete individual or business developer verification.
-3. Confirm the publisher name and category in the dashboard.
-4. Upload the generated ZIP through the **Skills only** path.
-5. Resolve automated metadata and Skill-scan findings.
-6. Submit for review and publish only after approval.
+2. Confirm the publisher name and category in the dashboard.
+3. Upload the generated ZIP through the **Skills only** path.
+4. Resolve automated metadata and Skill-scan findings.
+5. Submit for review and publish only after approval.
 
-Do not upload a ZIP while the privacy or terms links return 404. Repository presence,
-a repo-local marketplace, and schema-valid JSON do not publish the plugin.
+The listing documentation was published on the repository's default branch in commit
+`ffb0cda`, and all four public HTTPS URLs returned HTTP 200. Re-run the URL check
+immediately before upload. Repository presence, a repo-local marketplace, and
+schema-valid JSON do not publish the plugin.
 
 ## Verification before upload
 
