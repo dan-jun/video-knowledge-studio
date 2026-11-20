@@ -244,6 +244,18 @@ To test source changes with a local image:
 
 ### Option 2: Agent and Plugin
 
+Install directly from the public GitHub marketplace without keeping a local checkout:
+
+```bash
+codex plugin marketplace add dan-jun/video-knowledge-studio
+codex plugin add video-knowledge-studio@video-knowledge-studio-local
+```
+
+This is repository-backed distribution. It does not require publication in the
+universal Plugins Directory.
+
+For the full local application and installer workflow:
+
 ```bash
 git clone https://github.com/dan-jun/video-knowledge-studio.git
 cd video-knowledge-studio
