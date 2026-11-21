@@ -24,6 +24,7 @@
     history: [],
     currentTimeline: -1,
     deepNote: null,
+    courseGraph: null,
     deepStatus: { state: "idle", stage: "" },
   };
 
@@ -216,11 +217,15 @@
       lesson,
       note: S.deepNote,
       status: S.deepStatus,
+      courseGraph: S.courseGraph,
       onSeek: (value) => {
         const at = parseTime(value);
         if (at != null) seek(at);
       },
       onGenerate: (force) => generateDeepNote(!!force),
+      onOpenEpisode: (episodeId) => {
+        if (window.selectCourseEpisode) window.selectCourseEpisode(episodeId);
+      },
     });
   }
 
@@ -1367,6 +1372,7 @@
     S.selected = null;
     S.currentTimeline = -1;
     S.deepNote = null;
+    S.courseGraph = null;
     S.deepStatus = { state: "idle", stage: "" };
     const seq = ++S.loadSeq;
     root.innerHTML = '<div class="k-loading"><div class="k-spinner"></div>正在装入 87 讲知识数据…</div>';
@@ -1392,11 +1398,22 @@
       } catch (_) {
         S.deepNote = null;
       }
+      try {
+        const graphRes = await fetch(
+          "/api/knowledge/course-graph?id=" + encodeURIComponent(project.id)
+        );
+        const graph = await graphRes.json();
+        if (seq !== S.loadSeq) return;
+        S.courseGraph = graph.ok ? graph.graph : null;
+      } catch (_) {
+        S.courseGraph = null;
+      }
       render();
     } catch (err) {
       if (seq !== S.loadSeq) return;
       if (window.__vp && window.__vp.setSubtitles) window.__vp.setSubtitles([]);
       S.deepNote = null;
+      S.courseGraph = null;
       S.deepStatus = { state: "idle", stage: "" };
       root.innerHTML = "";
       const fail = el("div", "k-empty", err.message || String(err));

@@ -284,6 +284,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send_json({"ok": False, "error": str(exc)}, 503)
                 except DeepNoteError as exc:
                     return self._send_json({"ok": False, "error": str(exc)}, 422)
+                if result.get("note"):
+                    review = RUNTIME.deep_notes.review_status(result["note"])
+                    if review:
+                        result["note"] = {**result["note"], "semanticReview": review}
                 return self._send_json(result, 200 if result.get("cached") else 202)
             if path == "/api/annotations":
                 ep = RUNTIME.courses.get(str(body.get("id") or ""))
@@ -424,12 +428,35 @@ class Handler(BaseHTTPRequestHandler):
                 note = RUNTIME.deep_notes.cached(ep)
             except DeepNoteError as exc:
                 return self._send_json({"ok": True, "note": None, "reason": str(exc)})
+            if note:
+                review = RUNTIME.deep_notes.review_status(note)
+                if review:
+                    note = {**note, "semanticReview": review}
             return self._send_json({"ok": True, "note": note})
         if path == "/api/knowledge/deep/job":
             row = RUNTIME.deep_notes.job((query.get("id") or [""])[0])
             if not row:
                 return self._send_json({"ok": False, "error": "deep note job not found"}, 404)
+            if row.get("note"):
+                review = RUNTIME.deep_notes.review_status(row["note"])
+                if review:
+                    row["note"] = {**row["note"], "semanticReview": review}
             return self._send_json({"ok": True, **row})
+        if path == "/api/knowledge/course-graph":
+            ep = RUNTIME.courses.get((query.get("id") or [""])[0])
+            if not ep:
+                return self._send_json({"ok": False, "error": "episode not found"}, 404)
+            graph_path = (
+                RUNTIME.settings.data_dir
+                / "cache"
+                / "deep_notes"
+                / f"{ep['courseId']}-course-graph.json"
+            )
+            try:
+                graph = json.loads(graph_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                graph = None
+            return self._send_json({"ok": True, "graph": graph})
         if path == "/media/video":
             ep = RUNTIME.courses.get((query.get("id") or [""])[0])
             return self._send_file(ep["videoPath"] if ep else None, "video/mp4")

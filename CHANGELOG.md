@@ -9,10 +9,18 @@
   invalidation for the Codex CLI and OpenAI-compatible providers.
 - Replaced soft percentage coverage with a deterministic, contiguous transcript ledger
   that requires every block and every extracted key point to be accounted for.
-- Added a visual audit for every keyframe candidate, near-duplicate clustering, and a
-  requirement that every visual cluster contribute an included representative.
+- Added a visual audit for every keyframe candidate and near-duplicate cluster.
+  Instruction-bearing clusters require an included representative; end cards,
+  watermarks and decoration are explicitly excluded instead of being forced into notes.
+- Added hash-bound fresh-context semantic reviews. The player distinguishes current
+  approval, failure, stale review and missing review, and 401/402/403/429 pause the
+  resumable review queue instead of producing empty approvals.
 - Added a typed, connected concept graph plus player rendering for prerequisite,
   mechanism, causal, contrast, example and application relationships.
+- Added resumable course-wide generation and graph-building scripts for all episodes,
+  with per-episode state, retries and input-hash validation.
+- Added an embedded course-system view with chapter maps and a full canonical concept
+  index.
 - Demoted the raw transcript to a folded, explicitly evidence-only section and fixed
   the knowledge-frame URL contract.
 

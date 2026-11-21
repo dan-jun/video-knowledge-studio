@@ -117,6 +117,9 @@ class ServerTests(unittest.TestCase):
             def cached(self, episode):
                 return self.note
 
+            def review_status(self, note):
+                return None
+
             def start(self, episode, force=False):
                 self.note = note
                 return {"ok": True, "cached": False, "job": "deep-job-1"}
@@ -161,6 +164,25 @@ class ServerTests(unittest.TestCase):
                 timeout=20,
             )
         self.assertEqual(failed.exception.code, 404)
+
+    def test_course_graph_endpoint(self):
+        episode = server.RUNTIME.courses.get("demo-e01")
+        graph_dir = Path(self.temp.name) / "cache" / "deep_notes"
+        graph_dir.mkdir(parents=True, exist_ok=True)
+        graph_path = graph_dir / f"{episode['courseId']}-course-graph.json"
+        graph_path.write_text(
+            json.dumps({
+                "schemaVersion": 1,
+                "stats": {"episodes": 1, "canonicalConcepts": 1, "edges": 0},
+                "chapters": [],
+                "nodes": [],
+                "edges": [],
+            }),
+            encoding="utf-8",
+        )
+        status, payload = self.get_json("/api/knowledge/course-graph?id=demo-e01")
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["graph"]["stats"]["episodes"], 1)
 
     def test_production_modes_and_project_creation(self):
         status, payload = self.get_json("/api/production/modes")

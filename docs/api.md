@@ -49,6 +49,13 @@ Returns the asynchronous generation status:
 }
 ```
 
+### `GET /api/knowledge/course-graph?id=<episode-id>`
+
+Returns the course-wide graph generated from validated per-episode notes, or
+`{"ok": true, "graph": null}` before the batch graph has been built. The graph
+contains canonical concept nodes, every episode occurrence and timestamp, typed
+concept edges, chapter groups and chapter-to-chapter prerequisite flow.
+
 ### `GET /api/ai/status`
 
 Returns the selected provider and whether it is the offline demo.
@@ -108,9 +115,17 @@ knowledge summary.
 The evidence gate assigns every second of the episode to one deterministic transcript
 block. Every block must return exactly once with teaching, housekeeping or uncertainty
 status; teaching blocks retain their key points. Every visual candidate must receive a
-decision, and every near-duplicate visual cluster needs an included representative.
-The synthesis gate also requires 5–9 complete concepts and a connected typed graph with
-no isolated nodes and at least one contrast, example or application relationship.
+decision. A cluster with unique teaching information needs an included representative,
+while end cards, watermarks, repeated decoration and unreadable frames may be excluded
+with a reason. The synthesis gate also requires 5–9 complete concepts and a connected
+typed graph with no isolated nodes and at least one contrast, example or application
+relationship.
+
+`GET /api/knowledge/deep?id=<episode-id>` attaches `semanticReview` to a cached note.
+Its `status` is `valid`, `stale` or `missing`; a stale review means the note changed
+after review and must not be treated as approval. Review sidecars bind the note,
+transcript and frame manifest hashes and are generated fresh-context by
+`scripts/semantic_review_deep_notes.py`.
 
 ### `POST /api/annotations`
 

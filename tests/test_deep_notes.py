@@ -11,6 +11,7 @@ from vks.config import load_settings
 from vks.deep_notes import (
     DeepNoteService,
     DeepNoteUnavailable,
+    canonical_note_hash,
     cluster_visual_candidates,
     coverage_ratio,
     split_transcript_blocks,
@@ -244,7 +245,7 @@ class DeepNoteServiceTests(unittest.TestCase):
         self.assertEqual(row["status"], "failed")
         self.assertIn("核心概念应为 5–9 个", row["error"])
 
-    def test_rejects_coverage_links_to_unknown_concepts(self):
+    def test_repairs_unknown_coverage_links_with_visible_warning(self):
         def generator(packet, images, progress):
             raw = quality_payload(packet)
             raw["coverage"][0]["conceptTitles"] = ["不存在的概念"]
@@ -256,22 +257,58 @@ class DeepNoteServiceTests(unittest.TestCase):
         )
         started = service.start(self.episode)
         row = wait_for_job(service, started["job"])
-        self.assertEqual(row["status"], "failed")
-        self.assertIn("引用了未知概念", row["error"])
+        self.assertEqual(row["status"], "done", row.get("error"))
+        self.assertNotIn(
+            "不存在的概念",
+            row["note"]["coverage"][0]["conceptTitles"],
+        )
+        self.assertTrue(
+            any("未知概念关联" in item for item in row["note"]["quality"]["repairs"])
+        )
+        self.assertTrue(row["note"]["quality"]["warnings"])
 
-    def test_rejects_missing_visual_decision(self):
+    def test_repairs_missing_visual_cluster_with_visible_warning(self):
         def generator(packet, images, progress):
             raw = quality_payload(packet)
+            packet["visualCandidates"][-1]["ocr"] = ["关键机制图", "状态转换"]
             raw["visualDecisions"].pop()
             return raw, "test-provider"
 
         service = DeepNoteService(self.settings(), generator=generator)
         started = service.start(self.episode)
         row = wait_for_job(service, started["job"])
-        self.assertEqual(row["status"], "failed")
-        self.assertIn("画面审核账本不完整", row["error"])
+        self.assertEqual(row["status"], "done", row.get("error"))
+        self.assertTrue(row["note"]["quality"]["repairs"])
+        self.assertGreaterEqual(
+            row["note"]["quality"]["includedVisualClusters"],
+            row["note"]["quality"]["informativeVisualClusters"],
+        )
 
-    def test_rejects_disconnected_concept_graph(self):
+    def test_decorative_visual_cluster_is_reviewed_but_not_forced_into_notes(self):
+        def generator(packet, images, progress):
+            raw = quality_payload(packet)
+            packet["visualCandidates"][-1]["ocr"] = ["谢谢观看", "一键三连"]
+            raw["visualDecisions"].pop()
+            return raw, "test-provider"
+
+        service = DeepNoteService(self.settings(), generator=generator)
+        started = service.start(self.episode)
+        row = wait_for_job(service, started["job"])
+        self.assertEqual(row["status"], "done", row.get("error"))
+        note = row["note"]
+        self.assertLess(
+            note["quality"]["includedVisualClusters"],
+            note["quality"]["visualClusters"],
+        )
+        self.assertTrue(
+            any(
+                item["candidateId"] == "F03" and item["decision"] == "noise"
+                for item in note["visualAudit"]
+            )
+        )
+        self.assertTrue(note["quality"]["repairs"])
+
+    def test_repairs_disconnected_concept_graph_with_visible_warning(self):
         def generator(packet, images, progress):
             raw = quality_payload(packet)
             raw["conceptGraph"]["edges"] = []
@@ -280,8 +317,9 @@ class DeepNoteServiceTests(unittest.TestCase):
         service = DeepNoteService(self.settings(), generator=generator)
         started = service.start(self.episode)
         row = wait_for_job(service, started["job"])
-        self.assertEqual(row["status"], "failed")
-        self.assertIn("孤立节点", row["error"])
+        self.assertEqual(row["status"], "done", row.get("error"))
+        self.assertTrue(row["note"]["quality"]["repairs"])
+        self.assertTrue(row["note"]["quality"]["warnings"])
 
     def test_offline_provider_does_not_fabricate_note(self):
         service = DeepNoteService(self.settings("mock"))
@@ -326,6 +364,29 @@ class DeepNoteServiceTests(unittest.TestCase):
             service.cache_path("course/a"),
             service.cache_path("course-a"),
         )
+
+    def test_semantic_review_status_is_bound_to_current_note_hash(self):
+        service = DeepNoteService(self.settings())
+        note = {
+            "schemaVersion": 2,
+            "episodeId": "deep-e01",
+            "quality": {"coverage": 1.0},
+        }
+        review_path = service.review_path(note["episodeId"])
+        review_path.parent.mkdir(parents=True, exist_ok=True)
+        review_path.write_text(json.dumps({
+            "decision": "pass",
+            "coverage": 0.96,
+            "summary": "complete",
+            "note_sha256": canonical_note_hash(note),
+            "omissions": [],
+            "reviewer": {"reviewed_at": "now", "model": "test"},
+        }), encoding="utf-8")
+        current = service.review_status(note)
+        self.assertEqual(current["status"], "valid")
+        self.assertEqual(current["decision"], "pass")
+        changed = {**note, "bigIdea": "changed"}
+        self.assertEqual(service.review_status(changed)["status"], "stale")
 
 
 if __name__ == "__main__":

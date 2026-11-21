@@ -8,6 +8,7 @@
   };
 
   const clean = (value) => String(value == null ? "" : value).trim();
+  const NS = "http://www.w3.org/2000/svg";
 
   function rich(value) {
     const box = h("span", "kp-rich");
@@ -82,7 +83,11 @@
       top.appendChild(h("span", "kp-coverage", "证据覆盖 " + Math.round(Number(quality.coverage) * 100) + "%"));
     }
     if (quality.conceptCount) top.appendChild(h("span", "kp-coverage", quality.conceptCount + " 个核心概念"));
-    if (quality.visualClusters) top.appendChild(h("span", "kp-coverage", quality.visualClusters + " 组关键画面"));
+    if (quality.visualEvidenceCount) {
+      const reviewed = Number(quality.visualClusters || 0);
+      top.appendChild(h("span", "kp-coverage",
+        quality.visualEvidenceCount + " 张入选画面" + (reviewed ? " · " + reviewed + " 组已审核" : "")));
+    }
     top.appendChild(h("span", "kp-model", note.model || "AI 综合"));
     hero.appendChild(top);
 
@@ -244,6 +249,110 @@
     });
     canvas.appendChild(legend);
     node.appendChild(canvas);
+    return node;
+  }
+
+  function renderCourseSystem(graph, onOpenEpisode) {
+    if (!graph || !(graph.nodes || []).length) return null;
+    const details = h("details", "kp-section kp-course-system");
+    const summary = h("summary", "kp-head");
+    summary.appendChild(h("h3", "", "全课程知识体系"));
+    summary.appendChild(h("small", "",
+      (graph.stats?.episodes || 0) + " 讲 · " +
+      (graph.stats?.canonicalConcepts || graph.nodes.length) + " 个规范概念 · " +
+      (graph.stats?.edges || 0) + " 条关系"
+    ));
+    details.appendChild(summary);
+    const byId = Object.fromEntries((graph.nodes || []).map((row) => [row.id, row]));
+    const flow = h("div", "kp-course-flow");
+    (graph.chapters || []).forEach((chapter, index) => {
+      const card = h("article", "kp-course-chapter");
+      card.appendChild(h("span", "kp-step-no", String(index + 1).padStart(2, "0")));
+      card.appendChild(h("h4", "", chapter.label));
+      card.appendChild(h("p", "", (chapter.episodes || []).length + " 讲 · " + (chapter.conceptIds || []).length + " 个概念节点"));
+      const tags = h("div", "kp-course-tags");
+      (chapter.conceptIds || []).map((id) => byId[id]).filter(Boolean).slice(0, 5)
+        .forEach((row) => tags.appendChild(h("span", "", row.label)));
+      card.appendChild(tags);
+      const open = h("button", "kp-time", "打开第 " + (chapter.episodes?.[0] ?? "?") + " 讲");
+      open.type = "button";
+      open.onclick = () => {
+        if (chapter.episodes?.[0] != null && onOpenEpisode) {
+          const episode = chapter.episodes[0];
+          const node = (graph.nodes || [])
+            .flatMap((row) => row.occurrences || [])
+            .find((row) => row.episode === episode);
+          if (node?.episodeId) onOpenEpisode(node.episodeId);
+        }
+      };
+      card.appendChild(open);
+      flow.appendChild(card);
+      if (index < graph.chapters.length - 1) flow.appendChild(h("i", "kp-arrow", "→"));
+    });
+    details.appendChild(flow);
+    const indexDetails = h("details", "kp-course-index");
+    indexDetails.appendChild(h("summary", "", "展开全部概念索引"));
+    (graph.chapters || []).forEach((chapter) => {
+      const group = h("details", "kp-course-group");
+      group.appendChild(h("summary", "", chapter.label + " · " + (chapter.conceptIds || []).length + " 个概念"));
+      const list = h("div", "kp-course-concept-list");
+      (chapter.conceptIds || []).map((id) => byId[id]).filter(Boolean).forEach((row) => {
+        const item = h("div");
+        item.appendChild(h("b", "", row.label));
+        const episodes = Array.from(new Set((row.occurrences || []).map((x) => x.episode))).sort((a, b) => a - b);
+        item.appendChild(h("small", "", episodes.length ? "出现于 " + episodes.map((x) => "E" + String(x).padStart(2, "0")).join("、") : ""));
+        list.appendChild(item);
+      });
+      group.appendChild(list);
+      indexDetails.appendChild(group);
+    });
+    details.appendChild(indexDetails);
+    return details;
+  }
+
+  function renderSemanticReview(review, onSeek) {
+    if (!review) return null;
+    const status = clean(review.status || "missing");
+    const decision = clean(review.decision || "pending");
+    const node = section("独立语义复核", "新上下文审校，不复用写作过程");
+    const badge = h("div", "kp-review-status status-" + status + " decision-" + decision);
+    const labels = {
+      valid: decision === "pass" ? "当前版本已通过" : "当前版本未通过",
+      stale: "上一轮复核已失效",
+      missing: "尚未复核",
+    };
+    badge.appendChild(h("b", "", labels[status] || "复核状态未知"));
+    if (review.coverage != null) {
+      badge.appendChild(h("span", "", "证据覆盖 " + Math.round(Number(review.coverage) * 100) + "%"));
+    }
+    if (review.omissionCount != null) {
+      badge.appendChild(h("span", "", review.omissionCount + " 条审校意见"));
+    }
+    if (review.blockingCount) {
+      badge.appendChild(h("span", "blocking", review.blockingCount + " 条待修复"));
+    }
+    node.appendChild(badge);
+    if (review.message) node.appendChild(h("p", "kp-review-message", review.message));
+    if (review.summary) node.appendChild(h("p", "kp-review-summary", review.summary));
+    const blocking = (review.omissions || []).filter((row) =>
+      ["high", "medium"].includes(clean(row.severity))
+    );
+    if (blocking.length) {
+      const list = h("div", "kp-review-issues");
+      blocking.slice(0, 8).forEach((row) => {
+        const item = h("article", "kp-review-issue severity-" + clean(row.severity));
+        const head = h("div");
+        head.appendChild(h("b", "", clean(row.kind || "issue")));
+        if (row.time) head.appendChild(jumpButton(row.time, onSeek));
+        item.appendChild(head);
+        item.appendChild(h("p", "", clean(row.issue)));
+        if (row.suggestedRepair) {
+          item.appendChild(h("small", "", "修复建议：" + clean(row.suggestedRepair)));
+        }
+        list.appendChild(item);
+      });
+      node.appendChild(list);
+    }
     return node;
   }
 
@@ -513,8 +622,10 @@
     const lesson = opt.lesson || {};
     const note = opt.note;
     const status = opt.status || {};
+    const courseGraph = opt.courseGraph || null;
     const onSeek = opt.onSeek || (() => {});
     const onGenerate = opt.onGenerate || (() => {});
+    const onOpenEpisode = opt.onOpenEpisode || (() => {});
     host.innerHTML = "";
     host.className = "kp-root";
     if (!note) {
@@ -524,9 +635,11 @@
 
     host.appendChild(renderHero(note, lesson, onSeek, onGenerate, status));
     [
+      renderSemanticReview(note.semanticReview, onSeek),
       renderGoals(note),
       renderMentalModel(note, onSeek),
       renderConceptGraph(note, onSeek),
+      renderCourseSystem(courseGraph, onOpenEpisode),
       renderConcepts(note, onSeek),
       renderComparisons(note),
       renderFormulas(note),

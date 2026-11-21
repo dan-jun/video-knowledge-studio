@@ -471,6 +471,43 @@ body.knowledge-mode .head em{color:#8dcbdc}
 .kp-graph-legend span{display:inline-flex;align-items:center;gap:3px}
 .kp-graph-legend i{display:inline-block;width:12px;height:2px;background:currentColor}
 .kp-graph-legend .edge-prerequisite{color:#59b8cb}.kp-graph-legend .edge-mechanism{color:#59dcb0}.kp-graph-legend .edge-cause{color:#ebbb65}.kp-graph-legend .edge-contrast{color:#e58c72}.kp-graph-legend .edge-example{color:#9a86e6}.kp-graph-legend .edge-application{color:#6da7ef}
+.kp-course-system{cursor:pointer}
+.kp-course-system>summary,.kp-course-index>summary,.kp-course-group>summary{list-style:none;margin:0}
+.kp-course-system>summary::-webkit-details-marker,.kp-course-index>summary::-webkit-details-marker,.kp-course-group>summary::-webkit-details-marker{display:none}
+.kp-course-flow{display:flex;gap:6px;align-items:stretch;overflow-x:auto;padding:3px 0 8px}
+.kp-course-chapter{flex:0 0 170px;border-radius:9px;border:1px solid rgba(0,229,255,.13);background:linear-gradient(160deg,rgba(0,229,255,.05),rgba(2,10,16,.78));padding:8px}
+.kp-course-chapter h4{margin:3px 0 4px;color:#def8ff;font-size:10px;line-height:1.4}
+.kp-course-chapter p{margin:0 0 5px;color:#789fa9;font-size:8.5px}
+.kp-course-tags{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.kp-course-tags span{border-radius:99px;background:rgba(0,229,255,.07);padding:2px 5px;color:#8cbac4;font-size:7.6px}
+.kp-course-index{margin-top:4px;border-top:1px solid rgba(0,229,255,.09);padding-top:6px;cursor:pointer}
+.kp-course-index>summary{color:#78bdc9;font-size:9px;padding:3px 0}
+.kp-course-group{margin-top:4px;border-radius:7px;background:rgba(255,255,255,.02);padding:5px 7px}
+.kp-course-group>summary{color:#a9cbd3;font-size:9px}
+.kp-course-concept-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-top:5px}
+.kp-course-concept-list>div{border-radius:6px;background:rgba(0,229,255,.025);padding:5px}
+.kp-course-concept-list b{display:block;color:#cce8ef;font-size:8.5px;line-height:1.35}
+.kp-course-concept-list small{display:block;margin-top:2px;color:#5f8791;font-size:7.5px}
+.kp-review-status{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+  padding:12px 14px;border:1px solid rgba(148,163,184,.28);border-radius:12px;
+  background:rgba(148,163,184,.06);
+}
+.kp-review-status b{font-size:14px}
+.kp-review-status span{color:#94a3b8;font-size:12px}
+.kp-review-status.status-valid.decision-pass{border-color:rgba(52,211,153,.45)}
+.kp-review-status.status-valid.decision-fail{border-color:rgba(248,113,113,.48)}
+.kp-review-status .blocking{color:#fca5a5}
+.kp-review-status.status-stale{border-style:dashed}
+.kp-review-message,.kp-review-summary{color:#aab4c4;line-height:1.7}
+.kp-review-issues{display:grid;gap:10px}
+.kp-review-issue{
+  padding:12px 14px;border-left:3px solid #f59e0b;background:rgba(245,158,11,.06);
+}
+.kp-review-issue.severity-high{border-left-color:#ef4444;background:rgba(239,68,68,.07)}
+.kp-review-issue>div{display:flex;justify-content:space-between;gap:12px}
+.kp-review-issue p{margin:8px 0;line-height:1.65}
+.kp-review-issue small{color:#94a3b8;line-height:1.6}
 .kp-time{
   border:1px solid rgba(0,229,255,.18);border-radius:5px;background:rgba(0,229,255,.07);
   color:#70d8e8;padding:2px 5px;font:8.5px var(--mono);cursor:pointer;white-space:nowrap;
@@ -568,6 +605,7 @@ body.knowledge-mode .head em{color:#8dcbdc}
   .kp-concept-grid{grid-template-columns:1fr}
   .kp-graph{height:520px}
   .kp-graph-node{width:116px}
+  .kp-course-concept-list{grid-template-columns:1fr}
   .kp-visual{grid-template-columns:105px minmax(0,1fr)}
   .kp-visual img{width:105px}
   .kp-model{margin-left:0;max-width:100%}

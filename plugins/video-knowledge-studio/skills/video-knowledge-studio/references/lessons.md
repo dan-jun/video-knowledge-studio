@@ -1,5 +1,54 @@
 # Lessons
 
+## 2026-11-21 — Visual audit is not a command to include every frame
+
+- **Symptom:** Forcing one representative from every OCR cluster inserted course
+  endings, watermarks and decorative cards into the knowledge note.
+- **Root cause:** The quality gate counted cluster inclusion instead of whether the
+  cluster carried unique teaching information.
+- **Fix:** Require a decision for every candidate, but require inclusion only for
+  instruction-bearing clusters. Allow explicit `noise` or `unreadable` groups and
+  record every automatic inclusion or exclusion.
+- **Verification:** The real 87-lesson audit reviewed 2,388 candidates in 1,441
+  clusters, retained 1,438 evidence frames, and moved three automatically inserted
+  non-instructional frames back to `noise`.
+
+## 2026-11-21 — Time ranges must yield a numeric start and evidence must follow it
+
+- **Symptom:** Ranges such as `06:02–08:29` became `start=0`, and concept evidence
+  repeatedly quoted the course greeting.
+- **Root cause:** The parser accepted only point timestamps, and generation trusted
+  model timestamps without checking that the quote supported the claim.
+- **Fix:** Parse the first timestamp of a range, then align low-confidence evidence
+  inside the semantically linked transcript block. Store the correction in the
+  visible repair ledger.
+- **Verification:** A deterministic repair pass corrected 4,147 timestamp or visual
+  fields across 87 episodes; regression tests cover range starts, intro avoidance and
+  decorative-frame removal.
+
+## 2026-11-21 — Bind semantic review to hashes and expose stale status
+
+- **Symptom:** A note with blocking omissions could still pass a structural audit, and
+  a review of the pre-repair note stayed visible after the note changed.
+- **Root cause:** Structure and semantics were conflated, and review sidecars were not
+  tied to current inputs.
+- **Fix:** Store note/transcript/frame hashes and an input fingerprint in each review
+  sidecar. Mark mismatched sidecars stale in the API and player, and keep delivery
+  status false until every episode has a current passing review.
+- **Verification:** The 87-note audit reports structural success separately from
+  semantic delivery; 62 earlier reviews became stale after the repair instead of being
+  silently reused.
+
+## 2026-11-21 — Pause batch review on provider billing failures
+
+- **Symptom:** The semantic-review batch returned HTTP 402 `Insufficient Balance`
+  during a long run.
+- **Root cause:** Provider availability was treated like an episode-level retry.
+- **Fix:** Classify 401/402/403/429 as queue-level blocks, stop dispatching work,
+  retain completed sidecars, and report blocked and unattempted episodes explicitly.
+- **Verification:** The run preserved 62 sidecars and reported the exact blocked and
+  unattempted range rather than producing fabricated or empty approvals.
+
 ## 2026-11-21 — Soft model judgments need deterministic evidence ledgers
 
 - **Symptom:** A plugin could claim coverage while skipping useful diagrams and while

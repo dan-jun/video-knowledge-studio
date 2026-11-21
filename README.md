@@ -59,7 +59,8 @@ assumes the plain-language meaning shown here.
 | Task | Current status |
 | --- | --- |
 | Play local courses, timed notes and contextual AI questions | Built into the app; a configured model is required for real AI answers |
-| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; requires a configured model and validates complete transcript accounting, every visual cluster, 5–9 concepts and a connected typed concept graph |
+| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; requires a configured model and validates complete transcript accounting, a decision for every visual cluster, 5–9 concepts and a connected typed concept graph |
+| Generate every lesson and a course-wide knowledge graph | Provided as resumable batch scripts; each note must pass the per-lesson evidence gate before the course graph can be built |
 | Generate, check and render from a reviewed production spec | Built in; the persistent workflow pauses between stages for review |
 | Search Bilibili / YouTube | Optional Agent tool using `yt-dlp`; platform access can fail and results need review |
 | Select sources and author a sourced spec | Requires an Agent or a person |
@@ -168,8 +169,12 @@ The timeline is the main connection between reading and watching:
   folded away, while the main surface exposes problems, causal chains, mechanisms,
   examples, boundaries, misconceptions, comparisons, recall and visual proof.
 - A deterministic subtitle ledger assigns every second to a teaching, housekeeping or
-  uncertainty block; a visual ledger decides every frame; and a typed concept graph
-  connects all central concepts without isolated nodes.
+  uncertainty block; a visual ledger decides every frame while including only clusters
+  with unique teaching information; and a typed concept graph connects all central
+  concepts without isolated nodes.
+- The player distinguishes current semantic review from a structural pass. Review
+  sidecars are bound to the note, transcript and frame hashes, so any repair makes an
+  older review visibly stale instead of silently reusing its approval.
 - When available, the AI tutor receives the selected note, nearby transcript,
   timestamp and a relevant video frame with your question.
 
@@ -346,6 +351,19 @@ $env:OPENAI_API_KEY="..."
 $env:VKS_MODEL="gpt-4.1-mini"
 python -m vks
 ```
+
+For a complete course, generate validated notes with a resumable batch:
+
+```powershell
+python scripts/generate_course_deep_notes.py --course demo --workers 2
+python scripts/semantic_review_deep_notes.py --course demo --workers 2
+python scripts/build_course_graph.py --course demo
+```
+
+Completed episodes are skipped on later runs. Failed episodes retain their errors in
+`data/cache/deep_notes/batch-state.json` and can be retried without regenerating the
+rest of the course. Semantic reviews are stored under
+`data/cache/deep_notes/reviews/`; editing a note invalidates its previous review.
 
 ## Import your own course
 
