@@ -1,5 +1,19 @@
 # Lessons
 
+## 2026-11-21 — Windows reserved ports can pass a connection probe
+
+- **Symptom:** The launcher chose port 7898 but the server exited with Windows
+  `PermissionError 10013`; an explicit port 7900 started normally.
+- **Root cause:** Port selection treated “no listener accepted a connection” as
+  available, but Windows excluded-port ranges can reject `bind()` even when
+  `connect_ex()` finds no listener.
+- **Fix:** When automatic startup fails with `WinError 10013`, inspect the chosen
+  port and retry with an explicitly available port. Launcher changes should probe
+  actual socket binding rather than connection success alone.
+- **Verification:** Port 7900 listened on `127.0.0.1`, the bootstrap status reported
+  the saved process as running, and `GET /` returned HTTP 200 with the Video
+  Knowledge Studio title.
+
 ## 2026-11-20 — Distinguish package readiness from account eligibility
 
 - **Symptom:** A schema-valid plugin package passed local validation, but the Platform
