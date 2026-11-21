@@ -1,5 +1,23 @@
 # Lessons
 
+## 2026-11-21 — Native cue styling is not a subtitle system
+
+- **Symptom:** One long transcript segment became one giant native caption cue;
+  the browser painted a full-width black block over the controls and wrapped speech
+  mid-sentence.
+- **Root cause:** The player delegated both segmentation and presentation to WebVTT.
+  It neither split long transcript text into subtitle-sized phrases nor controlled
+  position relative to the player chrome.
+- **Reference:** Bilibili renders short white bold phrases with a black outline above
+  the control bar. YouTube raises bottom captions while controls are visible and lets
+  them fall when controls auto-hide; it also exposes size/style settings.
+- **Fix:** Build short caption cues from punctuation and character limits, render them
+  in a custom accessible overlay, keep them to two lines, move them with control
+  visibility, and add persisted outline/box and size settings.
+- **Verification:** In the live player, long transcript text became single-line short
+  cues, no native `<track>` remained, controls-on bottom was 64px, controls-hidden
+  bottom was 18px, and caption toggling hid/showed the overlay immediately.
+
 ## 2026-11-21 — Summary cards must be backed by full evidence coverage
 
 - **Symptom:** Each episode showed only 2–5 core cards, 2–5 timeline rows and a few

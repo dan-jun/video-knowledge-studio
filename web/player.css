@@ -76,15 +76,66 @@
   background: #000;
 }
 
-.vp video::cue {
-  color: #fff;
-  background: rgba(2, 10, 16, 0.82);
-  font-family: "Microsoft YaHei", system-ui, -apple-system, sans-serif;
-  font-size: 1.05rem;
-  font-weight: 600;
-  line-height: 1.45;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+.vp-caption-layer {
+  position: absolute;
+  z-index: 18;
+  left: 7%;
+  right: 7%;
+  bottom: 64px;
+  display: flex;
+  justify-content: center;
+  padding: 0 4px;
+  container-type: inline-size;
+  pointer-events: none;
+  opacity: 0;
+  transition: bottom 0.24s var(--vp-ease), opacity 0.12s ease;
 }
+.vp-caption-layer.show { opacity: 1; }
+.vp.autohide:not(:hover):not(:focus-within) .vp-caption-layer { bottom: 18px; }
+.vp.ended .vp-caption-layer { opacity: 0; }
+.vp-caption-window {
+  display: inline-block;
+  max-width: min(86%, 900px);
+  max-height: 2.9em;
+  overflow: hidden;
+  color: #fff;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, sans-serif;
+  font-size: clamp(17px, 4cqw, 34px);
+  font-weight: 700;
+  line-height: 1.42;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  padding: 0.08em 0.24em 0.12em;
+  border-radius: 5px;
+}
+.vp[data-caption-style="outline"] .vp-caption-window {
+  background: transparent;
+  -webkit-text-stroke: 0.55px rgba(0, 0, 0, 0.95);
+  text-shadow:
+    -1px -1px 0 rgba(0, 0, 0, 0.95),
+    0 -1px 0 rgba(0, 0, 0, 0.95),
+    1px -1px 0 rgba(0, 0, 0, 0.95),
+    -1px 0 0 rgba(0, 0, 0, 0.95),
+    1px 0 0 rgba(0, 0, 0, 0.95),
+    -1px 1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 0 rgba(0, 0, 0, 0.95),
+    1px 1px 0 rgba(0, 0, 0, 0.95),
+    0 3px 9px rgba(0, 0, 0, 0.72);
+}
+.vp[data-caption-style="box"] .vp-caption-window {
+  background: rgba(7, 11, 15, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.42);
+  padding: 0.18em 0.42em 0.22em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  -webkit-text-stroke: 0;
+  backdrop-filter: blur(3px);
+}
+.vp[data-caption-size="small"] .vp-caption-window { font-size: clamp(16px, 3.2cqw, 28px); }
+.vp[data-caption-size="medium"] .vp-caption-window { font-size: clamp(17px, 4cqw, 34px); }
+.vp[data-caption-size="large"] .vp-caption-window { font-size: clamp(19px, 4.8cqw, 40px); }
 
 .vp.captions-on [data-act="cc"] {
   background: var(--vp-hover);

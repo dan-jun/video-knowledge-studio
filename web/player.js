@@ -49,47 +49,93 @@
     return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}`;
   };
 
+  const CAPTION_MAX_CHARS = 24;
+
   function normalizeSubtitleCues(cues) {
+    const seen = new Set();
     return (Array.isArray(cues) ? cues : [])
-      .map((cue) => ({
-        start: Math.max(0, Number(cue && cue.start) || 0),
-        end: Math.max(0, Number(cue && cue.end) || 0),
-        text: String(cue && cue.text != null ? cue.text : "")
+      .map((cue) => {
+        const start = Number(cue && cue.start);
+        const rawEnd = Number(cue && cue.end);
+        const text = String(cue && cue.text != null ? cue.text : "")
           .replace(/\s+/g, " ")
-          .trim(),
-      }))
-      .filter((cue) => cue.text && isFinite(cue.start) && isFinite(cue.end))
-      .sort((a, b) => a.start - b.start);
+          .trim();
+        if (!isFinite(start) || !isFinite(rawEnd) || !text) return null;
+        const end = Math.max(start + 0.8, rawEnd);
+        const key = start + "|" + end + "|" + text;
+        return seen.has(key) ? null : (seen.add(key), { start, end, text });
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start || a.end - b.end);
   }
 
-  function subtitleClock(seconds) {
-    const ms = Math.max(0, Math.round(Number(seconds) * 1000));
-    const h = Math.floor(ms / 3600000);
-    const m = Math.floor(ms / 60000) % 60;
-    const s = Math.floor(ms / 1000) % 60;
-    const milli = ms % 1000;
-    const two = (n) => String(n).padStart(2, "0");
-    return `${two(h)}:${two(m)}:${two(s)}.${String(milli).padStart(3, "0")}`;
-  }
+  function splitCaptionText(text, maxChars) {
+    const limit = Math.max(12, Number(maxChars) || CAPTION_MAX_CHARS);
+    const value = String(text == null ? "" : text)
+      .replace(/[“”"]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const pieces = value.match(/[^，,。！？!?；;：:]+[，,。！？!?；;：:]?/g) || [value];
+    const chunks = [];
+    let buffer = "";
 
-  function cuesToVtt(cues) {
-    const rows = normalizeSubtitleCues(cues);
-    const blocks = ["WEBVTT", ""];
-    rows.forEach((cue, index) => {
-      let end = cue.end > cue.start ? cue.end : cue.start + 2.5;
-      const nextStart = rows[index + 1] && rows[index + 1].start;
-      if (nextStart != null && nextStart > cue.start) {
-        end = Math.min(end, nextStart - 0.001);
+    const flush = () => {
+      const row = buffer.replace(/[，,。！？!?；;：:\s]+$/g, "").trim();
+      if (row) chunks.push(row);
+      buffer = "";
+    };
+
+    pieces.forEach((piece) => {
+      const strongBreak = /[。！？!?；;：:]$/.test(piece);
+      let part = piece.replace(/[，,。！？!?；;：:\s]+$/g, "").trim();
+      while (part.length > limit) {
+        if (buffer) flush();
+        chunks.push(part.slice(0, limit).trim());
+        part = part.slice(limit).trim();
       }
-      if (end <= cue.start) end = cue.start + 0.5;
-      const text = cue.text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/-->/g, "--&gt;");
-      blocks.push(`${subtitleClock(cue.start)} --> ${subtitleClock(end)}`, text, "");
+      if (!part) return;
+      if (buffer && buffer.length + part.length > limit) flush();
+      buffer += part;
+      if (strongBreak) flush();
     });
-    return blocks.join("\n");
+    flush();
+    return chunks.length ? chunks : [value];
+  }
+
+  function buildCaptionCues(cues) {
+    const rows = normalizeSubtitleCues(cues);
+    const out = [];
+    rows.forEach((cue) => {
+      const parts = splitCaptionText(cue.text);
+      if (parts.length <= 1) {
+        out.push({ start: cue.start, end: cue.end, text: parts[0] || cue.text });
+        return;
+      }
+      const totalChars = Math.max(1, parts.reduce((sum, part) => sum + part.length, 0));
+      let cursor = cue.start;
+      parts.forEach((part, index) => {
+        let end = cue.end;
+        if (index < parts.length - 1) {
+          const ideal = (cue.end - cue.start) * (part.length / totalChars);
+          const tailMin = (parts.length - index - 1) * 0.45;
+          const available = Math.max(0.5, cue.end - cursor - tailMin);
+          end = Math.min(cue.end, cursor + Math.max(0.65, Math.min(ideal, available)));
+        }
+        if (end <= cursor) end = Math.min(cue.end, cursor + 0.4);
+        out.push({ start: cursor, end, text: part });
+        cursor = end;
+      });
+    });
+    return out.sort((a, b) => a.start - b.start || a.end - b.end);
+  }
+
+  function readCaptionPreference(key, allowed, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+      return allowed.includes(value) ? value : fallback;
+    } catch (_) {
+      return fallback;
+    }
   }
 
   class VP {
@@ -110,6 +156,9 @@
     build() {
       this.root.innerHTML = `
         <video playsinline preload="metadata"></video>
+        <div class="vp-caption-layer" aria-live="polite" aria-atomic="true">
+          <span class="vp-caption-window"></span>
+        </div>
         <div class="vp-top"><div><div class="vp-title"></div><div class="vp-sub"></div></div></div>
         <div class="vp-center">
           <div class="vp-bigplay" role="button" aria-label="播放">${ICON.play}</div>
@@ -160,6 +209,7 @@
         loaded: q('.vp-loaded'), played: q('.vp-played'), knob: q('.vp-knob'),
         chapters: q('.vp-chapters'), tip: q('.vp-tip'), tipImg: q('.vp-tip img'), tipTxt: q('.vp-tip span'),
         cur: q('.cur'), dur: q('.dur'), menu: q('.vp-menu'),
+        captionLayer: q('.vp-caption-layer'), captionText: q('.vp-caption-window'),
         toast: q('.vp-toast'), endcard: q('.vp-endcard'),
         rippleL: q('.vp-ripple.left'), rippleR: q('.vp-ripple.right'),
         volSlider: q('.vp-vol-slider input'),
@@ -168,7 +218,11 @@
       this.rate = 1;
       this.ccOn = false;
       this.subtitleCues = [];
-      this.subtitleUrl = null;
+      this.captionStyle = readCaptionPreference('vf_caption_style', ['outline', 'box'], 'outline');
+      this.captionSize = readCaptionPreference('vf_caption_size', ['small', 'medium', 'large'], 'medium');
+      this.captionKey = '';
+      this.root.dataset.captionStyle = this.captionStyle;
+      this.root.dataset.captionSize = this.captionSize;
       this.posKey = 'vf_pos_' + (this.opt.key || '');
       this.qualities = (this.opt && this.opt.qualities) || {};   // {"1440p":{w,h,upscaled}}
       this.quality = (this.opt && this.opt.quality) || null;      // 当前档位（null=母片）
@@ -374,16 +428,10 @@
       }
     }
 
-    applyCaptionMode() {
-      const trackEl = this.video.querySelector('track[data-vks-subtitles]');
-      const track = trackEl && trackEl.track;
-      if (track) track.mode = this.ccOn ? 'showing' : 'disabled';
-    }
-
     toggleCaptions(force) {
       if (!this.subtitleCues.length) {
         this.ccOn = false;
-        this.applyCaptionMode();
+        this.syncCaptions();
         this.toast('本讲暂无可用字幕');
         return;
       }
@@ -391,18 +439,67 @@
       this.el.btnCC.classList.toggle('on', this.ccOn);
       this.el.btnCC.setAttribute('aria-pressed', String(this.ccOn));
       this.root.classList.toggle('captions-on', this.ccOn);
-      this.applyCaptionMode();
+      this.syncCaptions();
       this.toast(this.ccOn ? '字幕：开' : '字幕：关');
     }
 
+    syncCaptions() {
+      const layer = this.el.captionLayer;
+      const label = this.el.captionText;
+      if (!layer || !label) return;
+      let active = null;
+      if (this.ccOn && this.subtitleCues.length) {
+        const now = Math.max(0, Number(this.video.currentTime) || 0);
+        let lo = 0;
+        let hi = this.subtitleCues.length - 1;
+        let found = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (this.subtitleCues[mid].start <= now) {
+            found = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
+        }
+        if (found >= 0 && now < this.subtitleCues[found].end) active = this.subtitleCues[found];
+      }
+      const key = active ? active.start + "|" + active.end + "|" + active.text : "";
+      if (key !== this.captionKey) {
+        this.captionKey = key;
+        label.textContent = active ? active.text : "";
+      }
+      layer.classList.toggle('show', !!active);
+      layer.setAttribute('aria-hidden', active ? 'false' : 'true');
+    }
+
+    captionStyleLabel() {
+      return this.captionStyle === 'box' ? '半透明底框' : '清晰描边';
+    }
+
+    captionSizeLabel() {
+      return ({ small: '小', medium: '中', large: '大' })[this.captionSize] || '中';
+    }
+
+    setCaptionStyle(style) {
+      if (!['outline', 'box'].includes(style)) return;
+      this.captionStyle = style;
+      this.root.dataset.captionStyle = style;
+      try { localStorage.setItem('vf_caption_style', style); } catch (_) {}
+      this.toast('字幕样式：' + this.captionStyleLabel());
+    }
+
+    setCaptionSize(size) {
+      if (!['small', 'medium', 'large'].includes(size)) return;
+      this.captionSize = size;
+      this.root.dataset.captionSize = size;
+      try { localStorage.setItem('vf_caption_size', size); } catch (_) {}
+      this.toast('字幕大小：' + this.captionSizeLabel());
+    }
+
     setSubtitles(cues) {
-      if (this.subtitleUrl) URL.revokeObjectURL(this.subtitleUrl);
-      this.subtitleUrl = null;
-      this.video.querySelectorAll('track[data-vks-subtitles]').forEach((track) => {
-        try { if (track.track) track.track.mode = 'disabled'; } catch (_) {}
-        track.remove();
-      });
-      this.subtitleCues = normalizeSubtitleCues(cues);
+      this.subtitleCues = buildCaptionCues(cues);
+      this.captionKey = "";
       const available = this.subtitleCues.length > 0;
       this.el.btnCC.disabled = !available;
       this.el.btnCC.title = available ? '字幕 (C)' : '本讲暂无可用字幕';
@@ -415,17 +512,7 @@
         this.syncMenu();
         return;
       }
-      const blob = new Blob([cuesToVtt(this.subtitleCues)], { type: 'text/vtt;charset=utf-8' });
-      this.subtitleUrl = URL.createObjectURL(blob);
-      const track = document.createElement('track');
-      track.kind = 'subtitles';
-      track.label = '课程字幕';
-      track.srclang = this.opt.subtitleLang || 'zh-CN';
-      track.src = this.subtitleUrl;
-      track.dataset.vksSubtitles = 'true';
-      track.addEventListener('load', () => this.applyCaptionMode());
-      this.video.appendChild(track);
-      this.applyCaptionMode();
+      this.syncCaptions();
       this.syncMenu();
     }
 
@@ -558,6 +645,7 @@
       e.knob.style.left = p + '%';
       e.cur.textContent = fmt(v.currentTime);
       if (d) e.dur.textContent = fmt(d);
+      this.syncCaptions();
     }
     syncBuffer() {
       const v = this.video;
@@ -672,7 +760,19 @@
         m.innerHTML = `<h4>字幕</h4>` +
           (this.subtitleCues.length
             ? mi('关闭', '', 'cc:off', !this.ccOn) + mi('显示课程字幕', '', 'cc:on', this.ccOn)
-            : mi('本讲暂无可用字幕', '', 'noop', true));
+            : mi('本讲暂无可用字幕', '', 'noop', true)) +
+          `<hr>` +
+          mi('字幕样式', this.captionStyleLabel(), 'view:captionStyle') +
+          mi('字幕大小', this.captionSizeLabel(), 'view:captionSize');
+      } else if (this.menuView === 'captionStyle') {
+        m.innerHTML = `<h4>字幕样式</h4>` +
+          mi('清晰描边（推荐）', '', 'captionStyle:outline', this.captionStyle === 'outline') +
+          mi('半透明底框', '', 'captionStyle:box', this.captionStyle === 'box');
+      } else if (this.menuView === 'captionSize') {
+        m.innerHTML = `<h4>字幕大小</h4>` +
+          mi('小', '', 'captionSize:small', this.captionSize === 'small') +
+          mi('中', '', 'captionSize:medium', this.captionSize === 'medium') +
+          mi('大', '', 'captionSize:large', this.captionSize === 'large');
       } else {
         m.innerHTML = `<h4>设置</h4>` +
           mi('播放速度', this.rate + '×', 'view:speed') +
@@ -696,6 +796,16 @@
             return;
           }
           if (a.startsWith('cc:')) { this.toggleCaptions(a.endsWith('on')); this.closeMenu(); return; }
+          if (a.startsWith('captionStyle:')) {
+            this.setCaptionStyle(a.slice('captionStyle:'.length));
+            this.closeMenu();
+            return;
+          }
+          if (a.startsWith('captionSize:')) {
+            this.setCaptionSize(a.slice('captionSize:'.length));
+            this.closeMenu();
+            return;
+          }
           this.closeMenu();
         });
       });
@@ -733,7 +843,6 @@
       });
     }
     destroy() {
-      if (this.subtitleUrl) URL.revokeObjectURL(this.subtitleUrl);
       this.root.innerHTML = '';
       this.root.classList.remove('vp');
     }
@@ -749,7 +858,9 @@
     }, { once: false });
   };
 
-  VP.cuesToVtt = cuesToVtt;
+  VP.normalizeSubtitleCues = normalizeSubtitleCues;
+  VP.splitCaptionText = splitCaptionText;
+  VP.buildCaptionCues = buildCaptionCues;
   global.VP = VP;
   if (typeof module !== 'undefined' && module.exports) module.exports = VP;
 })(typeof window !== 'undefined' ? window : globalThis);

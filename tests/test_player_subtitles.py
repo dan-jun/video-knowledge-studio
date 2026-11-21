@@ -12,14 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @unittest.skipUnless(shutil.which("node"), "Node.js is required for the player contract test")
 class PlayerSubtitleTests(unittest.TestCase):
-    def test_transcript_builds_webvtt_and_wires_player_controls(self):
+    def test_transcript_builds_readable_caption_overlay(self):
         script = r"""
 const VP = require('./web/player.js');
-const vtt = VP.cuesToVtt([
-  { start: 0, end: 1.2, text: 'First <caption> & test' },
-  { start: 1.2, end: 3.2, text: 'Second line' },
+const cues = VP.buildCaptionCues([
+  { start: 0, end: 8, text: '第一句解释操作系统是什么。第二句说明它有哪些功能，并且为什么需要这些功能。' },
+  { start: 8, end: 12, text: '最后用一个简短例子收尾。' },
 ]);
-process.stdout.write(JSON.stringify({ vtt }));
+if (cues.length < 3) process.exit(2);
+if (cues.some((cue) => !cue.text || cue.text.length > 24)) process.exit(3);
+if (cues[0].start !== 0 || cues[cues.length - 1].end !== 12) process.exit(4);
+process.stdout.write(JSON.stringify({ cues }));
 """
         proc = subprocess.run(
             ["node", "-e", script],
@@ -31,17 +34,22 @@ process.stdout.write(JSON.stringify({ vtt }));
             check=True,
         )
         payload = json.loads(proc.stdout)
-        vtt = payload["vtt"]
-        self.assertTrue(vtt.startswith("WEBVTT\n"))
-        self.assertIn("00:00:00.000 --> 00:00:01.199", vtt)
-        self.assertIn("First &lt;caption&gt; &amp; test", vtt)
-        self.assertIn("00:00:01.200 --> 00:00:03.200", vtt)
+        cues = payload["cues"]
+        self.assertGreaterEqual(len(cues), 3)
+        self.assertTrue(all(len(cue["text"]) <= 24 for cue in cues))
 
         player = (ROOT / "web" / "player.js").read_text(encoding="utf-8")
+        css = (ROOT / "web" / "player.css").read_text(encoding="utf-8")
         knowledge = (ROOT / "web" / "knowledge.js").read_text(encoding="utf-8")
         self.assertIn("setSubtitles(cues)", player)
-        self.assertIn("track.kind = 'subtitles'", player)
-        self.assertIn("track.mode = this.ccOn ? 'showing' : 'disabled'", player)
+        self.assertIn("buildCaptionCues", player)
+        self.assertIn("vp-caption-layer", player)
+        self.assertNotIn("track.kind = 'subtitles'", player)
+        self.assertIn(".vp-caption-layer", css)
+        self.assertIn('.vp[data-caption-style="outline"]', css)
+        self.assertIn(".vp.autohide:not(:hover):not(:focus-within) .vp-caption-layer", css)
+        self.assertIn("captionStyle:outline", player)
+        self.assertIn("captionSize:large", player)
         self.assertIn("window.__vp.setSubtitles", knowledge)
         self.assertIn("d.episode && d.episode.transcript", knowledge)
 
