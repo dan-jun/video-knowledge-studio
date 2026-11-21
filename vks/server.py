@@ -20,6 +20,7 @@ from .ai import TutorService
 from .auth import Auth
 from .config import Settings, load_settings
 from .courses import CourseStore, safe_child
+from .deep_notes import DeepNoteError, DeepNoteService, DeepNoteUnavailable
 from .production import ProductionError, ProductionService
 from .state import StateStore
 from .workflows import WorkflowService
@@ -32,6 +33,7 @@ class Runtime:
         self.state = StateStore(settings.data_dir)
         self.auth = Auth(settings.password, settings.session_secret)
         self.tutor = TutorService(settings)
+        self.deep_notes = DeepNoteService(settings)
         self.production = ProductionService(settings.root, settings.data_dir)
         self.workflows = WorkflowService(self.production, settings.data_dir)
         self.jobs: dict[str, dict[str, Any]] = {}
@@ -272,6 +274,17 @@ class Handler(BaseHTTPRequestHandler):
                 }
                 job = RUNTIME.create_job(packet, image_path)
                 return self._send_json({"ok": True, "job": job, "status": "running"}, 202)
+            if path == "/api/knowledge/deep":
+                episode = RUNTIME.courses.get(str(body.get("id") or ""))
+                if not episode:
+                    return self._send_json({"ok": False, "error": "episode not found"}, 404)
+                try:
+                    result = RUNTIME.deep_notes.start(episode, bool(body.get("force")))
+                except DeepNoteUnavailable as exc:
+                    return self._send_json({"ok": False, "error": str(exc)}, 503)
+                except DeepNoteError as exc:
+                    return self._send_json({"ok": False, "error": str(exc)}, 422)
+                return self._send_json(result, 200 if result.get("cached") else 202)
             if path == "/api/annotations":
                 ep = RUNTIME.courses.get(str(body.get("id") or ""))
                 if not ep:
@@ -332,7 +345,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/login.html":
             return self._send_file(RUNTIME.settings.web_dir / "login.html", "text/html; charset=utf-8")
-        if path in {"/app.css", "/app.js", "/knowledge.css", "/knowledge.js", "/i18n.js",
+        if path in {"/app.css", "/app.js", "/knowledge.css", "/knowledge.js", "/knowledge_plugin.js", "/i18n.js",
                     "/player.css", "/player.js", "/production.css", "/production.js",
                     "/favicon.svg"}:
             return self._send_file(RUNTIME.settings.web_dir / path.lstrip("/"))
@@ -403,6 +416,20 @@ class Handler(BaseHTTPRequestHandler):
             payload["state"] = RUNTIME.state.load(ep["courseId"], ep["id"])
             payload["ai"] = RUNTIME.tutor.status()
             return self._send_json({"ok": True, **payload})
+        if path == "/api/knowledge/deep":
+            ep = RUNTIME.courses.get((query.get("id") or [""])[0])
+            if not ep:
+                return self._send_json({"ok": False, "error": "episode not found"}, 404)
+            try:
+                note = RUNTIME.deep_notes.cached(ep)
+            except DeepNoteError as exc:
+                return self._send_json({"ok": True, "note": None, "reason": str(exc)})
+            return self._send_json({"ok": True, "note": note})
+        if path == "/api/knowledge/deep/job":
+            row = RUNTIME.deep_notes.job((query.get("id") or [""])[0])
+            if not row:
+                return self._send_json({"ok": False, "error": "deep note job not found"}, 404)
+            return self._send_json({"ok": True, **row})
         if path == "/media/video":
             ep = RUNTIME.courses.get((query.get("id") or [""])[0])
             return self._send_file(ep["videoPath"] if ep else None, "video/mp4")
@@ -425,7 +452,18 @@ class Handler(BaseHTTPRequestHandler):
                 at = 0
             return self._send_file(RUNTIME.frame(ep["id"], at))
         if path == "/media/knowledge-frame":
-            ep = RUNTIME.courses.get((query.get("id") or [""])[0])
+            episode_id = (query.get("id") or [""])[0]
+            ep = RUNTIME.courses.get(episode_id)
+            if not ep:
+                try:
+                    number = int((query.get("episode") or [""])[0])
+                except ValueError:
+                    number = None
+                if number is not None:
+                    ep = next(
+                        (row for row in RUNTIME.courses.episodes.values() if row.get("number") == number),
+                        None,
+                    )
             if not ep:
                 return self._send_file(None)
             try:

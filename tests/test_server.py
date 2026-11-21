@@ -9,6 +9,7 @@ import tempfile
 import threading
 import time
 import unittest
+import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -98,6 +99,68 @@ class ServerTests(unittest.TestCase):
                 return
             time.sleep(0.05)
         self.fail("mock AI job did not finish")
+
+    def test_deep_note_endpoints(self):
+        note = {
+            "schemaVersion": 1,
+            "episodeId": "demo-e01",
+            "centralQuestion": "为什么需要证据？",
+            "bigIdea": "保留条件、机制和原文。",
+            "quality": {"coverage": 1.0, "conceptCount": 5},
+            "concepts": [],
+        }
+
+        class FakeDeepNotes:
+            def __init__(self):
+                self.note = None
+
+            def cached(self, episode):
+                return self.note
+
+            def start(self, episode, force=False):
+                self.note = note
+                return {"ok": True, "cached": False, "job": "deep-job-1"}
+
+            def job(self, job_id):
+                return {
+                    "id": job_id,
+                    "status": "done",
+                    "stage": "完成",
+                    "note": note,
+                }
+
+        original = server.RUNTIME.deep_notes
+        fake = FakeDeepNotes()
+        server.RUNTIME.deep_notes = fake
+        try:
+            status, empty = self.get_json("/api/knowledge/deep?id=demo-e01")
+            self.assertEqual(status, 200)
+            self.assertIsNone(empty["note"])
+            status, started = self.post_json("/api/knowledge/deep", {"id": "demo-e01"})
+            self.assertEqual(status, 202)
+            self.assertEqual(started["job"], "deep-job-1")
+            status, job = self.get_json("/api/knowledge/deep/job?id=deep-job-1")
+            self.assertEqual(status, 200)
+            self.assertEqual(job["status"], "done")
+            status, cached = self.get_json("/api/knowledge/deep?id=demo-e01")
+            self.assertEqual(status, 200)
+            self.assertEqual(cached["note"]["episodeId"], "demo-e01")
+        finally:
+            server.RUNTIME.deep_notes = original
+
+    def test_knowledge_frame_is_scoped_to_course_pack(self):
+        with urllib.request.urlopen(
+            self.base + "/media/knowledge-frame?id=demo-e01&file=media/poster.png",
+            timeout=20,
+        ) as response:
+            self.assertEqual(response.status, 200)
+            self.assertGreater(len(response.read()), 1000)
+        with self.assertRaises(urllib.error.HTTPError) as failed:
+            urllib.request.urlopen(
+                self.base + "/media/knowledge-frame?id=demo-e01&file=../course.json",
+                timeout=20,
+            )
+        self.assertEqual(failed.exception.code, 404)
 
     def test_production_modes_and_project_creation(self):
         status, payload = self.get_json("/api/production/modes")

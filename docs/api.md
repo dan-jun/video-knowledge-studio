@@ -23,6 +23,32 @@ Returns:
 }
 ```
 
+### `GET /api/knowledge/deep?id=<episode-id>`
+
+Returns the cached deep note for an episode, or `{"ok": true, "note": null}` when
+no current note exists. A cached note is invalidated when the episode transcript,
+lesson structure or visual evidence changes.
+
+Deep notes contain a central question, thesis, causal model, 5–9 concepts with
+mechanisms, examples, boundaries, misconceptions and evidence, plus comparisons,
+formulas, exam points, recall questions, glossary entries, timeline coverage and
+visual evidence.
+
+### `GET /api/knowledge/deep/job?id=<job-id>`
+
+Returns the asynchronous generation status:
+
+```json
+{
+  "ok": true,
+  "id": "job-id",
+  "status": "running|done|failed",
+  "stage": "校验概念结构、证据和全片覆盖",
+  "error": null,
+  "note": null
+}
+```
+
 ### `GET /api/ai/status`
 
 Returns the selected provider and whether it is the offline demo.
@@ -64,6 +90,25 @@ Returns HTTP 202:
 ```json
 {"ok": true, "job": "12-character-id", "status": "running"}
 ```
+
+### `POST /api/knowledge/deep`
+
+Starts or reuses deep-note generation:
+
+```json
+{"id": "demo-e01", "force": false}
+```
+
+Returns a cached note immediately, an existing in-flight job, or HTTP 202 with a new
+job ID. The generator reads the complete transcript, course notes and safe,
+course-pack-local visual files. It requires a configured Codex CLI or
+OpenAI-compatible model. Offline demo mode returns HTTP 503 instead of fabricating a
+knowledge summary.
+
+The quality gate rejects output with fewer than five or more than nine structured
+concepts, missing mechanisms/examples/boundaries/misconceptions/evidence, less than
+90% timeline coverage, too few recall questions or glossary entries, and missing
+visual explanations when visual evidence is available.
 
 ### `POST /api/annotations`
 

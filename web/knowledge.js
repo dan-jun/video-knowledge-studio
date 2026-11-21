@@ -23,6 +23,8 @@
     lastAnswer: null,
     history: [],
     currentTimeline: -1,
+    deepNote: null,
+    deepStatus: { state: "idle", stage: "" },
   };
 
   function el(tag, cls, text) {
@@ -203,6 +205,54 @@
     node.dataset.revised = "1";
   }
 
+  function paintDeepPlugin(host, lesson) {
+    if (!host || !lesson) return;
+    if (!window.VKSKnowledgePlugin) {
+      host.innerHTML = "";
+      host.appendChild(el("div", "kp-error", "知识总结插件未加载，请刷新页面"));
+      return;
+    }
+    window.VKSKnowledgePlugin.render(host, {
+      lesson,
+      note: S.deepNote,
+      status: S.deepStatus,
+      onSeek: (value) => {
+        const at = parseTime(value);
+        if (at != null) seek(at);
+      },
+      onGenerate: (force) => generateDeepNote(!!force),
+    });
+  }
+
+  async function generateDeepNote(force) {
+    if (!S.data || !S.data.episode) return;
+    if (S.deepStatus && S.deepStatus.state === "running") return;
+    const lesson = S.data.episode;
+    const projectId = S.project && S.project.id;
+    S.deepStatus = { state: "running", stage: force ? "重新生成知识结构" : "读取完整转录与关键画面" };
+    paintDeepPlugin(byId("kdeep"), lesson);
+    try {
+      const note = await window.VKSKnowledgePlugin.generate(lesson, {
+        force,
+        onProgress: (status) => {
+          if (!S.project || S.project.id !== projectId) return;
+          S.deepStatus = status;
+          paintDeepPlugin(byId("kdeep"), lesson);
+        },
+      });
+      if (!S.project || S.project.id !== projectId) return;
+      S.deepNote = note;
+      S.deepStatus = { state: "done", stage: "完成" };
+      paintDeepPlugin(byId("kdeep"), lesson);
+      toast("深度知识总结已生成");
+    } catch (err) {
+      if (!S.project || S.project.id !== projectId) return;
+      S.deepStatus = { state: "failed", stage: "失败", error: err.message || String(err) };
+      paintDeepPlugin(byId("kdeep"), lesson);
+      toast("深度总结生成失败");
+    }
+  }
+
   function render() {
     const box = byId("knowledge");
     const lesson = S.data && S.data.episode;
@@ -218,7 +268,7 @@
     eyebrow.appendChild(chip("证据覆盖 · 转录 + 关键帧", "amber"));
     if (transcriptUnits.length) {
       const segmentCount = transcriptUnits.reduce((sum, unit) => sum + unit.rows.length, 0);
-      eyebrow.appendChild(chip("逐段讲解 " + transcriptUnits.length + " 段 / " + segmentCount + " 句", "mint"));
+      eyebrow.appendChild(chip("原文证据 " + segmentCount + " 句 · 默认折叠", "mint"));
     }
     hero.appendChild(eyebrow);
     hero.appendChild(el("h2", "k-title", lesson.title));
@@ -236,6 +286,11 @@
     actions.appendChild(button("问 AI", "primary", () => openDock("custom")));
     hero.appendChild(actions);
     box.appendChild(hero);
+
+    const deepHost = el("div", "k-plugin-host");
+    deepHost.id = "kdeep";
+    paintDeepPlugin(deepHost, lesson);
+    box.appendChild(deepHost);
 
     if (lesson.formula || lesson.trap || lesson.memoryHook) {
       const quick = el("section", "k-quick");
@@ -403,13 +458,15 @@
     }
 
     if (transcriptUnits.length) {
-      const section = el("section", "k-section transcript-depth");
+      const section = el("details", "k-section transcript-depth evidence-only");
       section.dataset.vksTranscriptSection = "true";
       const segmentCount = transcriptUnits.reduce((sum, unit) => sum + unit.rows.length, 0);
-      section.appendChild(sectionHead(
-        "逐段知识卡",
-        transcriptUnits.length + " 段 · " + segmentCount + " 句 · 覆盖全片细节"
+      const evidenceSummary = el("summary", "k-evidence-summary");
+      evidenceSummary.appendChild(sectionHead(
+        "完整原文证据",
+        segmentCount + " 句 · 仅供核对，不作为知识点总结"
       ));
+      section.appendChild(evidenceSummary);
 
       const lastEnd = transcriptUnits[transcriptUnits.length - 1].end;
       const duration = Math.max(1, Number(lesson.duration) || lastEnd || 1);
@@ -438,7 +495,7 @@
       transcriptUnits.forEach((unit) => {
         const details = el("details", "k-transcript-unit");
         details.dataset.vksTranscriptUnit = String(unit.index);
-        details.open = unit.index === 0;
+        details.open = false;
         const summary = el("summary");
         const top = el("div", "k-transcript-top");
         const heading = el("strong", "", transcriptTopic(unit, lesson));
@@ -1309,6 +1366,8 @@
     S.history = [];
     S.selected = null;
     S.currentTimeline = -1;
+    S.deepNote = null;
+    S.deepStatus = { state: "idle", stage: "" };
     const seq = ++S.loadSeq;
     root.innerHTML = '<div class="k-loading"><div class="k-spinner"></div>正在装入 87 讲知识数据…</div>';
     try {
@@ -1322,10 +1381,23 @@
       if (window.__vp && window.__vp.setSubtitles) {
         window.__vp.setSubtitles((d.episode && d.episode.transcript) || []);
       }
+      try {
+        const deepRes = await fetch("/api/knowledge/deep?id=" + encodeURIComponent(project.id));
+        const deep = await deepRes.json();
+        if (seq !== S.loadSeq) return;
+        S.deepNote = deep.ok ? deep.note : null;
+        if (!S.deepNote && deep.reason) {
+          S.deepStatus = { state: "failed", stage: "无法生成", error: deep.reason };
+        }
+      } catch (_) {
+        S.deepNote = null;
+      }
       render();
     } catch (err) {
       if (seq !== S.loadSeq) return;
       if (window.__vp && window.__vp.setSubtitles) window.__vp.setSubtitles([]);
+      S.deepNote = null;
+      S.deepStatus = { state: "idle", stage: "" };
       root.innerHTML = "";
       const fail = el("div", "k-empty", err.message || String(err));
       fail.style.marginTop = "20px";

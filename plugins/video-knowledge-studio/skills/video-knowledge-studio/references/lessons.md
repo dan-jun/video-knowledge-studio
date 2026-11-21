@@ -1,5 +1,33 @@
 # Lessons
 
+## 2026-11-21 — Verify the listening PID before declaring a restart complete
+
+- **Symptom:** After changing the studio server, a reload still served old code.
+  The handoff PID was terminated, but another process still owned port 7870; a new
+  process briefly started without becoming the listener.
+- **Root cause:** Process readiness was inferred from a remembered handoff PID and
+  from the existence of a newly launched process, rather than from the socket owner.
+- **Fix:** Resolve the exact listener with `Get-NetTCPConnection`, validate its
+  command line, stop that process and any failed contender, start the server hidden,
+  then wait until the listener belongs to the intended service before testing routes.
+- **Verification:** The final listener command points to `tools/studio_server.py
+  --host 0.0.0.0 --port 7870`; the browser showed the new evidence label, a loaded
+  deep-note result, loaded visual thumbnails, and a timestamp jump to `currentTime=31`.
+
+## 2026-11-21 — Deep knowledge notes need a synthesis contract
+
+- **Symptom:** A player plugin exposed a “generate notes” button, but the open-source
+  server had no deep-note endpoints and no contract preventing a transcript dump.
+- **Root cause:** The frontend and visual styling were implemented before the service
+  generated, validated, cached and invalidated a distinct knowledge artifact.
+- **Fix:** Add an asynchronous deep-note service with a strict JSON schema, full
+  transcript and visual inputs, a 5–9 concept structure, 90% timeline coverage,
+  source-hash cache invalidation, safe frame paths and explicit failure for offline
+  demo mode.
+- **Verification:** `tests/test_deep_notes.py` covers caching, stale-input rejection,
+  thin-output rejection and offline behavior; `tests/test_server.py` covers all three
+  routes and path scoping; the full 48-test suite and Node syntax checks pass.
+
 ## 2026-11-21 — Native cue styling is not a subtitle system
 
 - **Symptom:** One long transcript segment became one giant native caption cue;

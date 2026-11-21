@@ -59,6 +59,7 @@ assumes the plain-language meaning shown here.
 | Task | Current status |
 | --- | --- |
 | Play local courses, timed notes and contextual AI questions | Built into the app; a configured model is required for real AI answers |
+| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; requires a configured model and validates 5–9 concepts plus 90% timeline coverage |
 | Generate, check and render from a reviewed production spec | Built in; the persistent workflow pauses between stages for review |
 | Search Bilibili / YouTube | Optional Agent tool using `yt-dlp`; platform access can fail and results need review |
 | Select sources and author a sourced spec | Requires an Agent or a person |
@@ -163,6 +164,9 @@ The timeline is the main connection between reading and watching:
 - Playback highlights the current knowledge block.
 - Selecting a note timestamp jumps to the corresponding video moment.
 - Selecting visual evidence returns to the source frame.
+- The deep knowledge plugin separates synthesis from evidence: the raw transcript is
+  folded away, while the main surface exposes problems, causal chains, mechanisms,
+  examples, boundaries, misconceptions, comparisons, recall and visual proof.
 - When available, the AI tutor receives the selected note, nearby transcript,
   timestamp and a relevant video frame with your question.
 

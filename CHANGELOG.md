@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Added a player-embedded deep knowledge plugin that reconstructs a lesson into a
+  central problem, causal model, structured concepts, boundaries, misconceptions,
+  comparisons, recall, glossary and a timeline coverage ledger.
+- Added asynchronous deep-note generation, per-episode caching and source-hash
+  invalidation for the Codex CLI and OpenAI-compatible providers.
+- Added a quality gate that rejects thin or under-covered output and requires visual
+  evidence when the course pack supplies key frames.
+- Demoted the raw transcript to a folded, explicitly evidence-only section and fixed
+  the knowledge-frame URL contract.
+
 ## 0.2.8 - 2026-11-19
 
 - Added a complete English product experience for the learning workspace,
