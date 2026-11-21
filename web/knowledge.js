@@ -49,6 +49,95 @@
     return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
+  const EMPHASIS_RE = /(定义|功能|目标|作用|区别|关键|注意|必须|不能|本质|因此|所以|也就是说|指的是|组成|步骤|流程|机制|条件|结论|总结|分类|优点|缺点|问题)/;
+  const OPENER_RE = /^(?:好的|那么|其实|所以|然后|首先|接下来|那|我们|大家|可以看到|比如说)[，,、\s]*/;
+
+  function cleanTranscriptText(value) {
+    return String(value == null ? "" : value)
+      .replace(/\s+/g, " ")
+      .replace(/\*\*|`/g, "")
+      .replace(/^[,，、;；:：\s]+/, "")
+      .trim();
+  }
+
+  function normalizeTranscript(rows) {
+    const seen = new Set();
+    return (Array.isArray(rows) ? rows : [])
+      .map((row) => {
+        const start = Number(row && row.start);
+        let end = Number(row && row.end);
+        const text = cleanTranscriptText(row && row.text);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || !text) return null;
+        end = Math.max(start, end);
+        const key = start + "|" + end + "|" + text;
+        return seen.has(key) ? null : (seen.add(key), { start, end, text });
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+  }
+
+  function transcriptHeading(rows) {
+    const sentences = rows
+      .flatMap((row) => row.text.split(/[。！？!?；;]/))
+      .map(cleanTranscriptText)
+      .filter((text) => text.length >= 8);
+    const ranked = sentences
+      .map((text) => ({
+        text,
+        score: Math.min(text.length, 42) + (EMPHASIS_RE.test(text) ? 18 : 0),
+      }))
+      .sort((a, b) => b.score - a.score);
+    const chosen = cleanTranscriptText((ranked[0] || { text: rows[0].text }).text)
+      .replace(OPENER_RE, "");
+    return chosen.length > 32 ? chosen.slice(0, 32) + "…" : chosen || "讲解片段";
+  }
+
+  function groupTranscript(rows, options) {
+    const opt = options || {};
+    const targetChars = Math.max(240, Number(opt.targetChars) || 600);
+    const maxSeconds = Math.max(30, Number(opt.maxSeconds) || 100);
+    const all = normalizeTranscript(rows);
+    const units = [];
+    let current = null;
+
+    const flush = () => {
+      if (!current || !current.rows.length) return;
+      const text = current.rows.map((row) => row.text).join(" ");
+      units.push({
+        index: units.length,
+        start: current.rows[0].start,
+        end: current.rows[current.rows.length - 1].end,
+        heading: transcriptHeading(current.rows),
+        preview: text.length > 132 ? text.slice(0, 132) + "…" : text,
+        text,
+        rows: current.rows.slice(),
+      });
+      current = null;
+    };
+
+    all.forEach((row) => {
+      if (current) {
+        const nextChars = current.chars + row.text.length + 1;
+        const nextDuration = row.end - current.rows[0].start;
+        const longGap = row.start - current.rows[current.rows.length - 1].end > 45;
+        if (nextChars > targetChars || nextDuration > maxSeconds || longGap) flush();
+      }
+      if (!current) current = { rows: [], chars: 0 };
+      current.rows.push(row);
+      current.chars += row.text.length + 1;
+    });
+    flush();
+    return units;
+  }
+
+  function transcriptTopic(unit, lesson) {
+    let matched = null;
+    (lesson.timeline || []).forEach((row) => {
+      if (row.start != null && Number(row.start) <= unit.start + 0.5) matched = row;
+    });
+    return (matched && String(matched.topic || "").trim()) || unit.heading;
+  }
+
   function rich(text, className) {
     const box = el("span", className || "k-rich");
     const value = String(text == null ? "" : text);
@@ -118,6 +207,7 @@
     const box = byId("knowledge");
     const lesson = S.data && S.data.episode;
     if (!box || !lesson) return;
+    const transcriptUnits = groupTranscript(lesson.transcript || []);
     box.innerHTML = "";
 
     const hero = el("section", "k-hero");
@@ -126,6 +216,10 @@
     eyebrow.appendChild(chip(lesson.chapter || "课程"));
     eyebrow.appendChild(chip(clock(lesson.duration), "mint"));
     eyebrow.appendChild(chip("证据覆盖 · 转录 + 关键帧", "amber"));
+    if (transcriptUnits.length) {
+      const segmentCount = transcriptUnits.reduce((sum, unit) => sum + unit.rows.length, 0);
+      eyebrow.appendChild(chip("逐段讲解 " + transcriptUnits.length + " 段 / " + segmentCount + " 句", "mint"));
+    }
     hero.appendChild(eyebrow);
     hero.appendChild(el("h2", "k-title", lesson.title));
     const thesis = el("p", "k-thesis");
@@ -305,6 +399,72 @@
         card.appendChild(body);
         section.appendChild(card);
       });
+      box.appendChild(section);
+    }
+
+    if (transcriptUnits.length) {
+      const section = el("section", "k-section transcript-depth");
+      section.dataset.vksTranscriptSection = "true";
+      const segmentCount = transcriptUnits.reduce((sum, unit) => sum + unit.rows.length, 0);
+      section.appendChild(sectionHead(
+        "逐段知识卡",
+        transcriptUnits.length + " 段 · " + segmentCount + " 句 · 覆盖全片细节"
+      ));
+
+      const lastEnd = transcriptUnits[transcriptUnits.length - 1].end;
+      const duration = Math.max(1, Number(lesson.duration) || lastEnd || 1);
+      const coverage = el("div", "k-detail-coverage");
+      const coverageText = el("div", "k-detail-coverage-text");
+      coverageText.appendChild(el("span", "", "时间覆盖 " + clock(lastEnd) + " / " + clock(duration)));
+      coverageText.appendChild(el("small", "", "点标题展开逐句原话，点任意一句跳回视频"));
+      const bar = el("div", "k-detail-bar");
+      const fill = el("i");
+      fill.style.width = Math.min(100, Math.round((lastEnd / duration) * 100)) + "%";
+      bar.appendChild(fill);
+      coverage.appendChild(coverageText);
+      coverage.appendChild(bar);
+      section.appendChild(coverage);
+
+      const tools = el("div", "k-detail-tools");
+      tools.appendChild(button("展开全部", "", () => {
+        section.querySelectorAll("details").forEach((row) => { row.open = true; });
+      }));
+      tools.appendChild(button("全部收起", "", () => {
+        section.querySelectorAll("details").forEach((row) => { row.open = false; });
+      }));
+      section.appendChild(tools);
+
+      const list = el("div", "k-transcript-list");
+      transcriptUnits.forEach((unit) => {
+        const details = el("details", "k-transcript-unit");
+        details.dataset.vksTranscriptUnit = String(unit.index);
+        details.open = unit.index === 0;
+        const summary = el("summary");
+        const top = el("div", "k-transcript-top");
+        const heading = el("strong", "", transcriptTopic(unit, lesson));
+        heading.title = unit.heading;
+        top.appendChild(heading);
+        top.appendChild(el("time", "", clock(unit.start) + "–" + clock(unit.end)));
+        summary.appendChild(top);
+        summary.appendChild(el("p", "k-transcript-preview", unit.preview));
+        summary.appendChild(el("small", "k-transcript-count", unit.rows.length + " 句原话 · 展开查看"));
+        details.appendChild(summary);
+
+        const lines = el("div", "k-transcript-lines");
+        unit.rows.forEach((row) => {
+          const line = document.createElement("button");
+          line.type = "button";
+          line.className = "k-transcript-line";
+          line.title = "跳到 " + clock(row.start);
+          line.onclick = () => seek(row.start);
+          line.appendChild(el("time", "", clock(row.start)));
+          line.appendChild(el("span", "", row.text));
+          lines.appendChild(line);
+        });
+        details.appendChild(lines);
+        list.appendChild(details);
+      });
+      section.appendChild(list);
       box.appendChild(section);
     }
 
@@ -1184,7 +1344,11 @@
     if (dock) dock.classList.remove("show");
   }
 
-  setupSelection();
-  setupDock();
-  window.KNOWLEDGE = { load, clear, seek, ask, syncTimeline };
+  const api = { load, clear, seek, ask, syncTimeline, normalizeTranscript, groupTranscript };
+  if (typeof window !== "undefined") window.KNOWLEDGE = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  if (typeof document !== "undefined") {
+    setupSelection();
+    setupDock();
+  }
 })();

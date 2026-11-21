@@ -1,5 +1,27 @@
 # Lessons
 
+## 2026-11-21 — Summary cards must be backed by full evidence coverage
+
+- **Symptom:** Each episode showed only 2–5 core cards, 2–5 timeline rows and a few
+  terms, so much of the lecture never appeared in the knowledge panel.
+- **Root cause:** The renderer consumed only the pre-summarized `core` and `timeline`
+  arrays and did not expose the complete timed transcript as readable knowledge cards.
+- **Fix:** Group every valid transcript segment exactly once into timed, expandable
+  knowledge cards; show section/segment coverage and keep per-line playback jumps.
+- **Verification:** Episode 13 renders 10 expandable cards covering 243 transcript
+  segments; a deterministic test compares flattened card segments with the input rows.
+
+## 2026-11-21 — An overlay control needs its inverse transition
+
+- **Symptom:** Pressing the settings gear repeatedly kept the menu open, and the menu
+  could cover the video indefinitely.
+- **Root cause:** The gear action always called `openMenu()`; there was no toggle,
+  Escape handler, outside-click dismissal, or automatic close after choosing an option.
+- **Fix:** Toggle from the gear, close on Escape/outside click, and close after applying
+  speed, quality, or caption choices.
+- **Verification:** In the real player, gear opened and closed the menu; Escape and an
+  outside click closed it; selecting 1× speed closed it afterward.
+
 ## 2026-11-21 — A media control must change media state
 
 - **Symptom:** The subtitle button changed its own `ccOn` flag and showed a toast, but

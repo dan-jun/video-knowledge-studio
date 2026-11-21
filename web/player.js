@@ -288,6 +288,11 @@
 
       // 键盘
       document.addEventListener('keydown', (ev) => this.onKey(ev));
+      document.addEventListener('pointerdown', (ev) => {
+        if (!e.menu.classList.contains('open')) return;
+        if (e.menu.contains(ev.target) || (ev.target.closest && ev.target.closest('[data-act="gear"]'))) return;
+        this.closeMenu();
+      });
     }
 
     onKey(ev) {
@@ -312,6 +317,9 @@
       else if (k === 'm' || k === 'M') this.act('mute');
       else if (k === 'f' || k === 'F') this.toggleFull();
       else if (k === 't' || k === 'T') this.act('theater');
+      else if (k === 'Escape' && this.el.menu.classList.contains('open')) {
+        this.closeMenu();
+      }
       else if (k === 'Escape' && document.body.classList.contains('vp-theater')) {
         document.body.classList.remove('vp-theater');
         this.toast('退出剧场模式');
@@ -359,7 +367,7 @@
         case 'cover': this.opt.onCover && this.opt.onCover(); break;
         case 'shot': this.screenshot(); break;
         case 'cc': this.toggleCaptions(); break;
-        case 'gear': this.openMenu('settings'); break;
+        case 'gear': this.toggleMenu('settings'); break;
         case 'pip': this.togglePip(); break;
         case 'theater': this.toggleTheater(); break;
         case 'full': this.toggleFull(); break;
@@ -632,6 +640,10 @@
       this.renderMenu();
       this.el.menu.classList.add('open');
     }
+    toggleMenu(view) {
+      if (this.el.menu.classList.contains('open')) this.closeMenu();
+      else this.openMenu(view || 'settings');
+    }
     closeMenu() { this.el.menu.classList.remove('open'); }
     renderMenu() {
       const m = this.el.menu;
@@ -675,15 +687,15 @@
           ev.stopPropagation();
           const a = el.dataset.m;
           if (a.startsWith('view:')) { this.menuView = a.slice(5); this.renderMenu(); return; }
-          if (a.startsWith('rate:')) { this.setRate(Number(a.slice(5))); this.openMenu('settings'); return; }
+          if (a.startsWith('rate:')) { this.setRate(Number(a.slice(5))); this.closeMenu(); return; }
           if (a === 'shortcuts') { this.shortcuts(); this.closeMenu(); return; }
           if (a === 'restart') { v.currentTime = 0; this.play(); this.closeMenu(); return; }
           if (a.startsWith('q:')) {
             this.switchQuality(a.slice(2) || null);
-            this.openMenu('settings');
+            this.closeMenu();
             return;
           }
-          if (a.startsWith('cc:')) { this.toggleCaptions(a.endsWith('on')); this.openMenu('settings'); return; }
+          if (a.startsWith('cc:')) { this.toggleCaptions(a.endsWith('on')); this.closeMenu(); return; }
           this.closeMenu();
         });
       });
