@@ -82,6 +82,7 @@
       top.appendChild(h("span", "kp-coverage", "证据覆盖 " + Math.round(Number(quality.coverage) * 100) + "%"));
     }
     if (quality.conceptCount) top.appendChild(h("span", "kp-coverage", quality.conceptCount + " 个核心概念"));
+    if (quality.visualClusters) top.appendChild(h("span", "kp-coverage", quality.visualClusters + " 组关键画面"));
     top.appendChild(h("span", "kp-model", note.model || "AI 综合"));
     hero.appendChild(top);
 
@@ -140,6 +141,109 @@
       if (index < note.mentalModel.length - 1) flow.appendChild(h("i", "kp-arrow", "→"));
     });
     node.appendChild(flow);
+    return node;
+  }
+
+  function renderConceptGraph(note, onSeek) {
+    const graph = note.conceptGraph || {};
+    const nodes = graph.nodes || [];
+    const edges = graph.edges || [];
+    if (nodes.length < 2 || !edges.length) return null;
+    const node = section("概念知识网", "核心概念 + 前置、因果、对比、例子与应用关系");
+    const canvas = h("div", "kp-graph");
+    const width = 760;
+    const height = 390;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const positions = {};
+    const ordered = nodes.slice().sort((a, b) => {
+      const rank = { core: 0, mechanism: 1, boundary: 2, application: 3 };
+      return (rank[a.role] ?? 9) - (rank[b.role] ?? 9);
+    });
+    ordered.forEach((row, index) => {
+      const angle = -Math.PI / 2 + (Math.PI * 2 * index) / ordered.length;
+      const radiusX = Math.min(285, 125 + ordered.length * 22);
+      const radiusY = Math.min(145, 82 + ordered.length * 9);
+      positions[row.conceptTitle] = {
+        x: centerX + Math.cos(angle) * radiusX,
+        y: centerY + Math.sin(angle) * radiusY,
+      };
+    });
+
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "kp-graph-edges");
+    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    svg.setAttribute("aria-hidden", "true");
+    const defs = document.createElementNS(NS, "defs");
+    const marker = document.createElementNS(NS, "marker");
+    marker.setAttribute("id", "kp-arrow");
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("refX", "9");
+    marker.setAttribute("refY", "5");
+    marker.setAttribute("markerWidth", "5");
+    marker.setAttribute("markerHeight", "5");
+    marker.setAttribute("orient", "auto-start-reverse");
+    const markerPath = document.createElementNS(NS, "path");
+    markerPath.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    markerPath.setAttribute("fill", "currentColor");
+    marker.appendChild(markerPath);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+
+    edges.forEach((edge, index) => {
+      const left = positions[edge.from];
+      const right = positions[edge.to];
+      if (!left || !right) return;
+      const path = document.createElementNS(NS, "path");
+      const midX = (left.x + right.x) / 2;
+      const midY = (left.y + right.y) / 2;
+      const bend = ((index % 5) - 2) * 14;
+      path.setAttribute(
+        "d",
+        "M " + left.x + " " + left.y +
+        " Q " + (midX + bend) + " " + (midY - bend) +
+        " " + right.x + " " + right.y
+      );
+      path.setAttribute("class", "kp-graph-edge edge-" + clean(edge.type));
+      path.setAttribute("marker-end", "url(#kp-arrow)");
+      const title = document.createElementNS(NS, "title");
+      title.textContent = edge.from + " → " + edge.to + "：" + (edge.explain || edge.type);
+      path.appendChild(title);
+      svg.appendChild(path);
+    });
+    canvas.appendChild(svg);
+
+    ordered.forEach((row) => {
+      const at = positions[row.conceptTitle];
+      const concept = (note.concepts || []).find((item) => item.title === row.conceptTitle);
+      const time = concept?.evidence?.[0]?.time || "";
+      const card = h("button", "kp-graph-node role-" + clean(row.role));
+      card.type = "button";
+      card.style.left = (at.x / width) * 100 + "%";
+      card.style.top = (at.y / height) * 100 + "%";
+      card.appendChild(h("b", "", row.conceptTitle));
+      card.appendChild(h("small", "", row.summary || row.role));
+      if (time) card.appendChild(h("span", "", time));
+      card.onclick = () => onSeek && onSeek(time);
+      canvas.appendChild(card);
+    });
+
+    const legend = h("div", "kp-graph-legend");
+    [
+      ["prerequisite", "前置"],
+      ["mechanism", "机制"],
+      ["cause", "因果"],
+      ["contrast", "对比"],
+      ["example", "例子"],
+      ["application", "应用"],
+    ].forEach(([type, label]) => {
+      const item = h("span");
+      item.appendChild(h("i", "edge-" + type));
+      item.appendChild(document.createTextNode(label));
+      legend.appendChild(item);
+    });
+    canvas.appendChild(legend);
+    node.appendChild(canvas);
     return node;
   }
 
@@ -289,16 +393,26 @@
     if (!(note.coverage || []).length) return null;
     const details = h("details", "kp-section kp-coverage-details");
     const summary = h("summary", "kp-head");
-    summary.appendChild(h("h3", "", "全片知识覆盖账本"));
-    summary.appendChild(h("small", "", "证明内容不是只抓了开头几段"));
+    summary.appendChild(h("h3", "", "完整字幕覆盖账本"));
+    summary.appendChild(h("small", "",
+      (note.quality?.coverageBlocks || note.coverage.length) + " 块全部有归属"
+    ));
     details.appendChild(summary);
     const list = h("div", "kp-coverage-list");
     note.coverage.forEach((row) => {
       const item = h("div", "kp-coverage-row");
       item.appendChild(jumpButton(row.time || (row.start + "–" + row.end), onSeek, row.start + "–" + row.end));
       const body = h("div");
-      body.appendChild(h("b", "", row.topic));
+      const title = h("b", "", row.topic);
+      if (row.status) title.appendChild(h("span", "kp-audit-status", " · " + row.status));
+      body.appendChild(title);
+      if ((row.keyPoints || []).length) {
+        const points = h("ul", "kp-block-points");
+        row.keyPoints.forEach((point) => points.appendChild(h("li", "", point)));
+        body.appendChild(points);
+      }
       if ((row.conceptTitles || []).length) body.appendChild(h("p", "", "对应：" + row.conceptTitles.join(" · ")));
+      if (row.exclusionReason) body.appendChild(h("p", "kp-audit-reason", "判定：" + row.exclusionReason));
       item.appendChild(body);
       list.appendChild(item);
     });
@@ -308,7 +422,10 @@
 
   function renderVisual(note, lesson, onSeek) {
     if (!(note.visualEvidence || []).length) return null;
-    const node = section("画面补充了什么", "只保留文字之外的板书、流程、图表与界面证据");
+    const node = section(
+      "画面补充了什么",
+      (note.quality?.visualClusters || note.visualEvidence.length) + " 组画面已进入笔记"
+    );
     const grid = h("div", "kp-visual-grid");
     note.visualEvidence.forEach((row) => {
       const card = h("article", "kp-visual");
@@ -336,6 +453,32 @@
     });
     node.appendChild(grid);
     return node;
+  }
+
+  function renderVisualAudit(note, onSeek) {
+    const rows = note.visualAudit || [];
+    if (!rows.length) return null;
+    const details = h("details", "kp-section kp-visual-audit");
+    const summary = h("summary", "kp-head");
+    summary.appendChild(h("h3", "", "画面审核账本"));
+    summary.appendChild(h("small", "",
+      rows.length + " 帧全部有决定 · " +
+      (note.quality?.includedVisualClusters || 0) + " 组进入笔记"
+    ));
+    details.appendChild(summary);
+    const list = h("div", "kp-audit-list");
+    rows.forEach((row) => {
+      const item = h("div", "kp-audit-row decision-" + clean(row.decision));
+      item.appendChild(jumpButton(row.time, onSeek));
+      const body = h("div");
+      body.appendChild(h("b", "", row.candidateId + " · " + row.clusterId + " · " + row.decision));
+      body.appendChild(h("p", "", row.reason || ""));
+      if (row.caption) body.appendChild(h("small", "", row.caption));
+      item.appendChild(body);
+      list.appendChild(item);
+    });
+    details.appendChild(list);
+    return details;
   }
 
   function renderGlossary(note, onSeek) {
@@ -383,6 +526,7 @@
     [
       renderGoals(note),
       renderMentalModel(note, onSeek),
+      renderConceptGraph(note, onSeek),
       renderConcepts(note, onSeek),
       renderComparisons(note),
       renderFormulas(note),
@@ -391,6 +535,7 @@
       renderGlossary(note, onSeek),
       renderCoverage(note, onSeek),
       renderVisual(note, lesson, onSeek),
+      renderVisualAudit(note, onSeek),
     ].forEach((node) => {
       if (node) host.appendChild(node);
     });
@@ -454,6 +599,12 @@
       rows.push("", "## 知识主线");
       note.mentalModel.forEach((x, i) => rows.push((i + 1) + ". **" + clean(x.label) + "** `" + clean(x.time) + "` — " + clean(x.explain)));
     }
+    if ((note.conceptGraph?.edges || []).length) {
+      rows.push("", "## 概念知识网");
+      note.conceptGraph.edges.forEach((edge) => {
+        rows.push("- **" + clean(edge.from) + " → " + clean(edge.to) + "** [" + clean(edge.type) + "] `" + clean(edge.time) + "` — " + clean(edge.explain));
+      });
+    }
     (note.concepts || []).forEach((concept, index) => {
       rows.push("", "## " + (index + 1) + ". " + clean(concept.title));
       rows.push("", "**一句话**：" + clean(concept.oneLine));
@@ -488,8 +639,18 @@
       note.glossary.forEach((x) => rows.push("| " + [x.term, x.plain, x.example, x.time].map(clean).join(" | ") + " |"));
     }
     if ((note.coverage || []).length) {
-      rows.push("", "## 全片知识覆盖");
-      note.coverage.forEach((x) => rows.push("- `" + clean(x.start) + "–" + clean(x.end) + "` **" + clean(x.topic) + "**"));
+      rows.push("", "## 完整字幕覆盖账本");
+      note.coverage.forEach((x) => {
+        rows.push("- `" + clean(x.start) + "–" + clean(x.end) + "` **" + clean(x.topic) + "** [" + clean(x.status) + "]");
+        (x.keyPoints || []).forEach((point) => rows.push("  - " + clean(point)));
+      });
+    }
+    if ((note.visualAudit || []).length) {
+      rows.push("", "## 画面审核账本");
+      note.visualAudit.forEach((x) => rows.push(
+        "- `" + clean(x.time) + "` " + clean(x.candidateId) + " / " + clean(x.clusterId) +
+        " **" + clean(x.decision) + "** — " + clean(x.reason)
+      ));
     }
     if (note.quality?.warnings?.length) {
       rows.push("", "## 质量提醒");

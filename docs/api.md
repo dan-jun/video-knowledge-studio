@@ -105,10 +105,12 @@ course-pack-local visual files. It requires a configured Codex CLI or
 OpenAI-compatible model. Offline demo mode returns HTTP 503 instead of fabricating a
 knowledge summary.
 
-The quality gate rejects output with fewer than five or more than nine structured
-concepts, missing mechanisms/examples/boundaries/misconceptions/evidence, less than
-90% timeline coverage, too few recall questions or glossary entries, and missing
-visual explanations when visual evidence is available.
+The evidence gate assigns every second of the episode to one deterministic transcript
+block. Every block must return exactly once with teaching, housekeeping or uncertainty
+status; teaching blocks retain their key points. Every visual candidate must receive a
+decision, and every near-duplicate visual cluster needs an included representative.
+The synthesis gate also requires 5–9 complete concepts and a connected typed graph with
+no isolated nodes and at least one contrast, example or application relationship.
 
 ### `POST /api/annotations`
 

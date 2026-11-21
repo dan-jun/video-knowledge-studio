@@ -59,7 +59,7 @@ assumes the plain-language meaning shown here.
 | Task | Current status |
 | --- | --- |
 | Play local courses, timed notes and contextual AI questions | Built into the app; a configured model is required for real AI answers |
-| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; requires a configured model and validates 5–9 concepts plus 90% timeline coverage |
+| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; requires a configured model and validates complete transcript accounting, every visual cluster, 5–9 concepts and a connected typed concept graph |
 | Generate, check and render from a reviewed production spec | Built in; the persistent workflow pauses between stages for review |
 | Search Bilibili / YouTube | Optional Agent tool using `yt-dlp`; platform access can fail and results need review |
 | Select sources and author a sourced spec | Requires an Agent or a person |
@@ -167,6 +167,9 @@ The timeline is the main connection between reading and watching:
 - The deep knowledge plugin separates synthesis from evidence: the raw transcript is
   folded away, while the main surface exposes problems, causal chains, mechanisms,
   examples, boundaries, misconceptions, comparisons, recall and visual proof.
+- A deterministic subtitle ledger assigns every second to a teaching, housekeeping or
+  uncertainty block; a visual ledger decides every frame; and a typed concept graph
+  connects all central concepts without isolated nodes.
 - When available, the AI tutor receives the selected note, nearby transcript,
   timestamp and a relevant video frame with your question.
 

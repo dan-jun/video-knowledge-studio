@@ -1,5 +1,20 @@
 # Lessons
 
+## 2026-11-21 — Soft model judgments need deterministic evidence ledgers
+
+- **Symptom:** A plugin could claim coverage while skipping useful diagrams and while
+  returning only a linear knowledge flow.
+- **Root cause:** The prompt asked for coverage and visuals, but the validator did not
+  assign fixed transcript blocks or account for every frame candidate independently.
+- **Fix:** Generate contiguous transcript blocks first, require a decision and key
+  points for every block, cluster visual candidates but audit every frame, require an
+  included representative from each cluster, and validate a connected multi-relation
+  concept graph.
+- **Verification:** Unit tests cover exact block union, stale cache rejection, visible
+  candidate completeness, and disconnected graph failure. Real Codex runs completed for
+  the demo course, and Episode 13 rendered 3 blocks, 28 audited frames in 21 clusters,
+  21 included visuals, and an 8-node/12-edge graph in the live player.
+
 ## 2026-11-21 — Verify the listening PID before declaring a restart complete
 
 - **Symptom:** After changing the studio server, a reload still served old code.

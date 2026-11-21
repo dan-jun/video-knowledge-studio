@@ -7,8 +7,12 @@
   comparisons, recall, glossary and a timeline coverage ledger.
 - Added asynchronous deep-note generation, per-episode caching and source-hash
   invalidation for the Codex CLI and OpenAI-compatible providers.
-- Added a quality gate that rejects thin or under-covered output and requires visual
-  evidence when the course pack supplies key frames.
+- Replaced soft percentage coverage with a deterministic, contiguous transcript ledger
+  that requires every block and every extracted key point to be accounted for.
+- Added a visual audit for every keyframe candidate, near-duplicate clustering, and a
+  requirement that every visual cluster contribute an included representative.
+- Added a typed, connected concept graph plus player rendering for prerequisite,
+  mechanism, causal, contrast, example and application relationships.
 - Demoted the raw transcript to a folded, explicitly evidence-only section and fixed
   the knowledge-frame URL contract.
 

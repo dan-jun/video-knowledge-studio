@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import tempfile
 import time
 import unittest
@@ -10,7 +11,9 @@ from vks.config import load_settings
 from vks.deep_notes import (
     DeepNoteService,
     DeepNoteUnavailable,
+    cluster_visual_candidates,
     coverage_ratio,
+    split_transcript_blocks,
 )
 
 
@@ -54,7 +57,7 @@ def make_episode(root: Path) -> dict:
     }
 
 
-def quality_payload(concepts: int = 5) -> dict:
+def quality_payload(packet: dict, concepts: int = 5) -> dict:
     titles = [f"概念 {index + 1}" for index in range(concepts)]
     rows = []
     for index, title in enumerate(titles):
@@ -68,6 +71,47 @@ def quality_payload(concepts: int = 5) -> dict:
             "misconception": f"{title} 的常见误区。",
             "evidence": [{"time": f"{index:02d}:10", "reason": "原片支持该概念。"}],
         })
+    coverage = []
+    for index, block in enumerate(packet["transcriptBlocks"]):
+        coverage.append({
+            "blockId": block["blockId"],
+            "start": block["startClock"],
+            "end": block["endClock"],
+            "status": "knowledge",
+            "topic": f"知识块 {index + 1}",
+            "keyPoints": [f"第 {index + 1} 块的关键主张。"],
+            "conceptTitles": [titles[index % len(titles)]],
+            "exclusionReason": "",
+        })
+    visual_decisions = [
+        {
+            "candidateId": row["candidateId"],
+            "decision": "include",
+            "importance": "critical" if index == 0 else "supporting",
+            "reason": "该画面包含文字之外的关系。",
+            "caption": f"关键画面 {index + 1}",
+            "whatItAdds": "展示机制或状态关系。",
+            "conceptTitles": [titles[index % len(titles)]],
+        }
+        for index, row in enumerate(packet["visualCandidates"])
+    ]
+    graph_edges = [
+        {
+            "from": titles[index],
+            "to": titles[index + 1],
+            "type": "prerequisite",
+            "explain": "前一个概念为后一个概念提供基础。",
+            "time": f"0{index + 1}:00",
+        }
+        for index in range(len(titles) - 1)
+    ]
+    graph_edges.append({
+        "from": titles[0],
+        "to": titles[2],
+        "type": "example",
+        "explain": "用后一个概念的具体场景说明前一个概念。",
+        "time": "03:30",
+    })
     return {
         "centralQuestion": "条件如何通过机制产生结果？",
         "bigIdea": "先追踪条件，再按机制推导结果。",
@@ -100,25 +144,19 @@ def quality_payload(concepts: int = 5) -> dict:
             {"term": "机制", "plain": "产生变化的步骤。", "example": "按序执行。", "time": "03:10"},
             {"term": "证据", "plain": "可回查的材料。", "example": "原片与画面。", "time": "08:10"},
         ],
-        "coverage": [
-            {
-                "start": "00:00",
-                "end": "05:00",
-                "topic": "条件与机制",
-                "conceptTitles": titles[:3],
-            },
-            {
-                "start": "05:00",
-                "end": "10:00",
-                "topic": "结果、证据与边界",
-                "conceptTitles": titles[2:],
-            },
-        ],
-        "visualEvidence": [{
-            "time": "03:00",
-            "caption": "机制关系图",
-            "whatItAdds": "画面展示条件到结果的连接。",
-        }],
+        "coverage": coverage,
+        "visualDecisions": visual_decisions,
+        "conceptGraph": {
+            "nodes": [
+                {
+                    "conceptTitle": title,
+                    "role": "core" if index == 0 else "mechanism",
+                    "summary": f"{title} 在知识体系中的作用。",
+                }
+                for index, title in enumerate(titles)
+            ],
+            "edges": graph_edges,
+        },
         "uncertainties": [],
     }
 
@@ -155,7 +193,7 @@ class DeepNoteServiceTests(unittest.TestCase):
             captured["packet"] = packet
             captured["images"] = images
             progress("生成中")
-            return quality_payload(), "test-provider"
+            return quality_payload(packet), "test-provider"
 
         service = DeepNoteService(self.settings(), generator=generator)
         started = service.start(self.episode)
@@ -167,7 +205,11 @@ class DeepNoteServiceTests(unittest.TestCase):
         self.assertEqual(note["quality"]["conceptCount"], 5)
         self.assertEqual(note["model"], "test-provider")
         self.assertEqual(len(captured["packet"]["transcript"]), 10)
+        self.assertGreaterEqual(len(captured["packet"]["transcriptBlocks"]), 2)
         self.assertEqual(len(captured["images"]), 3)
+        self.assertEqual(note["quality"]["visualClusters"], 3)
+        self.assertEqual(note["quality"]["includedVisualClusters"], 3)
+        self.assertEqual(note["quality"]["graphNodeCount"], 5)
         self.assertTrue(service.cache_path("deep-e01").is_file())
         cached = service.cached(self.episode)
         self.assertEqual(cached["inputHash"], note["inputHash"])
@@ -177,18 +219,25 @@ class DeepNoteServiceTests(unittest.TestCase):
     def test_source_change_invalidates_old_cache(self):
         service = DeepNoteService(
             self.settings(),
-            generator=lambda packet, images, progress: (quality_payload(), "test-provider"),
+            generator=lambda packet, images, progress: (quality_payload(packet), "test-provider"),
         )
         started = service.start(self.episode)
         wait_for_job(service, started["job"])
         self.assertIsNotNone(service.cached(self.episode))
+        cache_path = service.cache_path("deep-e01")
+        old = json.loads(cache_path.read_text(encoding="utf-8"))
+        old["schemaVersion"] = 1
+        cache_path.write_text(json.dumps(old), encoding="utf-8")
+        self.assertIsNone(service.cached(self.episode))
+        old["schemaVersion"] = 2
+        cache_path.write_text(json.dumps(old), encoding="utf-8")
         self.episode["knowledge"]["transcript"][0]["text"] += " 新修订。"
         self.assertIsNone(service.cached(self.episode))
 
     def test_rejects_too_few_concepts(self):
         service = DeepNoteService(
             self.settings(),
-            generator=lambda packet, images, progress: (quality_payload(3), "test-provider"),
+            generator=lambda packet, images, progress: (quality_payload(packet, 3), "test-provider"),
         )
         started = service.start(self.episode)
         row = wait_for_job(service, started["job"])
@@ -196,16 +245,43 @@ class DeepNoteServiceTests(unittest.TestCase):
         self.assertIn("核心概念应为 5–9 个", row["error"])
 
     def test_rejects_coverage_links_to_unknown_concepts(self):
-        raw = quality_payload()
-        raw["coverage"][0]["conceptTitles"] = ["不存在的概念"]
+        def generator(packet, images, progress):
+            raw = quality_payload(packet)
+            raw["coverage"][0]["conceptTitles"] = ["不存在的概念"]
+            return raw, "test-provider"
+
         service = DeepNoteService(
             self.settings(),
-            generator=lambda packet, images, progress: (raw, "test-provider"),
+            generator=generator,
         )
         started = service.start(self.episode)
         row = wait_for_job(service, started["job"])
         self.assertEqual(row["status"], "failed")
         self.assertIn("引用了未知概念", row["error"])
+
+    def test_rejects_missing_visual_decision(self):
+        def generator(packet, images, progress):
+            raw = quality_payload(packet)
+            raw["visualDecisions"].pop()
+            return raw, "test-provider"
+
+        service = DeepNoteService(self.settings(), generator=generator)
+        started = service.start(self.episode)
+        row = wait_for_job(service, started["job"])
+        self.assertEqual(row["status"], "failed")
+        self.assertIn("画面审核账本不完整", row["error"])
+
+    def test_rejects_disconnected_concept_graph(self):
+        def generator(packet, images, progress):
+            raw = quality_payload(packet)
+            raw["conceptGraph"]["edges"] = []
+            return raw, "test-provider"
+
+        service = DeepNoteService(self.settings(), generator=generator)
+        started = service.start(self.episode)
+        row = wait_for_job(service, started["job"])
+        self.assertEqual(row["status"], "failed")
+        self.assertIn("孤立节点", row["error"])
 
     def test_offline_provider_does_not_fabricate_note(self):
         service = DeepNoteService(self.settings("mock"))
@@ -220,6 +296,26 @@ class DeepNoteServiceTests(unittest.TestCase):
         ]
         self.assertAlmostEqual(coverage_ratio(rows, 600), 0.9)
         self.assertAlmostEqual(coverage_ratio(rows, 300), 1.0)
+
+    def test_deterministic_blocks_cover_exact_duration_once(self):
+        transcript = self.episode["knowledge"]["transcript"]
+        blocks = split_transcript_blocks(transcript, 600, target_seconds=180, max_seconds=300)
+        self.assertEqual(blocks[0]["start"], 0.0)
+        self.assertEqual(blocks[-1]["end"], 600.0)
+        for left, right in zip(blocks, blocks[1:]):
+            self.assertEqual(left["end"], right["start"])
+        self.assertEqual(sum(row["segmentCount"] for row in blocks), len(transcript))
+
+    def test_visual_candidates_cluster_duplicates_but_audit_all(self):
+        rows = [
+            {"file": "a.jpg", "start": 0, "time": "00:00", "ocr": ["状态图", "就绪态"]},
+            {"file": "b.jpg", "start": 1, "time": "00:01", "ocr": ["状态图", "就绪态"]},
+            {"file": "c.jpg", "start": 40, "time": "00:40", "ocr": ["阻塞队列"]},
+        ]
+        candidates = cluster_visual_candidates(rows)
+        self.assertEqual(len(candidates), 3)
+        self.assertEqual(len({row["clusterId"] for row in candidates}), 2)
+        self.assertEqual(candidates[0]["clusterId"], candidates[1]["clusterId"])
 
     def test_cache_names_cannot_collide_after_sanitizing(self):
         service = DeepNoteService(

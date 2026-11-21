@@ -450,6 +450,27 @@ body.knowledge-mode .head em{color:#8dcbdc}
 .kp-flow-step h4{margin:3px 0 4px;color:#dff9ff;font-size:10.5px;line-height:1.4}
 .kp-flow-step p{margin:0 0 5px;color:#8eb3bd;font-size:9.4px;line-height:1.55}
 .kp-arrow{display:flex;align-items:center;color:#316a77;font-style:normal}
+.kp-graph{position:relative;height:390px;border-radius:10px;border:1px solid rgba(0,229,255,.09);background:radial-gradient(circle at 50% 50%,rgba(0,229,255,.055),rgba(0,6,11,.72) 62%);overflow:hidden}
+.kp-graph-edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.kp-graph-edge{fill:none;stroke-width:1.2;opacity:.55;color:#4d8794}
+.edge-prerequisite{stroke:#59b8cb}.edge-mechanism{stroke:#59dcb0}.edge-cause{stroke:#ebbb65}.edge-contrast{stroke:#e58c72}.edge-example{stroke:#9a86e6}.edge-application{stroke:#6da7ef}
+.kp-graph-node{
+  position:absolute;z-index:2;width:136px;min-height:58px;transform:translate(-50%,-50%);
+  border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:7px 8px;text-align:left;
+  background:linear-gradient(150deg,rgba(0,229,255,.1),rgba(3,13,20,.98));
+  color:#dff9ff;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.24);
+}
+.kp-graph-node:hover{border-color:rgba(0,229,255,.52);transform:translate(-50%,-50%) scale(1.035)}
+.kp-graph-node b{display:block;font-size:9.5px;line-height:1.35}
+.kp-graph-node small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px;color:#78a3ae;font-size:8.2px;line-height:1.35}
+.kp-graph-node span{display:inline-block;margin-top:4px;color:#58d8ea;font:8px var(--mono)}
+.kp-graph-node.role-core{border-color:rgba(0,255,180,.36);background:linear-gradient(150deg,rgba(0,255,180,.12),rgba(3,13,20,.98))}
+.kp-graph-node.role-boundary{border-color:rgba(239,184,96,.3)}
+.kp-graph-node.role-application{border-color:rgba(122,154,238,.3)}
+.kp-graph-legend{position:absolute;left:8px;right:8px;bottom:7px;z-index:3;display:flex;gap:9px;flex-wrap:wrap;color:#688e98;font-size:7.8px}
+.kp-graph-legend span{display:inline-flex;align-items:center;gap:3px}
+.kp-graph-legend i{display:inline-block;width:12px;height:2px;background:currentColor}
+.kp-graph-legend .edge-prerequisite{color:#59b8cb}.kp-graph-legend .edge-mechanism{color:#59dcb0}.kp-graph-legend .edge-cause{color:#ebbb65}.kp-graph-legend .edge-contrast{color:#e58c72}.kp-graph-legend .edge-example{color:#9a86e6}.kp-graph-legend .edge-application{color:#6da7ef}
 .kp-time{
   border:1px solid rgba(0,229,255,.18);border-radius:5px;background:rgba(0,229,255,.07);
   color:#70d8e8;padding:2px 5px;font:8.5px var(--mono);cursor:pointer;white-space:nowrap;
@@ -515,6 +536,19 @@ body.knowledge-mode .head em{color:#8dcbdc}
 .kp-coverage-row>button{flex:0 0 82px}
 .kp-coverage-row b{display:block;color:#b7d5dd;font-size:9.5px;line-height:1.4}
 .kp-coverage-row p{margin:2px 0 0;color:#638c97;font-size:8.7px;line-height:1.45}
+.kp-audit-status{margin-left:3px;color:#5fa5b2;font:7.8px var(--mono)}
+.kp-block-points{margin:4px 0;padding-left:15px;color:#94b6c0;font-size:8.9px;line-height:1.5}
+.kp-audit-reason{color:#c69d5f!important}
+.kp-visual-audit{cursor:pointer}
+.kp-visual-audit>summary{list-style:none;margin:0}
+.kp-visual-audit>summary::-webkit-details-marker{display:none}
+.kp-audit-list{display:flex;flex-direction:column;gap:3px}
+.kp-audit-row{display:flex;gap:7px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+.kp-audit-row>button{flex:0 0 44px}
+.kp-audit-row b{color:#a9cbd3;font-size:8.8px}
+.kp-audit-row p{margin:2px 0;color:#7198a2;font-size:8.5px;line-height:1.45}
+.kp-audit-row small{color:#587c86;font-size:8.1px}
+.kp-audit-row.decision-include b{color:#5fe0b2}
 .kp-visual-grid{display:grid;grid-template-columns:1fr;gap:7px}
 .kp-visual{display:grid;grid-template-columns:128px minmax(0,1fr);gap:8px;border-radius:9px;border:1px solid rgba(0,229,255,.1);overflow:hidden;background:rgba(0,6,11,.45)}
 .kp-visual img{width:128px;height:100%;object-fit:cover;min-height:78px;background:#000}
@@ -532,6 +566,8 @@ body.knowledge-mode .head em{color:#8dcbdc}
 .evidence-only>.k-evidence-summary .k-section-head:after{opacity:.45}
 @media(max-width:700px){
   .kp-concept-grid{grid-template-columns:1fr}
+  .kp-graph{height:520px}
+  .kp-graph-node{width:116px}
   .kp-visual{grid-template-columns:105px minmax(0,1fr)}
   .kp-visual img{width:105px}
   .kp-model{margin-left:0;max-width:100%}
