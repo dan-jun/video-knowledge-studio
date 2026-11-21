@@ -76,6 +76,20 @@
   background: #000;
 }
 
+.vp video::cue {
+  color: #fff;
+  background: rgba(2, 10, 16, 0.82);
+  font-family: "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.vp.captions-on [data-act="cc"] {
+  background: var(--vp-hover);
+}
+
 /* ── 顶栏（标题 + 频道信息，自动隐藏）───────────────────── */
 .vp-top {
   position: absolute;

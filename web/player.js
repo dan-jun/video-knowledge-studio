@@ -49,6 +49,49 @@
     return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}`;
   };
 
+  function normalizeSubtitleCues(cues) {
+    return (Array.isArray(cues) ? cues : [])
+      .map((cue) => ({
+        start: Math.max(0, Number(cue && cue.start) || 0),
+        end: Math.max(0, Number(cue && cue.end) || 0),
+        text: String(cue && cue.text != null ? cue.text : "")
+          .replace(/\s+/g, " ")
+          .trim(),
+      }))
+      .filter((cue) => cue.text && isFinite(cue.start) && isFinite(cue.end))
+      .sort((a, b) => a.start - b.start);
+  }
+
+  function subtitleClock(seconds) {
+    const ms = Math.max(0, Math.round(Number(seconds) * 1000));
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor(ms / 60000) % 60;
+    const s = Math.floor(ms / 1000) % 60;
+    const milli = ms % 1000;
+    const two = (n) => String(n).padStart(2, "0");
+    return `${two(h)}:${two(m)}:${two(s)}.${String(milli).padStart(3, "0")}`;
+  }
+
+  function cuesToVtt(cues) {
+    const rows = normalizeSubtitleCues(cues);
+    const blocks = ["WEBVTT", ""];
+    rows.forEach((cue, index) => {
+      let end = cue.end > cue.start ? cue.end : cue.start + 2.5;
+      const nextStart = rows[index + 1] && rows[index + 1].start;
+      if (nextStart != null && nextStart > cue.start) {
+        end = Math.min(end, nextStart - 0.001);
+      }
+      if (end <= cue.start) end = cue.start + 0.5;
+      const text = cue.text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/-->/g, "--&gt;");
+      blocks.push(`${subtitleClock(cue.start)} --> ${subtitleClock(end)}`, text, "");
+    });
+    return blocks.join("\n");
+  }
+
   class VP {
     constructor(root, opt = {}) {
       this.root = root;
@@ -98,7 +141,7 @@
             <div class="vp-spacer"></div>
             <button class="vp-btn" data-act="cover" title="存为封面 (C 已占用→用 Shift+C)" aria-label="封面">${ICON.cover || ''}</button>
             <button class="vp-btn" data-act="shot" title="截取当前帧 (S)" aria-label="截图">${ICON.shot || ''}</button>
-            <button class="vp-btn" data-act="cc" title="字幕 (C)" aria-label="字幕">${ICON.cc}</button>
+            <button class="vp-btn" data-act="cc" title="本讲暂无可用字幕" aria-label="字幕" aria-pressed="false" disabled>${ICON.cc}</button>
             <button class="vp-btn" data-act="gear" title="设置" aria-label="设置">${ICON.gear}</button>
             <button class="vp-btn" data-act="pip" title="画中画 (I)" aria-label="画中画">${ICON.pip}</button>
             <button class="vp-btn" data-act="theater" title="剧场模式 (T)" aria-label="剧场模式">${ICON.theater}</button>
@@ -124,6 +167,8 @@
       };
       this.rate = 1;
       this.ccOn = false;
+      this.subtitleCues = [];
+      this.subtitleUrl = null;
       this.posKey = 'vf_pos_' + (this.opt.key || '');
       this.qualities = (this.opt && this.opt.qualities) || {};   // {"1440p":{w,h,upscaled}}
       this.quality = (this.opt && this.opt.quality) || null;      // 当前档位（null=母片）
@@ -313,16 +358,67 @@
           break;
         case 'cover': this.opt.onCover && this.opt.onCover(); break;
         case 'shot': this.screenshot(); break;
-        case 'cc':
-          this.ccOn = !this.ccOn;
-          this.el.btnCC.classList.toggle('on', this.ccOn);
-          this.toast(this.ccOn ? '字幕：开（本片为硬字幕）' : '字幕：关（硬字幕无法关闭）');
-          break;
+        case 'cc': this.toggleCaptions(); break;
         case 'gear': this.openMenu('settings'); break;
         case 'pip': this.togglePip(); break;
         case 'theater': this.toggleTheater(); break;
         case 'full': this.toggleFull(); break;
       }
+    }
+
+    applyCaptionMode() {
+      const trackEl = this.video.querySelector('track[data-vks-subtitles]');
+      const track = trackEl && trackEl.track;
+      if (track) track.mode = this.ccOn ? 'showing' : 'disabled';
+    }
+
+    toggleCaptions(force) {
+      if (!this.subtitleCues.length) {
+        this.ccOn = false;
+        this.applyCaptionMode();
+        this.toast('本讲暂无可用字幕');
+        return;
+      }
+      this.ccOn = typeof force === 'boolean' ? force : !this.ccOn;
+      this.el.btnCC.classList.toggle('on', this.ccOn);
+      this.el.btnCC.setAttribute('aria-pressed', String(this.ccOn));
+      this.root.classList.toggle('captions-on', this.ccOn);
+      this.applyCaptionMode();
+      this.toast(this.ccOn ? '字幕：开' : '字幕：关');
+    }
+
+    setSubtitles(cues) {
+      if (this.subtitleUrl) URL.revokeObjectURL(this.subtitleUrl);
+      this.subtitleUrl = null;
+      this.video.querySelectorAll('track[data-vks-subtitles]').forEach((track) => {
+        try { if (track.track) track.track.mode = 'disabled'; } catch (_) {}
+        track.remove();
+      });
+      this.subtitleCues = normalizeSubtitleCues(cues);
+      const available = this.subtitleCues.length > 0;
+      this.el.btnCC.disabled = !available;
+      this.el.btnCC.title = available ? '字幕 (C)' : '本讲暂无可用字幕';
+      this.el.btnCC.setAttribute('aria-disabled', String(!available));
+      if (!available) {
+        this.ccOn = false;
+        this.el.btnCC.classList.remove('on');
+        this.el.btnCC.setAttribute('aria-pressed', 'false');
+        this.root.classList.remove('captions-on');
+        this.syncMenu();
+        return;
+      }
+      const blob = new Blob([cuesToVtt(this.subtitleCues)], { type: 'text/vtt;charset=utf-8' });
+      this.subtitleUrl = URL.createObjectURL(blob);
+      const track = document.createElement('track');
+      track.kind = 'subtitles';
+      track.label = '课程字幕';
+      track.srclang = this.opt.subtitleLang || 'zh-CN';
+      track.src = this.subtitleUrl;
+      track.dataset.vksSubtitles = 'true';
+      track.addEventListener('load', () => this.applyCaptionMode());
+      this.video.appendChild(track);
+      this.applyCaptionMode();
+      this.syncMenu();
     }
 
     jumpChapter(dir) {
@@ -562,7 +658,9 @@
         }
       } else if (this.menuView === 'captions') {
         m.innerHTML = `<h4>字幕</h4>` +
-          mi('关闭', '', 'cc:off', !this.ccOn) + mi('打开（硬字幕）', '', 'cc:on', this.ccOn);
+          (this.subtitleCues.length
+            ? mi('关闭', '', 'cc:off', !this.ccOn) + mi('显示课程字幕', '', 'cc:on', this.ccOn)
+            : mi('本讲暂无可用字幕', '', 'noop', true));
       } else {
         m.innerHTML = `<h4>设置</h4>` +
           mi('播放速度', this.rate + '×', 'view:speed') +
@@ -585,7 +683,7 @@
             this.openMenu('settings');
             return;
           }
-          if (a.startsWith('cc:')) { this.ccOn = a.endsWith('on'); this.el.btnCC.classList.toggle('on', this.ccOn); this.openMenu('settings'); return; }
+          if (a.startsWith('cc:')) { this.toggleCaptions(a.endsWith('on')); this.openMenu('settings'); return; }
           this.closeMenu();
         });
       });
@@ -594,6 +692,7 @@
 
     /* ── 对外接口 ───────────────────────────────────── */
     attach(src) {
+      this.setSubtitles([]);
       this.opt.srcBase = src;        // 切档时在它后面拼 &q=
       this.video.src = src;
       this.video.load();
@@ -621,7 +720,11 @@
         box.appendChild(i);
       });
     }
-    destroy() { this.root.innerHTML = ''; this.root.classList.remove('vp'); }
+    destroy() {
+      if (this.subtitleUrl) URL.revokeObjectURL(this.subtitleUrl);
+      this.root.innerHTML = '';
+      this.root.classList.remove('vp');
+    }
   }
 
   // 元数据到位后补画章节刻度
@@ -634,6 +737,7 @@
     }, { once: false });
   };
 
+  VP.cuesToVtt = cuesToVtt;
   global.VP = VP;
   if (typeof module !== 'undefined' && module.exports) module.exports = VP;
 })(typeof window !== 'undefined' ? window : globalThis);

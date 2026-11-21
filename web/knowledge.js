@@ -1159,9 +1159,13 @@
       S.data = d;
       S.index = d.index;
       S.kstate = d.state;
+      if (window.__vp && window.__vp.setSubtitles) {
+        window.__vp.setSubtitles((d.episode && d.episode.transcript) || []);
+      }
       render();
     } catch (err) {
       if (seq !== S.loadSeq) return;
+      if (window.__vp && window.__vp.setSubtitles) window.__vp.setSubtitles([]);
       root.innerHTML = "";
       const fail = el("div", "k-empty", err.message || String(err));
       fail.style.marginTop = "20px";

@@ -1,5 +1,18 @@
 # Lessons
 
+## 2026-11-21 — A media control must change media state
+
+- **Symptom:** The subtitle button changed its own `ccOn` flag and showed a toast, but
+  the video displayed no captions because no text track existed.
+- **Root cause:** The player treated burned-in captions as the only source and never
+  received the course transcript, so the control had no media state to modify.
+- **Fix:** Generate a WebVTT track from timed transcript cues, pass the lesson transcript
+  into the player after knowledge loads, and toggle the track between `showing` and
+  `disabled`. Disable the control when the lesson has no timed transcript.
+- **Verification:** Load a real operating-system lesson, start playback, confirm the
+  cue appears, then toggle captions off and confirm the cue disappears without changing
+  the video source.
+
 ## 2026-11-21 — Windows reserved ports can pass a connection probe
 
 - **Symptom:** The launcher chose port 7898 but the server exited with Windows
