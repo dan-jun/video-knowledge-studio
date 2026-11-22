@@ -193,8 +193,8 @@ The timeline is the main connection between reading and watching:
   navigation, relation-type filters and an optional one-hop neighbourhood view. This
   keeps the graph full-screen instead of forcing learners to scroll past the lesson
   introduction before they can explore it.
-- The same graph can be viewed as a hierarchy-first **体系导图**, a balanced structure
-  and relationship mesh, or a force-directed **关系网络**. All three perspectives use
+- The same graph can be viewed as a hierarchy-first **Hierarchy Map**, a balanced
+  structure and relationship mesh, or a force-directed **Relationship Network**. All three perspectives use
   the same canonical concepts, knowledge atoms and evidence-backed edges.
 - When deep notes are present, legacy summary and timeline cards are suppressed to
   avoid rendering two competing note systems. They remain the fallback for lessons
