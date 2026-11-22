@@ -12,6 +12,15 @@
     application: "应用",
     grouping: "体系分支",
   };
+  const EDGE_COLORS = {
+    prerequisite: "#65b9ff",
+    mechanism: "#62e5b5",
+    cause: "#f1c36e",
+    contrast: "#ef928a",
+    example: "#b09bff",
+    application: "#7ba8ff",
+    grouping: "#8da3ad",
+  };
 
   const h = (tag, cls, value) => {
     const node = document.createElement(tag);
@@ -252,6 +261,7 @@
         ...edge,
         fromPoint: left,
         toPoint: right,
+        color: EDGE_COLORS[edge.type] || "#65d8ea",
         cx: (left.x + right.x) / 2 - (dy / length) * bend,
         cy: (left.y + right.y) / 2 + (dx / length) * bend,
       };
@@ -465,6 +475,17 @@
     section.appendChild(legend);
 
     const layout = buildLayout(graph, lesson);
+    const ambientStars = Array.from({ length: 360 }, (_, index) => {
+      const seed = hashText("ambient:" + index);
+      const seed2 = hashText("ambient-y:" + index);
+      const seed3 = hashText("ambient-r:" + index);
+      return {
+        x: 230 + seed * (WORLD.width - 460),
+        y: 130 + seed2 * (WORLD.height - 260),
+        size: 0.45 + seed3 * 1.15,
+        alpha: 0.08 + seed3 * 0.23,
+      };
+    });
     const currentChapterId = clean(layout.currentLesson?.chapterId || note.chapterId || "");
     let camera = { x: WORLD.cx, y: WORLD.cy, scale: 0.35 };
     let selected = null;
@@ -615,6 +636,26 @@
       context.arc(WORLD.cx, WORLD.cy, 1080, 0, Math.PI * 2);
       context.fill();
 
+      layout.chapterCenters.forEach((row) => {
+        const nebula = context.createRadialGradient(row.x, row.y, 0, row.x, row.y, 540);
+        nebula.addColorStop(0, rgba(row.color, 0.10));
+        nebula.addColorStop(0.4, rgba(row.color, 0.035));
+        nebula.addColorStop(1, rgba(row.color, 0));
+        context.fillStyle = nebula;
+        context.beginPath();
+        context.arc(row.x, row.y, 540, 0, Math.PI * 2);
+        context.fill();
+      });
+
+      ambientStars.forEach((star) => {
+        context.globalAlpha = star.alpha;
+        context.fillStyle = "#c6f6ff";
+        context.beginPath();
+        context.arc(star.x, star.y, Math.max(0.25, star.size / camera.scale), 0, Math.PI * 2);
+        context.fill();
+      });
+      context.globalAlpha = 1;
+
       [260, 520, 780, 1040].forEach((radius, index) => {
         context.beginPath();
         context.arc(WORLD.cx, WORLD.cy, radius, 0, Math.PI * 2);
@@ -622,6 +663,16 @@
         context.lineWidth = 1 / camera.scale;
         context.stroke();
       });
+      context.setLineDash([5 / camera.scale, 12 / camera.scale]);
+      layout.chapterCenters.forEach((row, id) => {
+        const active = !chapterFilter || chapterFilter === id;
+        context.beginPath();
+        context.arc(row.x, row.y, 430, 0, Math.PI * 2);
+        context.strokeStyle = rgba(row.color, active ? 0.055 : 0.012);
+        context.lineWidth = 0.75 / camera.scale;
+        context.stroke();
+      });
+      context.setLineDash([]);
 
       layout.chapterLinks.forEach((row) => {
         const alpha = !focus || focus.chapters.has(row.chapterId) ? 0.15 : 0.035;
@@ -650,8 +701,8 @@
         const active = focus && focus.edges.has(String(edge.id));
         curvePath(context, edge);
         context.strokeStyle = active
-          ? "rgba(126,242,255,.78)"
-          : "rgba(86,190,214," + (focus ? 0.025 : 0.10) + ")";
+          ? rgba(edge.color || "#7ef2ff", 0.82)
+          : rgba(edge.color || "#56bed6", focus ? 0.035 : 0.13);
         context.lineWidth = Math.max(0.32, (active ? 1.1 : 0.62) / camera.scale);
         context.stroke();
       });
@@ -764,32 +815,124 @@
       context.fillText(text, sx, sy);
     }
 
+    function roundedRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, height / 2, width / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    function pillLabel(context, text, x, y, color, options) {
+      const opt = options || {};
+      const fontSize = opt.size || 11;
+      const alpha = opt.alpha == null ? 1 : opt.alpha;
+      const maxWidth = opt.maxWidth || 190;
+      let value = clean(text);
+      context.save();
+      context.globalAlpha = alpha;
+      context.font = (opt.weight || 600) + " " + fontSize +
+        "px 'Microsoft YaHei UI', 'PingFang SC', sans-serif";
+      if (context.measureText(value).width > maxWidth - 18) {
+        while (value.length > 3 && context.measureText(value + "…").width > maxWidth - 18) {
+          value = value.slice(0, -1);
+        }
+        value += "…";
+      }
+      const width = Math.min(maxWidth, context.measureText(value).width + 18);
+      const height = fontSize + 12;
+      const left = opt.anchor === "left" ? x : x - width / 2;
+      const top = y - height / 2;
+      const box = { left, top, right: left + width, bottom: top + height };
+      if (opt.avoid && boxesOverlap(opt.avoid, box, opt.margin || 3)) {
+        context.restore();
+        return null;
+      }
+      roundedRect(context, left, top, width, height, height / 2);
+      context.fillStyle = opt.fill || "rgba(2,10,15,.88)";
+      context.fill();
+      context.strokeStyle = rgba(color, alpha * 0.5);
+      context.lineWidth = 0.8;
+      context.stroke();
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillStyle = color;
+      context.fillText(value, left + width / 2, y + 0.4);
+      context.restore();
+      return box;
+    }
+
+    function boxesOverlap(boxes, candidate, margin) {
+      const pad = margin == null ? 3 : margin;
+      return boxes.some((box) =>
+        candidate.left < box.right + pad &&
+        candidate.right > box.left - pad &&
+        candidate.top < box.bottom + pad &&
+        candidate.bottom > box.top - pad
+      );
+    }
+
     function drawStaticLabels(context) {
+      const boxes = [];
       const coursePoint = cssPoint(WORLD.cx, WORLD.cy);
-      label(context, clean(graph.course || "全课程"), coursePoint.x, coursePoint.y - 27,
-        "#d9fbff", 16);
+      boxes.push(pillLabel(context, clean(graph.course || "全课程"),
+        coursePoint.x, coursePoint.y - 31, "#d9fbff",
+        { size: 15, weight: 700, maxWidth: 240 }));
       label(context, "课程主干", coursePoint.x, coursePoint.y + 27,
         "rgba(132,196,210,.8)", 10);
 
       layout.chapterCenters.forEach((row, id) => {
         const alpha = chapterFilter && id !== chapterFilter ? 0.18 : 1;
-        context.globalAlpha = alpha;
         const point = cssPoint(row.x, row.y);
         const chapter = row.chapter;
         const title = clean(chapter.label || chapter.title || id).replace(/^第/, "第");
         const short = title.length > 18 ? title.slice(0, 18) + "…" : title;
-        label(context, short, point.x, point.y + 25, row.color, 12);
+        boxes.push(pillLabel(context, short, point.x, point.y + 31, row.color,
+          { size: 11.5, weight: 700, maxWidth: 180, alpha }));
       });
-      context.globalAlpha = 1;
 
       if (layout.currentLesson) {
         const lessonHub = layout.lessonHubs.get(String(layout.currentLesson.id));
         if (lessonHub) {
           const point = cssPoint(lessonHub.x, lessonHub.y);
-          label(context, "当前 · E" + String(layout.currentLesson.episode).padStart(2, "0"),
-            point.x, point.y - 22, "#f6d58d", 10);
+          boxes.push(pillLabel(context, "当前 · E" +
+            String(layout.currentLesson.episode).padStart(2, "0"),
+          point.x, point.y - 25, "#f6d58d",
+          { size: 10, maxWidth: 92 }));
         }
       }
+
+      const perChapter = camera.scale < 0.42 ? 1 : camera.scale < 0.72 ? 2 : 4;
+      const groups = new Map();
+      layout.conceptPositions.forEach((row, id) => {
+        if (!groups.has(row.chapterId)) groups.set(row.chapterId, []);
+        groups.get(row.chapterId).push({ id, ...row });
+      });
+      groups.forEach((rows, chapterId) => {
+        rows.sort((left, right) => {
+          const leftCurrent = layout.currentConceptIds.has(left.id) ? 1000 : 0;
+          const rightCurrent = layout.currentConceptIds.has(right.id) ? 1000 : 0;
+          const leftDegree = layout.adjacency.get(left.id)?.size || 0;
+          const rightDegree = layout.adjacency.get(right.id)?.size || 0;
+          return (rightCurrent + rightDegree) - (leftCurrent + leftDegree);
+        });
+        rows.slice(0, perChapter).forEach((row) => {
+          const alpha = nodeAlpha("concept", row.id, chapterId);
+          if (alpha < 0.25) return;
+          const point = cssPoint(row.x, row.y);
+          if (point.x < 20 || point.x > size.width - 20 ||
+              point.y < 20 || point.y > size.height - 20) return;
+          const concept = layout.conceptIndex.get(row.id);
+          const box = pillLabel(context, concept?.label || "概念",
+            point.x + 9, point.y - 12, row.color,
+            { size: 10, maxWidth: 160, anchor: "left",
+              alpha: Math.min(0.9, alpha), avoid: boxes, margin: 4 });
+          if (box) boxes.push(box);
+        });
+      });
     }
 
     function drawFrame(time) {
@@ -805,20 +948,23 @@
       const activeEdges = focus
         ? layout.edges.filter((edge) => focus.edges.has(String(edge.id))).slice(0, 80)
         : layout.edges.filter((_, index) => index % 29 === 0).slice(0, 34);
+      const relationLabels = [];
       activeEdges.forEach((edge, index) => {
         const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
         const control = cssPoint(edge.cx, edge.cy);
         const to = cssPoint(edge.toPoint.x, edge.toPoint.y);
         const gradient = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
         gradient.addColorStop(0, rgba(edge.fromPoint.color, focus ? 0.46 : 0.12));
-        gradient.addColorStop(0.5, focus ? "rgba(145,248,255,.56)" : "rgba(92,213,230,.15)");
+        gradient.addColorStop(0.5, focus
+          ? rgba(edge.color || "#91f8ff", 0.65)
+          : rgba(edge.color || "#5cd5e6", 0.17));
         gradient.addColorStop(1, rgba(edge.toPoint.color, focus ? 0.46 : 0.12));
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
         ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
         ctx.strokeStyle = gradient;
         ctx.lineWidth = focus ? 1.4 : 0.7;
-        ctx.shadowColor = "#5bdcf2";
+        ctx.shadowColor = edge.color || "#5bdcf2";
         ctx.shadowBlur = focus ? 12 : 5;
         ctx.stroke();
         ctx.shadowBlur = 0;
@@ -830,8 +976,20 @@
         ctx.beginPath();
         ctx.arc(px, py, focus ? 1.8 : 1.1, 0, Math.PI * 2);
         ctx.fill();
+        if (focus && activeEdges.length <= 24 && edge.type) {
+          const t2 = 0.56;
+          const mt2 = 1 - t2;
+          relationLabels.push({
+            x: mt2 * mt2 * from.x + 2 * mt2 * t2 * control.x + t2 * t2 * to.x,
+            y: mt2 * mt2 * from.y + 2 * mt2 * t2 * control.y + t2 * t2 * to.y,
+            text: TYPE_LABELS[edge.type] || edge.type,
+            color: edge.color || "#8ce9f5",
+          });
+        }
       });
 
+      ctx.globalCompositeOperation = "source-over";
+      let selectedLabelBox = null;
       if (selected) {
         const hit = selected.kind === "concept"
           ? layout.conceptPositions.get(selected.id)
@@ -852,8 +1010,33 @@
             : selected.kind === "atom"
               ? layout.atomPositions.get(selected.id)?.atom?.label
               : layout.chapterCenters.get(selected.id)?.chapter?.label;
-          if (title) label(ctx, title, point.x + 12, point.y - 12, "#f0fdff", 12, "left");
+          if (title) {
+            selectedLabelBox = pillLabel(ctx, title, point.x + 11, point.y - 15, "#f0fdff",
+              { size: 11.5, weight: 700, anchor: "left", maxWidth: 230 });
+          }
         }
+      }
+      if (focus) {
+        const used = selectedLabelBox ? [selectedLabelBox] : [];
+        const focusRows = Array.from(focus.concepts)
+          .map((id) => ({ id, row: layout.conceptPositions.get(id) }))
+          .filter((item) => item.row && !(selected?.kind === "concept" && selected.id === item.id))
+          .slice(0, 18);
+        focusRows.forEach(({ id, row }) => {
+          const point = cssPoint(row.x, row.y);
+          if (point.x < 8 || point.x > size.width - 8 ||
+              point.y < 8 || point.y > size.height - 8) return;
+          const concept = layout.conceptIndex.get(id);
+          const box = pillLabel(ctx, concept?.label || "概念",
+            point.x + 7, point.y - 10, row.color,
+            { size: 10, maxWidth: 170, anchor: "left", avoid: used, margin: 3 });
+          if (box) used.push(box);
+        });
+        relationLabels.slice(0, 14).forEach((row) => {
+          const box = pillLabel(ctx, row.text, row.x, row.y, row.color,
+            { size: 8.5, maxWidth: 70, fill: "rgba(3,12,18,.74)", avoid: used, margin: 2 });
+          if (box) used.push(box);
+        });
       }
       ctx.globalCompositeOperation = "source-over";
       frame = global.requestAnimationFrame(drawFrame);

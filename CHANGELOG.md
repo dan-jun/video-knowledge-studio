@@ -8,6 +8,12 @@
 - The galaxy preserves the course → chapter → lesson → anchor → atom hierarchy:
   chapters become distinct colored clusters, lesson membership appears as faint local
   links, and the current lesson is marked in gold.
+- Added semantic zoom and reduced label collisions: chapter cards remain visible at the
+  course overview, the most connected concepts gain labels as the user zooms in, and a
+  focused concept labels its direct neighbours and relationship types.
+- Relation beams now use distinct colors for prerequisite, mechanism, causal, contrast,
+  example, application and grouping links, with a star field, chapter orbit rings and
+  focused travelling light pulses.
 - Added search, chapter selection, current-lesson focus, drag-to-pan, wheel zoom,
   full-course reset, local-neighbour highlighting, animated relation pulses, and a
   detail panel with timestamps and other-lesson links.
