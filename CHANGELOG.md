@@ -21,6 +21,9 @@
   introduction and fits the graph inside the current viewport. Search now provides
   live suggestions, relation-type chips can be toggled, and neighbourhood isolation
   follows the focused node instead of leaving unrelated graph noise visible.
+- Added three layout perspectives for the same knowledge graph: a hierarchy-first
+  **体系导图**, a blended structure/relation view, and a force-directed **关系网络**.
+  Switching perspectives preserves all concepts, atoms and evidence links.
 - Added search, chapter selection, current-lesson focus, drag-to-pan, wheel zoom,
   full-course reset, local-neighbour highlighting, animated relation pulses, and a
   detail panel with timestamps and other-lesson links.

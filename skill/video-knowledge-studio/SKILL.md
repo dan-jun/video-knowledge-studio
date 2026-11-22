@@ -62,6 +62,10 @@ Color relation beams by their typed semantic role and label those roles in focus
 Treat the map as a dedicated canvas: hide long introductory content while it is open,
 keep the full viewport available, provide live search suggestions, allow relation-type
 filtering, and support an isolated local-neighbourhood mode.
+Offer both hierarchy-first and relationship-first perspectives over the same data:
+course → chapter → lesson → anchor → atom for system understanding, and a
+force-directed graph where evidence links determine proximity. A blended mode can bridge
+the two without maintaining separate knowledge sources.
 
 For requests that start from a work, research, project or interview knowledge gap rather
 than an existing course, use the companion `$demand-driven-video-learning` Skill to plan

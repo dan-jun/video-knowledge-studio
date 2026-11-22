@@ -179,6 +179,10 @@
       if (right) right.add(String(edge.from));
     });
 
+    const hierarchyConceptPositions = new Map(
+      Array.from(conceptPositions, ([id, row]) => [id, { x: row.x, y: row.y }])
+    );
+
     // Start from the course/lesson hierarchy, then let evidence-backed edges shape
     // the final constellation. Chapter and lesson gravity preserve the curriculum.
     const conceptIds = Array.from(conceptPositions.keys());
@@ -257,6 +261,13 @@
         row.y += Math.max(-4.2, Math.min(4.2, move.y * 0.58));
       });
     }
+    conceptPositions.forEach((row, id) => {
+      const base = hierarchyConceptPositions.get(id);
+      row.baseX = base?.x ?? row.x;
+      row.baseY = base?.y ?? row.y;
+      row.networkX = row.x;
+      row.networkY = row.y;
+    });
 
     atoms.forEach((atom) => {
       atomPositions.set(String(atom.id), {
@@ -274,6 +285,7 @@
 
     atomGroups.forEach((ids, conceptId) => {
       const pos = conceptPositions.get(conceptId);
+      const basePos = hierarchyConceptPositions.get(conceptId);
       const concept = conceptIndex.get(conceptId);
       const fallbackChapter = chapterKey(concept?.chapterIds?.[0]);
       const fallbackCenter = chapterCenters.get(fallbackChapter) ||
@@ -286,6 +298,7 @@
         const distance = 11 + Math.sqrt(index + 0.5) * 7.2;
         const chapterId = chapterKey(atom?.chapterId || fallbackChapter);
         const point = pos || fallbackCenter;
+        const basePoint = basePos || fallbackCenter;
         const color = chapterCenters.get(chapterId)?.color || (pos?.color || fallbackCenter.color);
         atomPositions.set(id, {
           atom,
@@ -293,6 +306,10 @@
           chapterId,
           x: point.x + Math.cos(angle) * distance,
           y: point.y + Math.sin(angle) * distance * 0.86,
+          baseX: basePoint.x + Math.cos(angle) * distance,
+          baseY: basePoint.y + Math.sin(angle) * distance * 0.86,
+          networkX: point.x + Math.cos(angle) * distance,
+          networkY: point.y + Math.sin(angle) * distance * 0.86,
           color,
         });
       });
@@ -545,6 +562,19 @@
       filter.appendChild(option);
     });
     toolbar.appendChild(filter);
+    const layoutSelect = h("select", "kp-star-select");
+    layoutSelect.setAttribute("aria-label", "选择图谱布局");
+    [
+      ["structure", "体系导图"],
+      ["balanced", "混合结构"],
+      ["relations", "关系网络"],
+    ].forEach(([value, label]) => {
+      const option = h("option", "", label);
+      option.value = value;
+      if (value === "relations") option.selected = true;
+      layoutSelect.appendChild(option);
+    });
+    toolbar.appendChild(layoutSelect);
     toolbar.appendChild(button("定位本讲", "kp-star-button primary", () => focusLesson()));
     toolbar.appendChild(button("全课程", "kp-star-button", () => resetView()));
     const isolateButton = button("邻域聚焦", "kp-star-button active", () => {
@@ -650,6 +680,7 @@
     let isolateNeighborhood = true;
     const allowedTypes = new Set(Object.keys(TYPE_LABELS));
     let suggestionHits = [];
+    let relationBlend = 1;
     let active = false;
     let frame = 0;
     let resizeObserver = null;
@@ -668,6 +699,7 @@
     canvas.dataset.links = String(layout.atomLinks.length + layout.membershipLinks.length + layout.edges.length);
     canvas.dataset.chapters = String(layout.chapters.length);
     canvas.dataset.lessons = String(layout.lessons.length);
+    canvas.dataset.layout = "relations";
 
     function cssPoint(x, y) {
       return {
@@ -677,11 +709,17 @@
     }
 
     function updateDepthBadge() {
-      depthBadge.textContent = camera.scale < 0.46
-        ? "课程总览"
-        : camera.scale < 0.9
-          ? "章节结构"
-          : "知识细节";
+      if (relationBlend < 0.35) {
+        depthBadge.textContent = "体系导图";
+      } else if (relationBlend < 0.85) {
+        depthBadge.textContent = "混合结构";
+      } else {
+        depthBadge.textContent = camera.scale < 0.46
+          ? "课程总览"
+          : camera.scale < 0.9
+            ? "章节结构"
+            : "知识细节";
+      }
     }
 
     function cameraTransform(context) {
@@ -693,18 +731,39 @@
     }
 
     function fitView() {
-      const bounds = layout.bounds;
-      const width = Math.max(1, bounds.maxX - bounds.minX);
-      const height = Math.max(1, bounds.maxY - bounds.minY);
+      const points = [
+        ...Array.from(layout.chapterCenters.values()).map((row) => ({ x: row.x, y: row.y })),
+        ...Array.from(layout.conceptPositions.values()).map((row) => ({ x: row.x, y: row.y })),
+      ];
+      const minX = Math.min(...points.map((row) => row.x));
+      const maxX = Math.max(...points.map((row) => row.x));
+      const minY = Math.min(...points.map((row) => row.y));
+      const maxY = Math.max(...points.map((row) => row.y));
+      const width = Math.max(1, maxX - minX);
+      const height = Math.max(1, maxY - minY);
       const availableWidth = Math.max(240, size.width - 100);
       const availableHeight = Math.max(240, size.height - 90);
       camera.scale = Math.min(1.45, Math.max(0.16, Math.min(
         availableWidth / width,
         availableHeight / height
       )));
-      camera.x = (bounds.minX + bounds.maxX) / 2;
-      camera.y = (bounds.minY + bounds.maxY) / 2;
+      camera.x = (minX + maxX) / 2;
+      camera.y = (minY + maxY) / 2;
       cameraChanged = true;
+      updateDepthBadge();
+    }
+
+    function applyLayoutBlend(value) {
+      relationBlend = Math.max(0, Math.min(1, Number(value)));
+      layout.conceptPositions.forEach((row) => {
+        row.x = row.baseX * (1 - relationBlend) + row.networkX * relationBlend;
+        row.y = row.baseY * (1 - relationBlend) + row.networkY * relationBlend;
+      });
+      layout.atomPositions.forEach((row) => {
+        row.x = row.baseX * (1 - relationBlend) + row.networkX * relationBlend;
+        row.y = row.baseY * (1 - relationBlend) + row.networkY * relationBlend;
+      });
+      fitView();
       updateDepthBadge();
     }
 
@@ -805,6 +864,7 @@
 
     function paintBase() {
       if (!size.width || !size.height) return;
+      const structureMode = relationBlend < 0.35;
       const context = baseCtx;
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
@@ -870,7 +930,9 @@
       context.setLineDash([]);
 
       layout.chapterLinks.forEach((row) => {
-        const alpha = !focus || focus.chapters.has(row.chapterId) ? 0.23 : 0.04;
+        const alpha = !focus || focus.chapters.has(row.chapterId)
+          ? (structureMode ? 0.34 : 0.23)
+          : 0.04;
         worldLine(context, row.from, row.to,
           layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 1.25, alpha);
       });
@@ -888,14 +950,16 @@
           edge.color, focus ? 0.16 : 0.34, 8);
       });
       layout.lessonLinks.forEach((row) => {
-        const chapterAlpha = !chapterFilter || chapterFilter === row.chapterId ? 0.1 : 0.018;
+        const chapterAlpha = !chapterFilter || chapterFilter === row.chapterId
+          ? (structureMode ? 0.2 : 0.1)
+          : 0.018;
         worldLine(context, row.from, row.to,
           layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 0.7, chapterAlpha);
       });
       layout.membershipLinks.forEach((row) => {
         const activeLesson = layout.currentLesson && String(layout.currentLesson.id) === row.lessonId &&
           !focus;
-        const alpha = activeLesson ? 0.12 : 0.024;
+        const alpha = activeLesson ? 0.2 : (structureMode ? 0.095 : 0.024);
         worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.55, alpha);
       });
 
@@ -914,7 +978,8 @@
         curvePath(context, edge);
         context.strokeStyle = active
           ? rgba(edge.color || "#7ef2ff", 0.82)
-          : rgba(edge.color || "#56bed6", focus ? 0.035 : 0.13);
+          : rgba(edge.color || "#56bed6",
+            focus ? 0.035 : (structureMode ? 0.045 : 0.13));
         context.lineWidth = Math.max(0.32, (active ? 1.1 : 0.62) / camera.scale);
         context.stroke();
       });
@@ -1593,6 +1658,16 @@
         focusForHit({ kind: "chapter", id: chapterFilter });
         focusPoint(center, 0.78);
       }
+    });
+
+    layoutSelect.addEventListener("change", () => {
+      const values = { structure: 0, balanced: 0.62, relations: 1 };
+      canvas.dataset.layout = layoutSelect.value;
+      selected = null;
+      focus = null;
+      applyLayoutBlend(values[layoutSelect.value] ?? 1);
+      paintBase();
+      renderDetail();
     });
 
     function searchMatches(value) {

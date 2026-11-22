@@ -40,6 +40,11 @@ visible. Search suggestions listed eight results, “system call” focused nine
 relation filtering removed the cause links on demand, and neighbourhood isolation
 toggled correctly.
 
+The same map also needs switchable mental models. A hierarchy-first view answers
+“where does this fit?”, while a force-directed view answers “what is this connected
+to?”. Keep one data model and interpolate the same nodes between both layouts rather
+than maintaining separate diagrams.
+
 ## 2026-11-22 - Do not stack the new knowledge plugin over the old report
 
 **Symptom:** The new Learning/Knowledge/Review surface still felt noisy and its text
