@@ -1020,6 +1020,7 @@ body.knowledge-mode .tip{font-size:12px}
   min-width:150px;padding:10px 11px;border:1px solid rgba(93,219,237,.18);border-radius:10px;
   background:#07131a;color:#c0dce3;font:12px var(--sans);outline:none;
 }
+  .kp-star-quality{min-width:112px}
 .kp-star-button,.kp-star-icon{
   border:1px solid rgba(93,219,237,.16);border-radius:9px;background:rgba(93,219,237,.05);
   color:#a7d8e2;padding:9px 12px;font:12px var(--sans);cursor:pointer;white-space:nowrap;
@@ -1072,6 +1073,11 @@ body.knowledge-mode .tip{font-size:12px}
   border:1px solid rgba(102,218,235,.16);background:rgba(2,10,15,.62);
   color:#87bec8;font:10.5px var(--mono);pointer-events:none;
 }
+  .kp-star-performance{
+    position:absolute;left:14px;top:14px;z-index:3;padding:5px 9px;border-radius:999px;
+    border:1px solid rgba(99,225,173,.14);background:rgba(2,10,15,.58);
+    color:#78aa9b;font:10px var(--mono);pointer-events:none;
+  }
 .kp-star-detail{
   position:absolute;z-index:6;top:14px;right:14px;width:min(330px,calc(100% - 28px));
   max-height:calc(100% - 28px);overflow:auto;padding:17px;border-radius:14px;

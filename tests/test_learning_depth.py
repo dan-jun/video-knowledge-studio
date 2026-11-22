@@ -207,6 +207,32 @@ process.stdout.write(JSON.stringify({ concepts: 2, atoms: 2, edges: 1 }));
         )
         self.assertIn('"atoms":2', result.stdout)
 
+    def test_star_map_has_bounded_on_demand_rendering(self):
+        star = (ROOT / "web" / "star_map.js").read_text(encoding="utf-8")
+        draw_frame = star[
+            star.index("function drawFrame"):star.index("function stopLoop")
+        ]
+        paint_base = star[
+            star.index("function paintBase"):star.index("function label(")
+        ]
+        self.assertIn('["auto", "自动性能"]', star)
+        self.assertIn('["smooth", "流畅优先"]', star)
+        self.assertIn('["cinematic", "画质优先"]', star)
+        self.assertIn("const frameInterval = 1000 / 30", star)
+        self.assertIn("function requestRender(animate)", star)
+        self.assertIn("canvas.dataset.frameState", star)
+        self.assertIn("lastFrameAt = time", star)
+        self.assertIn("performance.now() < animationUntil", star)
+        self.assertEqual(star.count("global.requestAnimationFrame"), 1)
+        self.assertNotIn("createLinearGradient", draw_frame)
+        self.assertNotIn("shadowBlur", draw_frame)
+        self.assertIn("function drawGlow", star)
+        self.assertIn("glowSprites", star)
+        self.assertNotIn("createRadialGradient", paint_base)
+        self.assertIn("function buildHitIndexes", star)
+        self.assertIn("hitIndexes.concepts", star)
+        self.assertIn("labelGroups", star)
+
 
 if __name__ == "__main__":
     unittest.main()

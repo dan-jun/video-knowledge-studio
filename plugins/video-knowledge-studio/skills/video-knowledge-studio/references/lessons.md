@@ -602,3 +602,22 @@ cross-lesson E05/E06 links and opening E05 changed the active lesson.
   demand and retain the anchors as the default view.
 - **Verification:** The migrated course preserves 677 anchors while carrying 3,486
   atoms and 18,347 atom-layer relations; every non-housekeeping key point maps once.
+
+## 2026-11-22 - Large Canvas maps need demand-driven frames and cached glows
+
+- **Symptom:** A 656-concept / 3,486-atom knowledge map stayed visually complete but
+  felt sluggish during drag and zoom. The page also kept repainting while idle.
+- **Root cause:** `requestAnimationFrame` ran unconditionally; each frame recreated
+  relation gradients and shadows, while every camera change recreated hundreds of
+  radial gradients, re-sorted labels, and pointer hit-testing scanned every node.
+  A background browser window can also throttle or pause `requestAnimationFrame`, so
+  its observed FPS is not a reliable measure of draw cost.
+- **Fix:** Resolve an automatic smooth/cinematic quality tier, cap adaptive DPR, render
+  on demand, stop idle animation, reuse per-color glow sprites, use solid animated
+  relation strokes, skip optional layers during camera previews, cache sorted label
+  groups, index hit tests in spatial cells, and use compact numeric arrays during
+  force-layout initialization.
+- **Verification:** On the 656/3,486/983 course graph, layout initialization fell from
+  about 374 ms to 109 ms; full base paint measured 12–17 ms and drag preview 8–9 ms in
+  the real local app; search, relation filtering, neighborhood detail and reset worked;
+  the canvas frame counter remained unchanged after the idle animation window.

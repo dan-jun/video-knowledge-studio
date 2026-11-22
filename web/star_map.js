@@ -186,81 +186,92 @@
     // Start from the course/lesson hierarchy, then let evidence-backed edges shape
     // the final constellation. Chapter and lesson gravity preserve the curriculum.
     const conceptIds = Array.from(conceptPositions.keys());
-    const displacement = new Map(conceptIds.map((id) => [id, { x: 0, y: 0 }]));
-    for (let iteration = 0; iteration < 54; iteration += 1) {
-      displacement.forEach((row) => {
-        row.x = 0;
-        row.y = 0;
-      });
-      for (let leftIndex = 0; leftIndex < conceptIds.length; leftIndex += 1) {
-        const leftId = conceptIds[leftIndex];
-        const left = conceptPositions.get(leftId);
-        for (let rightIndex = leftIndex + 1; rightIndex < conceptIds.length; rightIndex += 1) {
-          const rightId = conceptIds[rightIndex];
-          const right = conceptPositions.get(rightId);
-          let dx = left.x - right.x;
-          let dy = left.y - right.y;
+    const conceptRows = conceptIds.map((id) => conceptPositions.get(id));
+    const conceptCount = conceptRows.length;
+    const positionX = new Float64Array(conceptCount);
+    const positionY = new Float64Array(conceptCount);
+    const displacementX = new Float64Array(conceptCount);
+    const displacementY = new Float64Array(conceptCount);
+    const conceptOrdinal = new Map(conceptIds.map((id, index) => [id, index]));
+    conceptRows.forEach((row, index) => {
+      positionX[index] = row.x;
+      positionY[index] = row.y;
+    });
+    const edgeOrdinals = edges.map((edge) => {
+      const left = conceptOrdinal.get(String(edge.from));
+      const right = conceptOrdinal.get(String(edge.to));
+      return left == null || right == null ? null : { left, right };
+    }).filter(Boolean);
+    const iterationCount = conceptCount > 520 ? 38 : conceptCount > 360 ? 46 : 54;
+    for (let iteration = 0; iteration < iterationCount; iteration += 1) {
+      displacementX.fill(0);
+      displacementY.fill(0);
+      for (let leftIndex = 0; leftIndex < conceptCount; leftIndex += 1) {
+        const leftX = positionX[leftIndex];
+        const leftY = positionY[leftIndex];
+        for (let rightIndex = leftIndex + 1; rightIndex < conceptCount; rightIndex += 1) {
+          let dx = leftX - positionX[rightIndex];
+          let dy = leftY - positionY[rightIndex];
           let distance2 = dx * dx + dy * dy;
           if (distance2 < 1) {
-            dx = (hashText(leftId + rightId) - 0.5) * 2;
-            dy = (hashText(rightId + leftId) - 0.5) * 2;
+            dx = (hashText(conceptIds[leftIndex] + conceptIds[rightIndex]) - 0.5) * 2;
+            dy = (hashText(conceptIds[rightIndex] + conceptIds[leftIndex]) - 0.5) * 2;
             distance2 = dx * dx + dy * dy + 1;
           }
           const distance = Math.sqrt(distance2);
           const force = Math.min(2.2, 3900 / distance2);
           const fx = (dx / distance) * force;
           const fy = (dy / distance) * force;
-          displacement.get(leftId).x += fx;
-          displacement.get(leftId).y += fy;
-          displacement.get(rightId).x -= fx;
-          displacement.get(rightId).y -= fy;
+          displacementX[leftIndex] += fx;
+          displacementY[leftIndex] += fy;
+          displacementX[rightIndex] -= fx;
+          displacementY[rightIndex] -= fy;
         }
       }
-      edges.forEach((edge) => {
-        const left = conceptPositions.get(String(edge.from));
-        const right = conceptPositions.get(String(edge.to));
-        if (!left || !right) return;
-        const dx = right.x - left.x;
-        const dy = right.y - left.y;
+      edgeOrdinals.forEach(({ left, right }) => {
+        const dx = positionX[right] - positionX[left];
+        const dy = positionY[right] - positionY[left];
         const distance = Math.max(1, Math.hypot(dx, dy));
         const force = Math.max(-1.7, Math.min(2.8, (distance - 118) * 0.010));
         const fx = (dx / distance) * force;
         const fy = (dy / distance) * force;
-        displacement.get(String(edge.from)).x += fx;
-        displacement.get(String(edge.from)).y += fy;
-        displacement.get(String(edge.to)).x -= fx;
-        displacement.get(String(edge.to)).y -= fy;
+        displacementX[left] += fx;
+        displacementY[left] += fy;
+        displacementX[right] -= fx;
+        displacementY[right] -= fy;
       });
-      conceptPositions.forEach((row, id) => {
+      for (let index = 0; index < conceptCount; index += 1) {
+        const row = conceptRows[index];
         const chapter = chapterCenters.get(row.chapterId);
         if (chapter) {
-          const dx = row.x - chapter.x;
-          const dy = row.y - chapter.y;
+          const dx = positionX[index] - chapter.x;
+          const dy = positionY[index] - chapter.y;
           const distance = Math.max(1, Math.hypot(dx, dy));
           if (distance > 250) {
             const pull = Math.min(1.6, (distance - 250) * 0.004);
-            displacement.get(id).x -= (dx / distance) * pull;
-            displacement.get(id).y -= (dy / distance) * pull;
+            displacementX[index] -= (dx / distance) * pull;
+            displacementY[index] -= (dy / distance) * pull;
           }
         }
         const hub = lessonHubs.get(row.lessonId);
         if (hub) {
-          const dx = row.x - hub.x;
-          const dy = row.y - hub.y;
+          const dx = positionX[index] - hub.x;
+          const dy = positionY[index] - hub.y;
           const distance = Math.max(1, Math.hypot(dx, dy));
           if (distance > 105) {
             const pull = Math.min(1.1, (distance - 105) * 0.0028);
-            displacement.get(id).x -= (dx / distance) * pull;
-            displacement.get(id).y -= (dy / distance) * pull;
+            displacementX[index] -= (dx / distance) * pull;
+            displacementY[index] -= (dy / distance) * pull;
           }
         }
-      });
-      conceptPositions.forEach((row, id) => {
-        const move = displacement.get(id);
-        row.x += Math.max(-4.2, Math.min(4.2, move.x * 0.58));
-        row.y += Math.max(-4.2, Math.min(4.2, move.y * 0.58));
-      });
+        positionX[index] += Math.max(-4.2, Math.min(4.2, displacementX[index] * 0.58));
+        positionY[index] += Math.max(-4.2, Math.min(4.2, displacementY[index] * 0.58));
+      }
     }
+    conceptRows.forEach((row, index) => {
+      row.x = positionX[index];
+      row.y = positionY[index];
+    });
     conceptPositions.forEach((row, id) => {
       const base = hierarchyConceptPositions.get(id);
       row.baseX = base?.x ?? row.x;
@@ -539,6 +550,8 @@
     head.appendChild(stats);
     section.appendChild(head);
 
+    let qualityMode = "auto";
+    let resolvedQuality = "smooth";
     const toolbar = h("div", "kp-star-toolbar");
     const searchWrap = h("div", "kp-star-search-wrap");
     const search = h("input", "kp-star-search");
@@ -575,13 +588,26 @@
       layoutSelect.appendChild(option);
     });
     toolbar.appendChild(layoutSelect);
+    const qualitySelect = h("select", "kp-star-select kp-star-quality");
+    qualitySelect.setAttribute("aria-label", "选择星图性能模式");
+    [
+      ["auto", "自动性能"],
+      ["smooth", "流畅优先"],
+      ["cinematic", "画质优先"],
+    ].forEach(([value, label]) => {
+      const option = h("option", "", label);
+      option.value = value;
+      qualitySelect.appendChild(option);
+    });
+    toolbar.appendChild(qualitySelect);
     toolbar.appendChild(button("定位本讲", "kp-star-button primary", () => focusLesson()));
     toolbar.appendChild(button("全课程", "kp-star-button", () => resetView()));
     const isolateButton = button("邻域聚焦", "kp-star-button active", () => {
       isolateNeighborhood = !isolateNeighborhood;
       isolateButton.classList.toggle("active", isolateNeighborhood);
       isolateButton.setAttribute("aria-pressed", isolateNeighborhood ? "true" : "false");
-      paintBase();
+      cameraChanged = true;
+      noteInteraction(500);
     });
     isolateButton.setAttribute("aria-pressed", "true");
     toolbar.appendChild(isolateButton);
@@ -607,7 +633,8 @@
         else allowedTypes.add(type);
         filterButton.classList.toggle("active", allowedTypes.has(type));
         filterButton.setAttribute("aria-pressed", allowedTypes.has(type) ? "true" : "false");
-        paintBase();
+        cameraChanged = true;
+        noteInteraction(500);
         renderDetail();
       };
       relationButtons[type] = filterButton;
@@ -619,7 +646,8 @@
         item.classList.add("active");
         item.setAttribute("aria-pressed", "true");
       });
-      paintBase();
+      cameraChanged = true;
+      noteInteraction(500);
       renderDetail();
     }));
     relationFilters.appendChild(relationGrid);
@@ -639,6 +667,8 @@
     stage.appendChild(hint);
     const depthBadge = h("div", "kp-star-depth", "课程总览");
     stage.appendChild(depthBadge);
+    const performanceBadge = h("div", "kp-star-performance", "自动 · 流畅");
+    stage.appendChild(performanceBadge);
     const detail = h("aside", "kp-star-detail");
     detail.hidden = true;
     stage.appendChild(detail);
@@ -682,16 +712,70 @@
     let suggestionHits = [];
     let relationBlend = 1;
     let active = false;
-    let frame = 0;
+    let raf = 0;
+    let timer = 0;
     let resizeObserver = null;
     let dragging = false;
     let dragStart = null;
     let cameraChanged = true;
-    let baseCanvas = document.createElement("canvas");
+    let qualityDirty = true;
+    let quickPreviewUntil = 0;
+    let animationUntil = 0;
+    let lastInteractionAt = 0;
+    let frameCount = 0;
+    let sampledAt = 0;
+    let sampledFrames = 0;
+    let measuredFps = 0;
+    let lastFrameAt = 0;
+    const frameInterval = 1000 / 30;
+    const heavyGraph = (graph.nodes || []).length > 420 ||
+      (graph.knowledgeAtoms || []).length > 2200;
+    const baseCanvas = document.createElement("canvas");
+    const backgroundCanvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const baseCtx = baseCanvas.getContext("2d");
-    const dpr = Math.min(2, global.devicePixelRatio || 1);
+    const backgroundCtx = backgroundCanvas.getContext("2d");
+    const glowSprites = new Map();
+    let dpr = 1;
     let size = { width: 0, height: 0 };
+
+    function resolveQuality() {
+      if (qualityMode === "auto") return heavyGraph ? "smooth" : "cinematic";
+      return qualityMode;
+    }
+
+    function qualityDpr() {
+      const ceiling = resolvedQuality === "cinematic" ? 2 : 1.25;
+      return Math.max(1, Math.min(ceiling, global.devicePixelRatio || 1));
+    }
+
+    function glowSprite(color) {
+      const key = clean(color || COLORS[0]);
+      if (glowSprites.has(key)) return glowSprites.get(key);
+      const sprite = document.createElement("canvas");
+      sprite.width = 128;
+      sprite.height = 128;
+      const spriteContext = sprite.getContext("2d");
+      const glow = spriteContext.createRadialGradient(64, 64, 0, 64, 64, 64);
+      glow.addColorStop(0, rgba(key, 0.92));
+      glow.addColorStop(0.24, rgba(key, 0.38));
+      glow.addColorStop(1, rgba(key, 0));
+      spriteContext.fillStyle = glow;
+      spriteContext.fillRect(0, 0, 128, 128);
+      glowSprites.set(key, sprite);
+      return sprite;
+    }
+
+    function drawGlow(context, color, x, y, radius, alpha) {
+      const sprite = glowSprite(color);
+      const previous = context.globalAlpha;
+      context.globalAlpha = previous * alpha;
+      context.drawImage(sprite, x - radius, y - radius, radius * 2, radius * 2);
+      context.globalAlpha = previous;
+    }
+
+    resolvedQuality = resolveQuality();
+    dpr = qualityDpr();
 
     canvas.dataset.concepts = String(layout.concepts.length);
     canvas.dataset.atoms = String(layout.atoms.length);
@@ -700,6 +784,14 @@
     canvas.dataset.chapters = String(layout.chapters.length);
     canvas.dataset.lessons = String(layout.lessons.length);
     canvas.dataset.layout = "relations";
+    canvas.dataset.performanceMode = qualityMode;
+    canvas.dataset.resolvedQuality = resolvedQuality;
+    canvas.dataset.frameState = "idle";
+    canvas.dataset.frames = "0";
+    canvas.dataset.fps = "0";
+    canvas.dataset.dpr = String(dpr);
+    performanceBadge.textContent = "自动 · " +
+      (resolvedQuality === "smooth" ? "流畅" : "画质");
 
     function cssPoint(x, y) {
       return {
@@ -728,6 +820,56 @@
         dpr * (size.width / 2 - camera.x * camera.scale),
         dpr * (size.height / 2 - camera.y * camera.scale)
       );
+    }
+
+    function cancelScheduledRender() {
+      if (timer) global.clearTimeout(timer);
+      if (raf) global.cancelAnimationFrame(raf);
+      timer = 0;
+      raf = 0;
+    }
+
+    function requestRender(animate) {
+      if (!active) {
+        canvas.dataset.frameState = "paused";
+        return;
+      }
+      if (raf || timer) return;
+      const now = performance.now();
+      const delay = animate
+        ? Math.max(0, frameInterval - Math.max(0, now - lastFrameAt))
+        : 0;
+      canvas.dataset.frameState = "scheduled";
+      timer = global.setTimeout(() => {
+        timer = 0;
+        if (!active) return;
+        raf = global.requestAnimationFrame(drawFrame);
+      }, delay);
+    }
+
+    function noteInteraction(duration) {
+      lastInteractionAt = performance.now();
+      animationUntil = Math.max(
+        animationUntil,
+        lastInteractionAt + Math.max(0, Number(duration) || 1100)
+      );
+      requestRender(true);
+    }
+
+    function paintBackground() {
+      if (!size.width || !size.height) return;
+      backgroundCanvas.width = canvas.width;
+      backgroundCanvas.height = canvas.height;
+      backgroundCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const gradient = backgroundCtx.createRadialGradient(
+        size.width * 0.48, size.height * 0.48, 20,
+        size.width * 0.48, size.height * 0.48, Math.max(size.width, size.height) * 0.75
+      );
+      gradient.addColorStop(0, "#08202a");
+      gradient.addColorStop(0.46, "#040d15");
+      gradient.addColorStop(1, "#02060a");
+      backgroundCtx.fillStyle = gradient;
+      backgroundCtx.fillRect(0, 0, size.width, size.height);
     }
 
     function fitView() {
@@ -763,6 +905,7 @@
         row.x = row.baseX * (1 - relationBlend) + row.networkX * relationBlend;
         row.y = row.baseY * (1 - relationBlend) + row.networkY * relationBlend;
       });
+      hitIndexes = buildHitIndexes();
       fitView();
       updateDepthBadge();
     }
@@ -774,6 +917,7 @@
       camera.scale = Math.max(0.34, Math.min(2.2, scale || Math.max(camera.scale, 0.72)));
       cameraChanged = true;
       updateDepthBadge();
+      noteInteraction(1200);
     }
 
     function zoomAt(multiplier, sx, sy) {
@@ -786,21 +930,28 @@
       camera.y = worldY - (screenY - size.height / 2) / camera.scale;
       cameraChanged = true;
       updateDepthBadge();
+      noteInteraction(900);
     }
 
     function resize() {
       const rect = stage.getBoundingClientRect();
       const width = Math.max(1, Math.round(rect.width));
       const height = Math.max(430, Math.round(rect.height || 620));
-      if (width === size.width && height === size.height && !cameraChanged) return;
+      const nextDpr = qualityDpr();
+      if (width === size.width && height === size.height &&
+          nextDpr === dpr && !qualityDirty) return;
       size = { width, height };
+      dpr = nextDpr;
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       baseCanvas.width = canvas.width;
       baseCanvas.height = canvas.height;
+      qualityDirty = false;
+      canvas.dataset.dpr = String(dpr);
       if (!layout.bounds || camera.scale === 0.35 && camera.x === WORLD.cx) fitView();
-      paintBase();
-      cameraChanged = false;
+      paintBackground();
+      cameraChanged = true;
+      requestRender(false);
     }
 
     function worldLine(context, from, to, color, width, alpha) {
@@ -862,72 +1013,53 @@
       return allowedTypes.has(type || "grouping");
     }
 
-    function paintBase() {
+    function paintBase(options) {
       if (!size.width || !size.height) return;
+      const quick = Boolean(options && options.quick);
+      const startedAt = performance.now();
       const structureMode = relationBlend < 0.35;
       const context = baseCtx;
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
-      const bg = context.createRadialGradient(
-        size.width * 0.48, size.height * 0.48, 20,
-        size.width * 0.48, size.height * 0.48, Math.max(size.width, size.height) * 0.75
-      );
-      bg.addColorStop(0, "#08202a");
-      bg.addColorStop(0.46, "#040d15");
-      bg.addColorStop(1, "#02060a");
-      context.fillStyle = bg;
-      context.fillRect(0, 0, baseCanvas.width, baseCanvas.height);
+      context.drawImage(backgroundCanvas, 0, 0);
 
       cameraTransform(context);
       context.globalCompositeOperation = "lighter";
       context.shadowBlur = 0;
 
-      const halo = context.createRadialGradient(WORLD.cx, WORLD.cy, 0, WORLD.cx, WORLD.cy, 1080);
-      halo.addColorStop(0, "rgba(64,222,244,.11)");
-      halo.addColorStop(0.48, "rgba(34,130,171,.045)");
-      halo.addColorStop(1, "rgba(0,0,0,0)");
-      context.fillStyle = halo;
-      context.beginPath();
-      context.arc(WORLD.cx, WORLD.cy, 1080, 0, Math.PI * 2);
-      context.fill();
+      if (!quick) {
+        drawGlow(context, "#40def4", WORLD.cx, WORLD.cy, 1080, 0.11);
+        layout.chapterCenters.forEach((row) => {
+          drawGlow(context, row.color, row.x, row.y, 540, 0.1);
+        });
 
-      layout.chapterCenters.forEach((row) => {
-        const nebula = context.createRadialGradient(row.x, row.y, 0, row.x, row.y, 540);
-        nebula.addColorStop(0, rgba(row.color, 0.10));
-        nebula.addColorStop(0.4, rgba(row.color, 0.035));
-        nebula.addColorStop(1, rgba(row.color, 0));
-        context.fillStyle = nebula;
-        context.beginPath();
-        context.arc(row.x, row.y, 540, 0, Math.PI * 2);
-        context.fill();
-      });
+        ambientStars.forEach((star) => {
+          context.globalAlpha = star.alpha;
+          context.fillStyle = "#c6f6ff";
+          context.beginPath();
+          context.arc(star.x, star.y, Math.max(0.25, star.size / camera.scale), 0, Math.PI * 2);
+          context.fill();
+        });
+        context.globalAlpha = 1;
 
-      ambientStars.forEach((star) => {
-        context.globalAlpha = star.alpha;
-        context.fillStyle = "#c6f6ff";
-        context.beginPath();
-        context.arc(star.x, star.y, Math.max(0.25, star.size / camera.scale), 0, Math.PI * 2);
-        context.fill();
-      });
-      context.globalAlpha = 1;
-
-      [260, 520, 780, 1040].forEach((radius, index) => {
-        context.beginPath();
-        context.arc(WORLD.cx, WORLD.cy, radius, 0, Math.PI * 2);
-        context.strokeStyle = "rgba(99,213,230," + (0.055 - index * 0.008) + ")";
-        context.lineWidth = 1 / camera.scale;
-        context.stroke();
-      });
-      context.setLineDash([5 / camera.scale, 12 / camera.scale]);
-      layout.chapterCenters.forEach((row, id) => {
-        const active = !chapterFilter || chapterFilter === id;
-        context.beginPath();
-        context.arc(row.x, row.y, 430, 0, Math.PI * 2);
-        context.strokeStyle = rgba(row.color, active ? 0.055 : 0.012);
-        context.lineWidth = 0.75 / camera.scale;
-        context.stroke();
-      });
-      context.setLineDash([]);
+        [260, 520, 780, 1040].forEach((radius, index) => {
+          context.beginPath();
+          context.arc(WORLD.cx, WORLD.cy, radius, 0, Math.PI * 2);
+          context.strokeStyle = "rgba(99,213,230," + (0.055 - index * 0.008) + ")";
+          context.lineWidth = 1 / camera.scale;
+          context.stroke();
+        });
+        context.setLineDash([5 / camera.scale, 12 / camera.scale]);
+        layout.chapterCenters.forEach((row, id) => {
+          const visible = !chapterFilter || chapterFilter === id;
+          context.beginPath();
+          context.arc(row.x, row.y, 430, 0, Math.PI * 2);
+          context.strokeStyle = rgba(row.color, visible ? 0.055 : 0.012);
+          context.lineWidth = 0.75 / camera.scale;
+          context.stroke();
+        });
+        context.setLineDash([]);
+      }
 
       layout.chapterLinks.forEach((row) => {
         const alpha = !focus || focus.chapters.has(row.chapterId)
@@ -956,20 +1088,22 @@
         worldLine(context, row.from, row.to,
           layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 0.7, chapterAlpha);
       });
-      layout.membershipLinks.forEach((row) => {
-        const activeLesson = layout.currentLesson && String(layout.currentLesson.id) === row.lessonId &&
-          !focus;
-        const alpha = activeLesson ? 0.2 : (structureMode ? 0.095 : 0.024);
-        worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.55, alpha);
-      });
+      if (!quick) {
+        layout.membershipLinks.forEach((row) => {
+          const activeLesson = layout.currentLesson &&
+            String(layout.currentLesson.id) === row.lessonId && !focus;
+          const alpha = activeLesson ? 0.2 : (structureMode ? 0.095 : 0.024);
+          worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.55, alpha);
+        });
 
-      context.globalAlpha = 1;
-      layout.atomLinks.forEach((row) => {
-        if (focus && isolateNeighborhood && !focus.atoms.has(row.atomId)) return;
-        const inFocus = focus && focus.atoms.has(row.atomId);
-        const alpha = inFocus ? 0.34 : 0.018;
-        worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.38, alpha);
-      });
+        context.globalAlpha = 1;
+        layout.atomLinks.forEach((row) => {
+          if (focus && isolateNeighborhood && !focus.atoms.has(row.atomId)) return;
+          const inFocus = focus && focus.atoms.has(row.atomId);
+          const alpha = inFocus ? 0.34 : 0.018;
+          worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.38, alpha);
+        });
+      }
 
       layout.edges.forEach((edge) => {
         if (!typeAllowed(edge.type)) return;
@@ -1022,14 +1156,10 @@
           const isSelected = selected?.kind === "concept" && selected.id === row.id;
           const radius = Math.max(1.15, ((isSelected ? 5.6 : current ? 3.9 : 2.8) +
             Math.min(2.2, degree * 0.09)) / camera.scale);
-          const glow = context.createRadialGradient(row.x, row.y, 0, row.x, row.y, radius * 3.6);
-          glow.addColorStop(0, rgba(group.color, 0.95));
-          glow.addColorStop(0.28, rgba(group.color, 0.48));
-          glow.addColorStop(1, rgba(group.color, 0));
-          context.fillStyle = glow;
-          context.beginPath();
-          context.arc(row.x, row.y, radius * 3.6, 0, Math.PI * 2);
-          context.fill();
+          if (!quick || current || isSelected) {
+            drawGlow(context, group.color, row.x, row.y,
+              radius * (isSelected ? 4.2 : 3.6), isSelected ? 1 : 0.82);
+          }
           context.fillStyle = "rgba(240,255,255,.94)";
           context.beginPath();
           context.arc(row.x, row.y, Math.max(0.7, radius * 0.52), 0, Math.PI * 2);
@@ -1050,14 +1180,7 @@
         const alpha = nodeAlpha("chapter", id, id);
         context.globalAlpha = alpha;
         const radius = Math.max(4, 8 / camera.scale);
-        const glow = context.createRadialGradient(row.x, row.y, 0, row.x, row.y, radius * 5);
-        glow.addColorStop(0, rgba(row.color, 0.8));
-        glow.addColorStop(0.3, rgba(row.color, 0.26));
-        glow.addColorStop(1, rgba(row.color, 0));
-        context.fillStyle = glow;
-        context.beginPath();
-        context.arc(row.x, row.y, radius * 5, 0, Math.PI * 2);
-        context.fill();
+        drawGlow(context, row.color, row.x, row.y, radius * 5, 0.82);
         context.fillStyle = "rgba(235,255,255,.92)";
         context.beginPath();
         context.arc(row.x, row.y, radius * 0.62, 0, Math.PI * 2);
@@ -1066,19 +1189,13 @@
 
       const centerAlpha = focus && !focus.chapters.size ? 0.2 : 1;
       context.globalAlpha = centerAlpha;
-      const coreGlow = context.createRadialGradient(WORLD.cx, WORLD.cy, 0, WORLD.cx, WORLD.cy, 92);
-      coreGlow.addColorStop(0, "rgba(230,255,255,.94)");
-      coreGlow.addColorStop(0.12, "rgba(90,230,250,.5)");
-      coreGlow.addColorStop(1, "rgba(30,130,190,0)");
-      context.fillStyle = coreGlow;
-      context.beginPath();
-      context.arc(WORLD.cx, WORLD.cy, 92, 0, Math.PI * 2);
-      context.fill();
+      drawGlow(context, "#8ff3ff", WORLD.cx, WORLD.cy, 92, 0.95);
       context.globalAlpha = 1;
       context.globalCompositeOperation = "source-over";
 
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawStaticLabels(context);
+      drawStaticLabels(context, quick);
+      canvas.dataset.paintMs = (performance.now() - startedAt).toFixed(1);
     }
 
     function label(context, text, sx, sy, color, sizePx, align) {
@@ -1152,7 +1269,46 @@
       );
     }
 
-    function drawStaticLabels(context) {
+    function buildLabelGroups() {
+      const groups = new Map();
+      layout.conceptPositions.forEach((row, id) => {
+        if (!groups.has(row.chapterId)) groups.set(row.chapterId, []);
+        groups.get(row.chapterId).push({ id, row });
+      });
+      groups.forEach((rows) => {
+        rows.sort((left, right) => {
+          const leftScore = (layout.currentConceptIds.has(left.id) ? 1000 : 0) +
+            (layout.adjacency.get(left.id)?.size || 0);
+          const rightScore = (layout.currentConceptIds.has(right.id) ? 1000 : 0) +
+            (layout.adjacency.get(right.id)?.size || 0);
+          return rightScore - leftScore;
+        });
+      });
+      return groups;
+    }
+
+    function buildHitIndexes() {
+      const makeIndex = (rows, cellSize) => {
+        const cells = new Map();
+        rows.forEach((row, id) => {
+          const cx = Math.floor(row.x / cellSize);
+          const cy = Math.floor(row.y / cellSize);
+          const key = cx + ":" + cy;
+          if (!cells.has(key)) cells.set(key, []);
+          cells.get(key).push({ id, row });
+        });
+        return { cellSize, cells };
+      };
+      return {
+        concepts: makeIndex(layout.conceptPositions, 64),
+        atoms: makeIndex(layout.atomPositions, 48),
+      };
+    }
+
+    let labelGroups = buildLabelGroups();
+    let hitIndexes = buildHitIndexes();
+
+    function drawStaticLabels(context, quick) {
       const boxes = [];
       const coursePoint = cssPoint(WORLD.cx, WORLD.cy);
       boxes.push(pillLabel(context, clean(graph.course || "全课程"),
@@ -1182,27 +1338,17 @@
         }
       }
 
+      if (quick) return;
       const perChapter = camera.scale < 0.42 ? 1 : camera.scale < 0.72 ? 2 : 4;
-      const groups = new Map();
-      layout.conceptPositions.forEach((row, id) => {
-        if (!groups.has(row.chapterId)) groups.set(row.chapterId, []);
-        groups.get(row.chapterId).push({ id, ...row });
-      });
-      groups.forEach((rows, chapterId) => {
-        rows.sort((left, right) => {
-          const leftCurrent = layout.currentConceptIds.has(left.id) ? 1000 : 0;
-          const rightCurrent = layout.currentConceptIds.has(right.id) ? 1000 : 0;
-          const leftDegree = layout.adjacency.get(left.id)?.size || 0;
-          const rightDegree = layout.adjacency.get(right.id)?.size || 0;
-          return (rightCurrent + rightDegree) - (leftCurrent + leftDegree);
-        });
-        rows.slice(0, perChapter).forEach((row) => {
-          const alpha = nodeAlpha("concept", row.id, chapterId);
+      labelGroups.forEach((items, chapterId) => {
+        items.slice(0, perChapter).forEach((item) => {
+          const { id, row } = item;
+          const alpha = nodeAlpha("concept", id, chapterId);
           if (alpha < 0.25) return;
           const point = cssPoint(row.x, row.y);
           if (point.x < 20 || point.x > size.width - 20 ||
               point.y < 20 || point.y > size.height - 20) return;
-          const concept = layout.conceptIndex.get(row.id);
+          const concept = layout.conceptIndex.get(id);
           const box = pillLabel(context, concept?.label || "概念",
             point.x + 9, point.y - 12, row.color,
             { size: 10, maxWidth: 160, anchor: "left",
@@ -1213,63 +1359,64 @@
     }
 
     function drawFrame(time) {
-      if (!active || !size.width) return;
+      raf = 0;
+      if (!active || !size.width) {
+        canvas.dataset.frameState = "paused";
+        return;
+      }
+      const now = performance.now();
+      lastFrameAt = time;
+      canvas.dataset.frameState = "running";
+      const quick = dragging || now < quickPreviewUntil;
       if (cameraChanged) {
-        paintBase();
+        paintBase({ quick });
         cameraChanged = false;
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(baseCanvas, 0, 0);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalCompositeOperation = "lighter";
-      layout.chapterFlow.forEach((edge, index) => {
-        if (!typeAllowed(edge.type)) return;
-        if (focus && isolateNeighborhood &&
-            !focus.chapters.has(edge.fromId) && !focus.chapters.has(edge.toId)) return;
-        const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
-        const control = cssPoint(edge.cx, edge.cy);
-        const to = cssPoint(edge.toPoint.x, edge.toPoint.y);
-        const t = (time * 0.000055 + index * 0.23) % 1;
-        const mt = 1 - t;
-        const px = mt * mt * from.x + 2 * mt * t * control.x + t * t * to.x;
-        const py = mt * mt * from.y + 2 * mt * t * control.y + t * t * to.y;
-        ctx.fillStyle = rgba(edge.color, focus ? 0.32 : 0.92);
-        ctx.shadowColor = edge.color;
-        ctx.shadowBlur = focus ? 5 : 12;
-        ctx.beginPath();
-        ctx.arc(px, py, focus ? 1.2 : 2.1, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      });
-      const activeEdges = focus
-        ? layout.edges.filter((edge) =>
-          typeAllowed(edge.type) && focus.edges.has(String(edge.id))).slice(0, 80)
-        : layout.edges.filter((edge, index) =>
-          typeAllowed(edge.type) && index % 29 === 0).slice(0, 34);
+      const activeEdges = quick ? [] : focus
+          ? layout.edges.filter((edge) =>
+            typeAllowed(edge.type) && focus.edges.has(String(edge.id))).slice(0, 80)
+          : layout.edges.filter((edge, index) =>
+            typeAllowed(edge.type) && index % 29 === 0).slice(0, 34);
       const relationLabels = [];
+      if (!quick) {
+        layout.chapterFlow.forEach((edge, index) => {
+          if (!typeAllowed(edge.type)) return;
+          if (focus && isolateNeighborhood &&
+              !focus.chapters.has(edge.fromId) && !focus.chapters.has(edge.toId)) return;
+          const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
+          const control = cssPoint(edge.cx, edge.cy);
+          const to = cssPoint(edge.toPoint.x, edge.toPoint.y);
+          const t = (time * 0.000055 + index * 0.23) % 1;
+          const mt = 1 - t;
+          const px = mt * mt * from.x + 2 * mt * t * control.x + t * t * to.x;
+          const py = mt * mt * from.y + 2 * mt * t * control.y + t * t * to.y;
+          drawGlow(ctx, edge.color, px, py, focus ? 4.2 : 7,
+            focus ? 0.44 : 0.88);
+          ctx.fillStyle = rgba(edge.color, focus ? 0.5 : 0.96);
+          ctx.beginPath();
+          ctx.arc(px, py, focus ? 1.2 : 2.1, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
       activeEdges.forEach((edge, index) => {
         const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
         const control = cssPoint(edge.cx, edge.cy);
         const to = cssPoint(edge.toPoint.x, edge.toPoint.y);
-        const gradient = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
-        gradient.addColorStop(0, rgba(edge.fromPoint.color, focus ? 0.46 : 0.12));
-        gradient.addColorStop(0.5, focus
-          ? rgba(edge.color || "#91f8ff", 0.65)
-          : rgba(edge.color || "#5cd5e6", 0.17));
-        gradient.addColorStop(1, rgba(edge.toPoint.color, focus ? 0.46 : 0.12));
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
         ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
-        ctx.strokeStyle = gradient;
+        ctx.strokeStyle = rgba(edge.color || "#5cd5e6", focus ? 0.62 : 0.2);
         ctx.lineWidth = focus ? 1.4 : 0.7;
-        ctx.shadowColor = edge.color || "#5bdcf2";
-        ctx.shadowBlur = focus ? 12 : 5;
         ctx.stroke();
-        ctx.shadowBlur = 0;
         const t = ((time * 0.00013 + index * 0.173) % 1);
         const mt = 1 - t;
         const px = mt * mt * from.x + 2 * mt * t * control.x + t * t * to.x;
         const py = mt * mt * from.y + 2 * mt * t * control.y + t * t * to.y;
+        if (focus) drawGlow(ctx, edge.color || "#dffcff", px, py, 4.2, 0.6);
         ctx.fillStyle = focus ? "rgba(230,255,255,.95)" : "rgba(174,242,251,.5)";
         ctx.beginPath();
         ctx.arc(px, py, focus ? 1.8 : 1.1, 0, Math.PI * 2);
@@ -1288,7 +1435,7 @@
 
       ctx.globalCompositeOperation = "source-over";
       let selectedLabelBox = null;
-      if (selected) {
+      if (selected && !quick) {
         const hit = selected.kind === "concept"
           ? layout.conceptPositions.get(selected.id)
           : selected.kind === "atom"
@@ -1301,7 +1448,8 @@
           ctx.strokeStyle = "rgba(235,255,255,.82)";
           ctx.lineWidth = 1.4;
           ctx.beginPath();
-          ctx.arc(point.x, point.y, 8 + Math.sin(time * 0.006) * 1.6, 0, Math.PI * 2);
+          const pulse = now < animationUntil ? Math.sin(time * 0.006) * 1.6 : 0;
+          ctx.arc(point.x, point.y, 8 + pulse, 0, Math.PI * 2);
           ctx.stroke();
           const title = selected.kind === "concept"
             ? layout.conceptIndex.get(selected.id)?.label
@@ -1314,7 +1462,7 @@
           }
         }
       }
-      if (focus) {
+      if (focus && !quick) {
         const used = selectedLabelBox ? [selectedLabelBox] : [];
         const focusRows = Array.from(focus.concepts)
           .map((id) => ({ id, row: layout.conceptPositions.get(id) }))
@@ -1337,17 +1485,28 @@
         });
       }
       ctx.globalCompositeOperation = "source-over";
-      frame = global.requestAnimationFrame(drawFrame);
-    }
-
-    function startLoop() {
-      if (frame) return;
-      frame = global.requestAnimationFrame(drawFrame);
+      frameCount += 1;
+      canvas.dataset.frames = String(frameCount);
+      if (!sampledAt) {
+        sampledAt = time;
+        sampledFrames = frameCount;
+      } else if (time - sampledAt >= 500) {
+        measuredFps = Math.round((frameCount - sampledFrames) * 1000 / (time - sampledAt));
+        canvas.dataset.fps = String(measuredFps);
+        sampledAt = time;
+        sampledFrames = frameCount;
+      }
+      if (!dragging && performance.now() < animationUntil) {
+        requestRender(true);
+      } else {
+        animationUntil = 0;
+        canvas.dataset.frameState = "idle";
+      }
     }
 
     function stopLoop() {
-      if (frame) global.cancelAnimationFrame(frame);
-      frame = 0;
+      cancelScheduledRender();
+      canvas.dataset.frameState = "paused";
     }
 
     function focusForHit(hit) {
@@ -1364,6 +1523,7 @@
       filter.value = chapterFilter;
       focus = focusSets(layout, selected);
       cameraChanged = true;
+      noteInteraction(1100);
       renderDetail();
     }
 
@@ -1490,30 +1650,37 @@
     }
 
     function hitTest(sx, sy) {
+      const worldX = (sx - size.width / 2) / camera.scale + camera.x;
+      const worldY = (sy - size.height / 2) / camera.scale + camera.y;
       let best = null;
       let bestDistance = Infinity;
-      layout.conceptPositions.forEach((row, id) => {
-        const point = cssPoint(row.x, row.y);
-        const distance = Math.hypot(point.x - sx, point.y - sy);
-        const threshold = 11;
-        if (distance <= threshold && distance < bestDistance) {
-          bestDistance = distance;
-          best = { kind: "concept", id };
+      const query = (index, thresholdPx, kind) => {
+        const threshold = thresholdPx / camera.scale;
+        const cellSize = index.cellSize;
+        const minX = Math.floor((worldX - threshold) / cellSize);
+        const maxX = Math.floor((worldX + threshold) / cellSize);
+        const minY = Math.floor((worldY - threshold) / cellSize);
+        const maxY = Math.floor((worldY + threshold) / cellSize);
+        for (let x = minX; x <= maxX; x += 1) {
+          for (let y = minY; y <= maxY; y += 1) {
+            const rows = index.cells.get(x + ":" + y);
+            if (!rows) continue;
+            rows.forEach(({ id, row }) => {
+              const distance = Math.hypot(row.x - worldX, row.y - worldY);
+              if (distance <= threshold && distance < bestDistance) {
+                bestDistance = distance;
+                best = { kind, id };
+              }
+            });
+          }
         }
-      });
+      };
+      query(hitIndexes.concepts, 11, "concept");
       if (best) return best;
-      layout.atomPositions.forEach((row, id) => {
-        const point = cssPoint(row.x, row.y);
-        const distance = Math.hypot(point.x - sx, point.y - sy);
-        if (distance <= 7 && distance < bestDistance) {
-          bestDistance = distance;
-          best = { kind: "atom", id };
-        }
-      });
+      query(hitIndexes.atoms, 7, "atom");
       if (best) return best;
       layout.chapterCenters.forEach((row, id) => {
-        const point = cssPoint(row.x, row.y);
-        const distance = Math.hypot(point.x - sx, point.y - sy);
+        const distance = Math.hypot(row.x - worldX, row.y - worldY) * camera.scale;
         if (distance <= 18 && distance < bestDistance) {
           bestDistance = distance;
           best = { kind: "chapter", id };
@@ -1565,6 +1732,7 @@
         camera.x = dragStart.cameraX - dx / camera.scale;
         camera.y = dragStart.cameraY - dy / camera.scale;
         cameraChanged = true;
+        requestRender(false);
         tooltip.hidden = true;
         return;
       }
@@ -1577,10 +1745,13 @@
       dragging = false;
       canvas.releasePointerCapture?.(event.pointerId);
       canvas.style.cursor = "grab";
+      cameraChanged = true;
+      quickPreviewUntil = 0;
       if (!moved) {
         const hit = hitTest(point.x, point.y);
         focusForHit(hit);
       }
+      noteInteraction(1200);
       dragStart = null;
     }
     canvas.addEventListener("pointerup", endDrag);
@@ -1594,7 +1765,14 @@
     canvas.addEventListener("wheel", (event) => {
       event.preventDefault();
       const point = pointerPosition(event);
+      quickPreviewUntil = performance.now() + 90;
       zoomAt(event.deltaY < 0 ? 1.12 : 0.89, point.x, point.y);
+      clearTimeout(canvas._kpWheelTimer);
+      canvas._kpWheelTimer = setTimeout(() => {
+        quickPreviewUntil = 0;
+        cameraChanged = true;
+        noteInteraction(600);
+      }, 110);
     }, { passive: false });
     canvas.addEventListener("keydown", (event) => {
       if (event.key === "+" || event.key === "=") zoomAt(1.2);
@@ -1622,6 +1800,8 @@
       selected = null;
       focus = null;
       fitView();
+      cameraChanged = true;
+      noteInteraction(1200);
       renderDetail();
     }
 
@@ -1666,8 +1846,23 @@
       selected = null;
       focus = null;
       applyLayoutBlend(values[layoutSelect.value] ?? 1);
-      paintBase();
+      cameraChanged = true;
+      noteInteraction(700);
       renderDetail();
+    });
+
+    qualitySelect.addEventListener("change", () => {
+      qualityMode = qualitySelect.value;
+      resolvedQuality = resolveQuality();
+      qualityDirty = true;
+      canvas.dataset.performanceMode = qualityMode;
+      canvas.dataset.resolvedQuality = resolvedQuality;
+      performanceBadge.textContent = qualityMode === "auto"
+        ? "自动 · " + (resolvedQuality === "smooth" ? "流畅" : "画质")
+        : qualityMode === "smooth" ? "流畅优先" : "画质优先";
+      resize();
+      cameraChanged = true;
+      noteInteraction(700);
     });
 
     function searchMatches(value) {
@@ -1766,11 +1961,7 @@
       active = Boolean(next);
       if (active) {
         resize();
-        if (cameraChanged) {
-          paintBase();
-          cameraChanged = false;
-        }
-        startLoop();
+        noteInteraction(1200);
       } else {
         stopLoop();
       }
@@ -1779,6 +1970,7 @@
       stopLoop();
       if (resizeObserver) resizeObserver.disconnect();
       clearTimeout(resizeTimer);
+      clearTimeout(canvas._kpWheelTimer);
       global.document.removeEventListener("pointerdown", hideSuggestionsOutside);
     };
     section._kpFocusLesson = focusLesson;
