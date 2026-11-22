@@ -1,5 +1,27 @@
 # Lessons
 
+## 2026-11-22 - Knowledge completeness still needs a usable learning entry
+
+**Symptom:** The course graph contained 656 canonical concepts, 3,486 atoms and 983
+core relations, but the player exposed one long scroll of anchors, atoms and course
+indexes. Users could see that the data was complete while still not knowing where to
+start, how to focus a concept or what to review next.
+
+**Root cause:** Navigation compression, evidence completeness and learning workflow
+were all rendered as sections of one report. Cross-lesson data also stored a numeric
+episode but the frontend required an `episodeId`, so every intended cross-lesson link
+was silently filtered out.
+
+**Fix:** Split the surface into Learning, Knowledge and Review views. Keep the core
+network in Learning, focus a clicked anchor and its direct neighbours, expose the full
+atom layer only in Knowledge, preserve both `episodeId` and episode number in the
+course graph, and add per-lesson browser-local mastery plus a review queue.
+
+**Verification:** In the live player, the default view was Learning; clicking an
+anchor opened a focus panel with direct relations and evidence; marking a node
+"unsure" produced a review badge and queue item that survived refresh; E01 exposed
+cross-lesson E05/E06 links and opening E05 changed the active lesson.
+
 ## 2026-11-21 — Visual audit is not a command to include every frame
 
 - **Symptom:** Forcing one representative from every OCR cluster inserted course

@@ -74,6 +74,65 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
         self.assertIn("if (k === 'Escape' && this.el.menu.classList.contains('open'))", player)
         self.assertIn("a.startsWith('rate:')", player)
 
+    def test_focus_views_review_queue_and_cross_episode_links(self):
+        plugin = (ROOT / "web" / "knowledge_plugin.js").read_text(encoding="utf-8")
+        for token in (
+            "kp-tab-shell",
+            "renderReviewQueue",
+            "kp-focus-panel",
+            "localStorage",
+            "vks.mastery.",
+            "跨讲关联",
+            "会",
+            "模糊",
+            "不会",
+        ):
+            self.assertIn(token, plugin)
+        script = r"""
+const P = require(process.argv[1]);
+const graph = {
+  course: '操作系统知识体系',
+  lessons: [
+    { episode: 1, episodeId: 'os-course-e01' },
+    { episode: 5, episodeId: 'os-course-e05' },
+    { episode: 6, episodeId: 'os-course-e06' },
+  ],
+  nodes: [{
+    label: '系统调用',
+    occurrences: [
+      { episode: 1, episodeTitle: '第一讲' },
+      { episode: 5, episodeTitle: '第五讲' },
+      { episode: 6, episodeTitle: '第六讲' },
+    ],
+  }],
+};
+const rows = P.relatedEpisodes(graph, ['系统调用'], 1);
+if (JSON.stringify(rows.map((x) => x.episodeId)) !== '["os-course-e05","os-course-e06"]') process.exit(2);
+const generic = {
+  course: 'Another course',
+  nodes: [{
+    label: '共享概念',
+    occurrences: [
+      { episode: 1, episodeId: 'demo-e01' },
+      { episode: 2, episodeId: 'demo-e02' },
+    ],
+  }],
+};
+const genericRows = P.relatedEpisodes(generic, ['共享概念'], 1);
+if (genericRows.length !== 1 || genericRows[0].episodeId !== 'demo-e02') process.exit(3);
+process.stdout.write(JSON.stringify({ episodeOnly: rows.length, explicit: genericRows.length }));
+"""
+        result = subprocess.run(
+            ["node", "-e", script, str(ROOT / "web" / "knowledge_plugin.js")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=True,
+        )
+        self.assertIn('"episodeOnly":2', result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

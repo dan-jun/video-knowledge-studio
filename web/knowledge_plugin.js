@@ -56,6 +56,111 @@
     return button;
   }
 
+  function masteryKey(lesson) {
+    return "vks.mastery." + clean(
+      (lesson && (lesson.id || lesson.episodeId)) || "unknown"
+    );
+  }
+
+  function loadMastery(lesson) {
+    try {
+      return JSON.parse(localStorage.getItem(masteryKey(lesson)) || "{}") || {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveMastery(lesson, value) {
+    try {
+      localStorage.setItem(masteryKey(lesson), JSON.stringify(value));
+    } catch (_) {
+      // Local storage can be unavailable in restricted browser contexts.
+    }
+  }
+
+  function masteryControl(key, store, lesson, onChange) {
+    const box = h("div", "kp-mastery");
+    box.setAttribute("aria-label", "掌握度");
+    box.dataset.masteryKey = key;
+    [
+      ["known", "会"],
+      ["fuzzy", "模糊"],
+      ["unknown", "不会"],
+    ].forEach(([state, label]) => {
+      const button = h("button", "kp-mastery-btn", label);
+      button.type = "button";
+      button.dataset.state = state;
+      if (store[key] === state) button.classList.add("active");
+      button.onclick = (event) => {
+        event.stopPropagation();
+        store[key] = state;
+        saveMastery(lesson, store);
+        document.querySelectorAll(".kp-mastery").forEach((control) => {
+          if (control.dataset.masteryKey !== key) return;
+          control.querySelectorAll(".kp-mastery-btn").forEach((item) => {
+            item.classList.toggle("active", item.dataset.state === state);
+          });
+        });
+        if (onChange) onChange();
+      };
+      box.appendChild(button);
+    });
+    return box;
+  }
+
+  function episodeTarget(courseGraph, row) {
+    if (!row) return "";
+    if (row.episodeId) return clean(row.episodeId);
+    const episode = Number(row.episode);
+    if (!Number.isFinite(episode)) return "";
+    const lesson = (courseGraph?.lessons || []).find(
+      (item) => Number(item.episode) === episode && item.episodeId
+    );
+    if (lesson?.episodeId) return clean(lesson.episodeId);
+    const course = clean(courseGraph?.course);
+    if (course.includes("操作系统")) {
+      return "os-course-e" + String(episode).padStart(2, "0");
+    }
+    return "";
+  }
+
+  function relatedEpisodes(courseGraph, titles, currentEpisode) {
+    if (!courseGraph || !(titles || []).length) return [];
+    const titleSet = new Set(titles);
+    const current = Number(currentEpisode);
+    const found = new Map();
+    (courseGraph.nodes || []).forEach((node) => {
+      if (!titleSet.has(node.label)) return;
+      (node.occurrences || []).forEach((occurrence) => {
+        if (!occurrence || Number(occurrence.episode) === current) return;
+        const target = episodeTarget(courseGraph, occurrence);
+        if (target) found.set(target, { ...occurrence, episodeId: target });
+      });
+    });
+    return [...found.values()]
+      .sort((a, b) => Number(a.episode || 0) - Number(b.episode || 0))
+      .slice(0, 8);
+  }
+
+  function relatedEpisodeLinks(courseGraph, titles, currentEpisode, onOpenEpisode) {
+    const rows = relatedEpisodes(courseGraph, titles, currentEpisode);
+    if (!rows.length) return null;
+    const box = h("div", "kp-related");
+    box.appendChild(h("span", "", "跨讲关联"));
+    rows.forEach((row) => {
+      const button = h("button", "kp-related-link",
+        "E" + String(row.episode).padStart(2, "0"));
+      button.type = "button";
+      button.title = row.episodeTitle || row.episodeId;
+      button.onclick = (event) => {
+        event.stopPropagation();
+        if (onOpenEpisode) onOpenEpisode(row.episodeId);
+      };
+      box.appendChild(button);
+    });
+    return box;
+  }
+
   function renderEmpty(lesson, status, onGenerate) {
     const box = h("section", "kp-empty");
     box.dataset.vksKnowledgePlugin = "empty";
@@ -164,7 +269,9 @@
     return node;
   }
 
-  function renderConceptGraph(note, onSeek) {
+  function renderConceptGraph(
+    note, onSeek, lesson, mastery, onMasteryChanged, courseGraph, onOpenEpisode
+  ) {
     const graph = note.conceptGraph || {};
     const nodes = graph.nodes || [];
     const edges = graph.edges || [];
@@ -189,7 +296,6 @@
         y: centerY + Math.sin(angle) * radiusY,
       };
     });
-
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("class", "kp-graph-edges");
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
@@ -209,7 +315,7 @@
     marker.appendChild(markerPath);
     defs.appendChild(marker);
     svg.appendChild(defs);
-
+    const edgeElements = [];
     edges.forEach((edge, index) => {
       const left = positions[edge.from];
       const right = positions[edge.to];
@@ -218,21 +324,17 @@
       const midX = (left.x + right.x) / 2;
       const midY = (left.y + right.y) / 2;
       const bend = ((index % 5) - 2) * 14;
-      path.setAttribute(
-        "d",
-        "M " + left.x + " " + left.y +
-        " Q " + (midX + bend) + " " + (midY - bend) +
-        " " + right.x + " " + right.y
-      );
+      path.setAttribute("d", "M " + left.x + " " + left.y + " Q " + (midX + bend) + " " + (midY - bend) + " " + right.x + " " + right.y);
       path.setAttribute("class", "kp-graph-edge edge-" + clean(edge.type));
       path.setAttribute("marker-end", "url(#kp-arrow)");
       const title = document.createElementNS(NS, "title");
       title.textContent = edge.from + " → " + edge.to + "：" + (edge.explain || edge.type);
       path.appendChild(title);
       svg.appendChild(path);
+      edgeElements.push({ element: path, edge });
     });
     canvas.appendChild(svg);
-
+    const nodeElements = {};
     ordered.forEach((row) => {
       const at = positions[row.conceptTitle];
       const concept = (note.concepts || []).find((item) => item.title === row.conceptTitle);
@@ -244,10 +346,10 @@
       card.appendChild(h("b", "", row.conceptTitle));
       card.appendChild(h("small", "", row.summary || row.role));
       if (time) card.appendChild(h("span", "", time));
-      card.onclick = () => onSeek && onSeek(time);
+      card.onclick = () => showFocus(row.conceptTitle);
       canvas.appendChild(card);
+      nodeElements[row.conceptTitle] = card;
     });
-
     const legend = h("div", "kp-graph-legend");
     [
       ["prerequisite", "前置"],
@@ -265,6 +367,108 @@
     });
     canvas.appendChild(legend);
     node.appendChild(canvas);
+
+    const focus = h("div", "kp-focus-panel");
+    focus.hidden = true;
+    node.appendChild(focus);
+
+    function clearFocus() {
+      Object.values(nodeElements).forEach((element) => {
+        element.classList.remove("focused", "dimmed");
+      });
+      edgeElements.forEach(({ element }) => {
+        element.classList.remove("focused", "dimmed");
+      });
+      focus.hidden = true;
+      focus.innerHTML = "";
+    }
+
+    function showFocus(title) {
+      const graphNode = nodes.find((row) => row.conceptTitle === title);
+      const concept = (note.concepts || []).find((row) => row.title === title);
+      if (!graphNode || !concept) return;
+      const adjacent = new Set([title]);
+      const relationRows = [];
+      edges.forEach((edge) => {
+        if (edge.from === title || edge.to === title) {
+          adjacent.add(edge.from);
+          adjacent.add(edge.to);
+          relationRows.push(edge);
+        }
+      });
+      Object.entries(nodeElements).forEach(([name, element]) => {
+        element.classList.toggle("focused", name === title);
+        element.classList.toggle("dimmed", !adjacent.has(name));
+      });
+      edgeElements.forEach(({ element, edge }) => {
+        const active = edge.from === title || edge.to === title;
+        element.classList.toggle("focused", active);
+        element.classList.toggle("dimmed", !active);
+      });
+
+      focus.innerHTML = "";
+      focus.hidden = false;
+      const head = h("div", "kp-focus-head");
+      const titleBox = h("div");
+      titleBox.appendChild(h("span", "kp-overline", "聚焦锚点"));
+      titleBox.appendChild(h("h4", "", title));
+      titleBox.appendChild(h("p", "", concept.oneLine || graphNode.summary || ""));
+      head.appendChild(titleBox);
+      const close = h("button", "kp-ghost", "清除聚焦");
+      close.type = "button";
+      close.onclick = clearFocus;
+      head.appendChild(close);
+      focus.appendChild(head);
+      focus.appendChild(masteryControl(
+        "anchor:" + title,
+        mastery,
+        lesson,
+        onMasteryChanged,
+      ));
+      const body = h("p", "kp-focus-explain");
+      body.appendChild(rich(concept.explain || ""));
+      focus.appendChild(body);
+      if ((concept.mechanism || []).length) {
+        const mechanism = h("div", "kp-focus-mechanism");
+        mechanism.appendChild(h("b", "", "关键机制"));
+        const list = h("ol");
+        concept.mechanism.slice(0, 5).forEach((item) => list.appendChild(h("li", "", item)));
+        mechanism.appendChild(list);
+        focus.appendChild(mechanism);
+      }
+      if (relationRows.length) {
+        const relations = h("div", "kp-focus-relations");
+        relations.appendChild(h("b", "", "直接关系"));
+        relationRows.forEach((edge) => {
+          const neighbor = edge.from === title ? edge.to : edge.from;
+          const row = h("button", "kp-focus-relation");
+          row.type = "button";
+          row.appendChild(h("strong", "", neighbor));
+          row.appendChild(h("span", "", edge.type));
+          row.appendChild(h("p", "", edge.explain || ""));
+          row.onclick = () => showFocus(neighbor);
+          relations.appendChild(row);
+        });
+        focus.appendChild(relations);
+      }
+      const actions = h("div", "kp-focus-actions");
+      const first = (concept.evidence || [])[0];
+      if (first?.time) actions.appendChild(jumpButton(first.time, onSeek, "回到原片 " + first.time));
+      const cross = relatedEpisodeLinks(
+        courseGraph,
+        [title],
+        note.episode,
+        onOpenEpisode,
+      );
+      if (cross) actions.appendChild(cross);
+      if (actions.children.length) focus.appendChild(actions);
+      if ((concept.evidence || []).length) {
+        const evidence = h("details", "kp-focus-evidence");
+        evidence.appendChild(h("summary", "", "核对本锚点证据"));
+        evidence.appendChild(renderEvidence(concept.evidence, onSeek));
+        focus.appendChild(evidence);
+      }
+    }
     return node;
   }
 
@@ -292,9 +496,9 @@
         (chapter.conceptIds || []).length + " 个核心锚点 · " +
         (chapter.atomIds || []).length + " 个知识原子"
       ));
+      const top = (chapter.conceptIds || []).map((id) => byId[id]).filter(Boolean).slice(0, 5);
       const tags = h("div", "kp-course-tags");
-      (chapter.conceptIds || []).map((id) => byId[id]).filter(Boolean).slice(0, 5)
-        .forEach((row) => tags.appendChild(h("span", "", row.label)));
+      top.forEach((row) => tags.appendChild(h("span", "", row.label)));
       card.appendChild(tags);
       const lessonDetails = h("details", "kp-course-lessons");
       lessonDetails.appendChild(h("summary", "", "展开本章 " + (chapter.lessonIds || []).length + " 讲"));
@@ -307,7 +511,8 @@
         button.appendChild(h("small", "", (lesson.knowledgeAtomCount || 0) + " 原子"));
         button.onclick = (event) => {
           event.stopPropagation();
-          if (onOpenEpisode && lesson.episodeId) onOpenEpisode(lesson.episodeId);
+          const target = episodeTarget(graph, lesson);
+          if (onOpenEpisode && target) onOpenEpisode(target);
         };
         lessonList.appendChild(button);
       });
@@ -316,19 +521,21 @@
       const open = h("button", "kp-time", "打开第 " + (chapter.episodes?.[0] ?? "?") + " 讲");
       open.type = "button";
       open.onclick = () => {
-        if (chapter.episodes?.[0] != null && onOpenEpisode) {
-          const episode = chapter.episodes[0];
-          const node = (graph.nodes || [])
-            .flatMap((row) => row.occurrences || [])
-            .find((row) => row.episode === episode);
-          if (node?.episodeId) onOpenEpisode(node.episodeId);
-        }
+        const episode = chapter.episodes?.[0];
+        if (episode == null || !onOpenEpisode) return;
+        const lesson = (graph.lessons || []).find(
+          (row) => Number(row.episode) === Number(episode)
+        );
+        const target = episodeTarget(graph, lesson) ||
+          "os-course-e" + String(episode).padStart(2, "0");
+        onOpenEpisode(target);
       };
       card.appendChild(open);
       flow.appendChild(card);
       if (index < graph.chapters.length - 1) flow.appendChild(h("i", "kp-arrow", "→"));
     });
     details.appendChild(flow);
+
     const indexDetails = h("details", "kp-course-index");
     indexDetails.appendChild(h("summary", "", "展开全部概念索引"));
     (graph.chapters || []).forEach((chapter) => {
@@ -412,7 +619,9 @@
     return list;
   }
 
-  function renderConcepts(note, onSeek) {
+  function renderConcepts(
+    note, onSeek, lesson, mastery, onMasteryChanged, courseGraph, onOpenEpisode
+  ) {
     const node = section("核心锚点", "顶层导航：定义、机制、例子、边界、误区与证据放在一起");
     (note.concepts || []).forEach((concept, index) => {
       const card = h("article", "kp-concept");
@@ -423,6 +632,12 @@
       title.appendChild(h("p", "kp-one-line", concept.oneLine));
       head.appendChild(title);
       card.appendChild(head);
+      card.appendChild(masteryControl(
+        "anchor:" + concept.title,
+        mastery,
+        lesson,
+        onMasteryChanged,
+      ));
       const explain = h("div", "kp-explain");
       explain.appendChild(rich(concept.explain));
       card.appendChild(explain);
@@ -455,6 +670,13 @@
         grid.appendChild(row);
       }
       if (grid.children.length) card.appendChild(grid);
+      const cross = relatedEpisodeLinks(
+        courseGraph,
+        [concept.title],
+        note.episode,
+        onOpenEpisode,
+      );
+      if (cross) card.appendChild(cross);
       if ((concept.evidence || []).length) {
         const details = h("details", "kp-evidence-details");
         details.appendChild(h("summary", "", "核对原片证据 · " + concept.evidence.length + " 处"));
@@ -466,7 +688,9 @@
     return node;
   }
 
-  function renderKnowledgeAtoms(note, onSeek) {
+  function renderKnowledgeAtoms(
+    note, onSeek, lesson, mastery, onMasteryChanged, courseGraph, onOpenEpisode
+  ) {
     const atoms = note.knowledgeAtoms || [];
     if (!atoms.length) return null;
     const details = h("details", "kp-section kp-atom-atlas");
@@ -525,6 +749,19 @@
           card.appendChild(h("small", "kp-atom-anchors",
             "连接锚点：" + atom.conceptTitles.join(" · ")));
         }
+        const cross = relatedEpisodeLinks(
+          courseGraph,
+          atom.conceptTitles || [],
+          note.episode,
+          onOpenEpisode,
+        );
+        if (cross) card.appendChild(cross);
+        card.appendChild(masteryControl(
+          "atom:" + atom.atomId,
+          mastery,
+          lesson,
+          onMasteryChanged,
+        ));
         list.appendChild(card);
       });
       group.appendChild(list);
@@ -543,11 +780,92 @@
       groupRoot.querySelectorAll(".kp-atom-group").forEach((group) => {
         const hasMatch = Boolean(group.querySelector(".kp-atom:not([hidden])"));
         group.hidden = !hasMatch;
-        if (query && hasMatch) group.open = true;
       });
       visible.textContent = count + " 条";
     });
     return details;
+  }
+
+  function renderReviewQueue(note, lesson, mastery, onSeek, onMasteryChanged) {
+    const items = [];
+    (note.concepts || []).forEach((concept) => {
+      const key = "anchor:" + concept.title;
+      if (!["fuzzy", "unknown"].includes(mastery[key])) return;
+      items.push({
+        key,
+        scope: "核心锚点",
+        title: concept.title,
+        detail: concept.oneLine,
+        time: concept.evidence?.[0]?.time || "",
+        status: mastery[key],
+      });
+    });
+    (note.knowledgeAtoms || []).forEach((atom) => {
+      const key = "atom:" + atom.atomId;
+      if (!["fuzzy", "unknown"].includes(mastery[key])) return;
+      items.push({
+        key,
+        scope: "知识原子 · " + ((atom.conceptTitles || [])[0] || "未归类"),
+        title: atom.title || atom.claim,
+        detail: atom.claim,
+        time: atom.time,
+        status: mastery[key],
+      });
+    });
+    items.sort((left, right) => {
+      const rank = { unknown: 0, fuzzy: 1 };
+      return (rank[left.status] ?? 9) - (rank[right.status] ?? 9);
+    });
+    const node = section(
+      "复习队列",
+      items.length
+        ? items.length + " 个模糊或未掌握节点"
+        : "当前没有标记为模糊或不会的节点",
+      "kp-review-queue",
+    );
+    if (!items.length) {
+      const empty = h("div", "kp-review-empty");
+      empty.appendChild(h("b", "", "当前已标记内容都掌握了"));
+      empty.appendChild(h("p", "", "可以展开下面的主动回忆，或回到“知识”视图给新的锚点和原子评分。"));
+      node.appendChild(empty);
+    } else {
+      const list = h("div", "kp-review-list");
+      items.forEach((item) => {
+        const card = h("article", "kp-review-item status-" + item.status);
+        const top = h("div", "kp-review-item-top");
+        top.appendChild(h("span", "kp-review-scope", item.scope));
+        top.appendChild(h("span", "kp-review-state", item.status === "unknown" ? "不会" : "模糊"));
+        if (item.time) top.appendChild(jumpButton(item.time, onSeek));
+        card.appendChild(top);
+        card.appendChild(h("b", "", item.title));
+        if (item.detail && item.detail !== item.title) {
+          card.appendChild(h("p", "", item.detail));
+        }
+        card.appendChild(masteryControl(
+          item.key,
+          mastery,
+          lesson,
+          onMasteryChanged,
+        ));
+        list.appendChild(card);
+      });
+      node.appendChild(list);
+    }
+    if ((note.recall || []).length) {
+      const recall = h("details", "kp-review-recall");
+      recall.appendChild(h("summary", "", "展开主动回忆 · " + note.recall.length + " 题"));
+      const list = h("div", "kp-review-recall-list");
+      note.recall.forEach((row) => {
+        const details = h("details");
+        details.appendChild(h("summary", "", row.question));
+        details.appendChild(h("p", "", row.answer));
+        if (row.time) details.appendChild(jumpButton(row.time, onSeek));
+        list.appendChild(details);
+      });
+      recall.appendChild(list);
+      node.appendChild(recall);
+    }
+    return node;
   }
 
   function renderComparisons(note) {
@@ -629,9 +947,7 @@
     const details = h("details", "kp-section kp-coverage-details");
     const summary = h("summary", "kp-head");
     summary.appendChild(h("h3", "", "完整字幕覆盖账本"));
-    summary.appendChild(h("small", "",
-      (note.quality?.coverageBlocks || note.coverage.length) + " 块全部有归属"
-    ));
+    summary.appendChild(h("small", "", (note.quality?.coverageBlocks || note.coverage.length) + " 块全部有归属"));
     details.appendChild(summary);
     const list = h("div", "kp-coverage-list");
     note.coverage.forEach((row) => {
@@ -657,10 +973,7 @@
 
   function renderVisual(note, lesson, onSeek) {
     if (!(note.visualEvidence || []).length) return null;
-    const node = section(
-      "画面补充了什么",
-      (note.quality?.visualClusters || note.visualEvidence.length) + " 组画面已进入笔记"
-    );
+    const node = section("画面补充了什么", (note.quality?.visualClusters || note.visualEvidence.length) + " 组画面已进入笔记");
     const grid = h("div", "kp-visual-grid");
     note.visualEvidence.forEach((row) => {
       const card = h("article", "kp-visual");
@@ -696,10 +1009,7 @@
     const details = h("details", "kp-section kp-visual-audit");
     const summary = h("summary", "kp-head");
     summary.appendChild(h("h3", "", "画面审核账本"));
-    summary.appendChild(h("small", "",
-      rows.length + " 帧全部有决定 · " +
-      (note.quality?.includedVisualClusters || 0) + " 组进入笔记"
-    ));
+    summary.appendChild(h("small", "", rows.length + " 帧全部有决定 · " + (note.quality?.includedVisualClusters || 0) + " 组进入笔记"));
     details.appendChild(summary);
     const list = h("div", "kp-audit-list");
     rows.forEach((row) => {
@@ -760,14 +1070,84 @@
     }
 
     host.appendChild(renderHero(note, lesson, onSeek, onGenerate, status));
+    const mastery = loadMastery(lesson);
+    const reviewHost = h("div", "kp-review-host");
+    const reviewBadge = h("span", "kp-tab-count", "");
+
+    function reviewCount() {
+      const live = new Set([
+        ...(note.concepts || []).map((concept) => "anchor:" + concept.title),
+        ...(note.knowledgeAtoms || []).map((atom) => "atom:" + atom.atomId),
+      ]);
+      return Object.entries(mastery).filter(([key, value]) => (
+        live.has(key) && ["fuzzy", "unknown"].includes(value)
+      )).length;
+    }
+
+    function refreshReview() {
+      reviewHost.innerHTML = "";
+      reviewHost.appendChild(
+        renderReviewQueue(note, lesson, mastery, onSeek, refreshReview)
+      );
+      const count = reviewCount();
+      reviewBadge.textContent = count ? String(count) : "";
+      reviewBadge.hidden = !count;
+    }
+
+    const shell = h("div", "kp-tab-shell");
+    const tabs = h("nav", "kp-tabs");
+    tabs.setAttribute("aria-label", "知识视图");
+    const pageRoot = h("div", "kp-pages");
+    const pages = {};
+    const buttons = {};
+
+    function switchTab(name) {
+      Object.entries(pages).forEach(([key, page]) => {
+        page.hidden = key !== name;
+      });
+      Object.entries(buttons).forEach(([key, button]) => {
+        button.classList.toggle("active", key === name);
+        button.setAttribute("aria-selected", key === name ? "true" : "false");
+      });
+    }
+
+    [
+      ["learn", "学习", null],
+      ["knowledge", "知识", null],
+      ["review", "复习", reviewBadge],
+    ].forEach(([key, label, badge]) => {
+      const button = h("button", "kp-tab", label);
+      button.type = "button";
+      button.setAttribute("role", "tab");
+      if (badge) button.appendChild(badge);
+      button.onclick = () => switchTab(key);
+      buttons[key] = button;
+      tabs.appendChild(button);
+    });
+    shell.appendChild(tabs);
+
+    const learnPage = h("div", "kp-page");
     [
       renderSemanticReview(note.semanticReview, onSeek),
       renderGoals(note),
       renderMentalModel(note, onSeek),
-      renderConceptGraph(note, onSeek),
+      renderConceptGraph(
+        note, onSeek, lesson, mastery, refreshReview, courseGraph, onOpenEpisode
+      ),
       renderCourseSystem(courseGraph, onOpenEpisode),
-      renderConcepts(note, onSeek),
-      renderKnowledgeAtoms(note, onSeek),
+    ].forEach((node) => {
+      if (node) learnPage.appendChild(node);
+    });
+    pages.learn = learnPage;
+
+    const knowledgePage = h("div", "kp-page");
+    [
+      renderConcepts(
+        note, onSeek, lesson, mastery, refreshReview, courseGraph, onOpenEpisode
+      ),
+      renderKnowledgeAtoms(
+        note, onSeek, lesson, mastery, refreshReview, courseGraph, onOpenEpisode
+      ),
       renderComparisons(note),
       renderFormulas(note),
       renderExam(note, onSeek),
@@ -777,8 +1157,20 @@
       renderVisual(note, lesson, onSeek),
       renderVisualAudit(note, onSeek),
     ].forEach((node) => {
-      if (node) host.appendChild(node);
+      if (node) knowledgePage.appendChild(node);
     });
+    pages.knowledge = knowledgePage;
+
+    pages.review = h("div", "kp-page");
+    pages.review.appendChild(reviewHost);
+    Object.entries(pages).forEach(([key, page]) => {
+      page.dataset.tabPage = key;
+      pageRoot.appendChild(page);
+    });
+    shell.appendChild(pageRoot);
+    host.appendChild(shell);
+    refreshReview();
+    switchTab("learn");
 
     const footer = h("div", "kp-footer");
     footer.appendChild(h("span", "", "生成时间 " + (note.generatedAt || "未知")));
@@ -905,10 +1297,7 @@
     }
     if ((note.visualAudit || []).length) {
       rows.push("", "## 画面审核账本");
-      note.visualAudit.forEach((x) => rows.push(
-        "- `" + clean(x.time) + "` " + clean(x.candidateId) + " / " + clean(x.clusterId) +
-        " **" + clean(x.decision) + "** — " + clean(x.reason)
-      ));
+      note.visualAudit.forEach((x) => rows.push("- `" + clean(x.time) + "` " + clean(x.candidateId) + " / " + clean(x.clusterId) + " **" + clean(x.decision) + "** — " + clean(x.reason)));
     }
     if (note.quality?.warnings?.length) {
       rows.push("", "## 质量提醒");
@@ -917,7 +1306,7 @@
     return rows.join("\n");
   }
 
-  const api = { render, generate, toMarkdown };
+  const api = { render, generate, toMarkdown, relatedEpisodes };
   global.VKSKnowledgePlugin = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

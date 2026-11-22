@@ -158,7 +158,7 @@ Do not invent unavailable sources or evidence.
 | --- | --- |
 | Course library | Find chapters and lessons, search titles, and inspect duration and knowledge-block counts |
 | Video player | Playback, speed, chapters, picture-in-picture, theater mode, screenshots, and fullscreen |
-| Knowledge notes | Core anchors, the complete searchable atom layer, visual evidence, pitfalls, active recall, and the multiscale knowledge graph |
+| Knowledge notes | Learning, knowledge and review views; core-anchor graph, complete searchable atom layer, visual evidence, pitfalls, active recall, cross-lesson links, and a local mastery queue |
 
 The timeline is the main connection between reading and watching:
 
@@ -176,6 +176,13 @@ The timeline is the main connection between reading and watching:
   retained as a source-bound knowledge atom. The course view exposes
   course → chapter → lesson → anchor → atom without forcing the default graph to show
   every atom at once.
+- The knowledge surface opens in a compact **Learning** view, moves the full anchor and
+  atom catalog into **Knowledge**, and reserves **Review** for concepts marked
+  “unsure” or “not yet.” Clicking a graph node focuses that anchor, its direct
+  neighbours, definitions, mechanisms, evidence and cross-lesson occurrences.
+- Mastery is stored per lesson in the browser's local storage. It does not require an
+  account or upload learning state to a server, and the review queue survives a page
+  refresh on the same device and browser profile.
 - The player distinguishes current semantic review from a structural pass. Review
   sidecars are bound to the note, transcript and frame hashes, so any repair makes an
   older review visibly stale instead of silently reusing its approval.

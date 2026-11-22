@@ -28,8 +28,17 @@ computer; never tell another person to use the same loopback URL as a shared ser
 The deep-note model is multiscale: 5–9 core anchors are a navigation recommendation,
 not a knowledge limit. Schema v3 stores one evidence-linked `knowledgeAtom` for every
 instructional coverage key point, then groups atoms under anchors and lessons. The
-default player view should remain the compact anchor network; expose the complete atom
-layer on demand.
+default player view should remain the compact anchor network. The knowledge panel uses
+three views: **Learning** for goals, the knowledge line and the core network;
+**Knowledge** for anchors, the complete atom layer and evidence; and **Review** for
+locally persisted uncertain nodes. Clicking a core node must focus that anchor and its
+direct neighbours rather than exposing the whole course graph at once.
+
+Cross-lesson links are derived from canonical course-graph occurrences. Preserve both
+the stable episode ID and the human-facing episode number in the graph; never assume
+that equal concept labels alone are enough to build a working navigation target.
+Mastery is per lesson and stored in browser local storage. Do not describe it as an
+account-level or cross-device feature.
 
 For requests that start from a work, research, project or interview knowledge gap rather
 than an existing course, use the companion `$demand-driven-video-learning` Skill to plan
@@ -107,6 +116,7 @@ After an install or code change:
 python -m unittest discover -s tests -v
 node --check web/app.js
 node --check web/knowledge.js
+node --check web/knowledge_plugin.js
 node --check web/production.js
 ```
 

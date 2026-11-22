@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Reworked the knowledge surface into compact Learning, full Knowledge and personal
+  Review views instead of one long report. The Learning view now shows the lesson,
+  study goals, knowledge line and core network without exposing the complete atom
+  catalog by default.
+- Added click-to-focus behaviour to the core graph. A selected anchor highlights its
+  direct neighbours, explains their typed relationships, exposes source evidence and
+  keeps unrelated parts of the graph visually quiet.
+- Added cross-lesson concept links from course-graph occurrences. The renderer now
+  resolves stable episode IDs and tolerates legacy graphs that only provide display
+  numbers, so a reused concept can open the other lesson instead of silently
+  producing no link.
+- Added per-lesson mastery states (`known`, `fuzzy`, `unknown`), browser-local
+  persistence and a priority review queue for uncertain anchors and knowledge atoms.
 - Added a player-embedded deep knowledge plugin that reconstructs a lesson into a
   central problem, causal model, structured concepts, boundaries, misconceptions,
   comparisons, recall, glossary and a timeline coverage ledger.
