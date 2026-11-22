@@ -979,8 +979,8 @@
         context.strokeStyle = active
           ? rgba(edge.color || "#7ef2ff", 0.82)
           : rgba(edge.color || "#56bed6",
-            focus ? 0.035 : (structureMode ? 0.045 : 0.13));
-        context.lineWidth = Math.max(0.32, (active ? 1.1 : 0.62) / camera.scale);
+            focus ? 0.035 : (structureMode ? 0.055 : 0.19));
+        context.lineWidth = Math.max(0.34, (active ? 1.15 : 0.76) / camera.scale);
         context.stroke();
       });
 
@@ -1020,7 +1020,7 @@
           const degree = layout.adjacency.get(row.id)?.size || 0;
           const current = layout.currentConceptIds.has(row.id);
           const isSelected = selected?.kind === "concept" && selected.id === row.id;
-          const radius = Math.max(1.15, ((isSelected ? 5.2 : current ? 3.4 : 2.4) +
+          const radius = Math.max(1.15, ((isSelected ? 5.6 : current ? 3.9 : 2.8) +
             Math.min(2.2, degree * 0.09)) / camera.scale);
           const glow = context.createRadialGradient(row.x, row.y, 0, row.x, row.y, radius * 3.6);
           glow.addColorStop(0, rgba(group.color, 0.95));
