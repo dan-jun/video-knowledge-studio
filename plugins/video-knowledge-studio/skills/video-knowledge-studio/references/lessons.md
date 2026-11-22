@@ -1,5 +1,27 @@
 # Lessons
 
+## 2026-11-23 - Gzip must be cached and transfer size is not response time
+
+**Symptom:** The first efficiency pass reduced course-graph bytes from about 2.40 MB
+to 355 KB, but loopback response time rose from 33.9 ms to 60.1 ms. A second benchmark
+showed three parallel knowledge requests at 57.8 ms versus 57.7 ms sequential.
+
+**Root cause:** Every request re-read, parsed and serialized the 3.33 MB source graph,
+then compressed the result again. On loopback, that added CPU cost exceeded the transfer
+time saved. The previous report also compared the 3.33 MB disk file with the compressed
+2.40 MB serialized API body, overstating the reduction.
+
+**Fix:** Cache minified raw and gzip bodies by source `mtime_ns + size`, warm existing
+course graphs at startup, and cache static-file gzip output by file stat. Keep ETag/304,
+immutable version URLs and uncompressed video ranges. Report API wire bytes separately
+from source-file bytes.
+
+**Verification:** With warmed bodies, the 2,264,356-byte minified graph or its
+349,312-byte gzip representation is sent without reparsing. Median cached response fell
+from about 60-72 ms cold to 1.6-2.2 ms; cached raw response was 12-15 ms. Three cached
+knowledge requests fell from about 15.8 ms sequential to 5.8 ms parallel in the same
+benchmark. Full tests and live-header checks must still pass.
+
 ## 2026-11-22 - Lazy panels still pay for their data unless the request cache is scoped
 
 **Symptom:** The first screen loaded an 82 KB star-map script immediately, and every
@@ -17,11 +39,12 @@ and serve text responses with gzip plus weak ETags. Version every first-screen s
 asset so repeated opens can use immutable browser caching.
 
 **Verification:** The first-screen JavaScript dropped by 82,840 bytes before gzip;
-combined text resources were 371,074 bytes raw and 96,006 bytes gzip. Course-graph
-payload was 3,328,808 bytes raw and 374,892 bytes gzip, with conditional requests
-returning 304. After a verified restart, the live page had no `star_map.js` until the
-Star tab was clicked, then rendered the 656-concept map. Switching from lesson 03 to 05
-kept one map script and one scoped course graph. Full tests and Node syntax checks pass.
+combined text resources were 371,074 bytes raw and 96,006 bytes gzip. The graph source
+file was 3,328,808 bytes, while the pre-existing API serialized it to about 2.40 MB
+before gzip; source-file size must not be presented as the old wire payload. Conditional
+requests returned 304. After a verified restart, the live page had no `star_map.js`
+until the Star tab was clicked, then rendered the 656-concept map. Switching from lesson
+03 to 05 kept one map script and one scoped course graph.
 
 ## 2026-11-22 - A course graph needs normalized hierarchy keys
 

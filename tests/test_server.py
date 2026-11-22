@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
 
 from vks import server
 from vks.config import load_settings
@@ -35,6 +36,8 @@ class ServerTests(unittest.TestCase):
             ai_provider="mock",
         )
         server.RUNTIME = server.Runtime(settings)
+        server._STATIC_GZIP_CACHE.clear()
+        server._COURSE_GRAPH_CACHE.clear()
         cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
         cls.thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
         cls.thread.start()
@@ -118,9 +121,14 @@ class ServerTests(unittest.TestCase):
             self.base + "/knowledge.css",
             headers={"Accept-Encoding": "gzip"},
         )
-        with urllib.request.urlopen(request, timeout=20) as response:
-            self.assertEqual(response.headers.get("Cache-Control"), "private, no-cache")
-            self.assertTrue(gzip.decompress(response.read()))
+        with mock.patch.object(
+            server.gzip,
+            "compress",
+            side_effect=AssertionError("cached static asset was compressed again"),
+        ):
+            with urllib.request.urlopen(request, timeout=20) as response:
+                self.assertEqual(response.headers.get("Cache-Control"), "private, no-cache")
+                self.assertTrue(gzip.decompress(response.read()))
 
     def test_video_range(self):
         request = urllib.request.Request(
@@ -243,6 +251,19 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(payload["graph"]["stats"]["episodes"], 1)
             etag = response.headers.get("ETag")
             self.assertTrue(etag)
+        cached_request = urllib.request.Request(
+            self.base + "/api/knowledge/course-graph?id=demo-e01",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        with mock.patch.object(
+            server.gzip,
+            "compress",
+            side_effect=AssertionError("cached course graph was compressed again"),
+        ):
+            with urllib.request.urlopen(cached_request, timeout=20) as response:
+                self.assertEqual(response.status, 200)
+                payload = json.loads(gzip.decompress(response.read()))
+                self.assertEqual(payload["graph"]["stats"]["episodes"], 1)
         conditional = urllib.request.Request(
             self.base + "/api/knowledge/course-graph?id=demo-e01",
             headers={"Accept-Encoding": "gzip", "If-None-Match": etag},

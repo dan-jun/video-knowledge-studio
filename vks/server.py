@@ -27,6 +27,74 @@ from .state import StateStore
 from .workflows import WorkflowService
 
 
+_CACHE_LOCK = threading.RLock()
+_STATIC_GZIP_CACHE: dict[tuple[str, int, int, int], bytes] = {}
+_COURSE_GRAPH_CACHE: dict[str, tuple[tuple[int, int], bytes, bytes]] = {}
+_CACHE_LIMIT = 32
+_GRAPH_CACHE_LIMIT = 4
+
+
+def _cache_set(cache, key, value, limit: int = _CACHE_LIMIT):
+    with _CACHE_LOCK:
+        if key not in cache and len(cache) >= limit:
+            cache.pop(next(iter(cache)))
+        cache[key] = value
+
+
+def _gzip_file_cached(path: Path, stat: os.stat_result, level: int = 6) -> bytes:
+    key = (str(path), stat.st_mtime_ns, stat.st_size, level)
+    with _CACHE_LOCK:
+        cached = _STATIC_GZIP_CACHE.get(key)
+        if cached is None:
+            cached = gzip.compress(path.read_bytes(), compresslevel=level, mtime=0)
+            _cache_set(_STATIC_GZIP_CACHE, key, cached)
+        return cached
+
+
+def _course_graph_payload(
+    path: Path,
+    stat: os.stat_result | None = None,
+) -> tuple[bytes, bytes]:
+    stat = stat or path.stat()
+    key = str(path)
+    stamp = (stat.st_mtime_ns, stat.st_size)
+    with _CACHE_LOCK:
+        cached = _COURSE_GRAPH_CACHE.get(key)
+        if cached and cached[0] == stamp:
+            return cached[1], cached[2]
+        try:
+            graph = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            graph = None
+        raw = json.dumps(
+            {"ok": True, "graph": graph},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        compressed = gzip.compress(raw, compresslevel=5, mtime=0)
+        _cache_set(
+            _COURSE_GRAPH_CACHE,
+            key,
+            (stamp, raw, compressed),
+            limit=_GRAPH_CACHE_LIMIT,
+        )
+        return raw, compressed
+
+
+def warm_course_graph_cache(data_dir: Path) -> int:
+    graph_dir = data_dir / "cache" / "deep_notes"
+    if not graph_dir.is_dir():
+        return 0
+    warmed = 0
+    for path in graph_dir.glob("*-course-graph.json"):
+        try:
+            _course_graph_payload(path)
+            warmed += 1
+        except OSError:
+            continue
+    return warmed
+
+
 class Runtime:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -161,11 +229,31 @@ class Handler(BaseHTTPRequestHandler):
         cache_control: str = "no-store",
     ):
         raw = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        encoded = self._accepts_gzip() and len(raw) >= 1024
+        compressed = gzip.compress(raw, compresslevel=5, mtime=0) if encoded else None
+        self._send_json_bytes(
+            raw,
+            compressed,
+            status=status,
+            cookie=cookie,
+            etag=etag,
+            cache_control=cache_control,
+        )
+
+    def _send_json_bytes(
+        self,
+        raw: bytes,
+        compressed: bytes | None,
+        status=200,
+        cookie: str | None = None,
+        etag: str | None = None,
+        cache_control: str = "no-store",
+    ):
         if etag and self._etag_matches(etag):
             self._send_not_modified(etag, cache_control)
             return
-        encoded = self._accepts_gzip() and len(raw) >= 1024
-        body = gzip.compress(raw, compresslevel=5, mtime=0) if encoded else raw
+        encoded = compressed is not None and self._accepts_gzip()
+        body = compressed if encoded else raw
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -227,7 +315,7 @@ class Handler(BaseHTTPRequestHandler):
         )
         payload = None
         if compressible and self._accepts_gzip() and size >= 1024:
-            payload = gzip.compress(path.read_bytes(), compresslevel=6, mtime=0)
+            payload = _gzip_file_cached(path, stat, level=6)
         self.send_response(206 if partial else 200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(payload) if payload is not None else end - start + 1))
@@ -544,11 +632,13 @@ class Handler(BaseHTTPRequestHandler):
                 if self._etag_matches(etag):
                     self._send_not_modified(etag, cache_control)
                     return
-                graph = json.loads(graph_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                graph = None
-            return self._send_json(
-                {"ok": True, "graph": graph},
+                raw, compressed = _course_graph_payload(graph_path, stat)
+            except OSError:
+                raw = b'{"ok":true,"graph":null}'
+                compressed = None
+            return self._send_json_bytes(
+                raw,
+                compressed,
                 etag=etag,
                 cache_control=cache_control,
             )
@@ -611,11 +701,14 @@ def run(host: str | None = None, port: int | None = None):
     if host not in {"127.0.0.1", "localhost", "::1"} and not settings.password:
         raise SystemExit("Remote binding requires VKS_PASSWORD. Use 127.0.0.1 for passwordless local use.")
     RUNTIME = Runtime(settings)
+    warmed = warm_course_graph_cache(settings.data_dir)
     if not RUNTIME.courses.courses:
         print(f"No course packs found in {settings.packs_dir}", flush=True)
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"Video Knowledge Studio: http://{host}:{port}/", flush=True)
     print(f"Course packs: {len(RUNTIME.courses.courses)} | Episodes: {len(RUNTIME.courses.episodes)}", flush=True)
+    if warmed:
+        print(f"Course graph cache: {warmed} warmed", flush=True)
     print(f"AI provider: {RUNTIME.tutor.status()['provider']}", flush=True)
     try:
         server.serve_forever()
