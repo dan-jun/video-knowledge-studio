@@ -59,6 +59,9 @@ Use semantic zoom and collision-aware labels: show chapter cards at the overview
 only high-importance or current-lesson concepts while zoomed out, reveal more labels as
 the viewport approaches them, and always label the focused node's direct neighbours.
 Color relation beams by their typed semantic role and label those roles in focus mode.
+Treat the map as a dedicated canvas: hide long introductory content while it is open,
+keep the full viewport available, provide live search suggestions, allow relation-type
+filtering, and support an isolated local-neighbourhood mode.
 
 For requests that start from a work, research, project or interview knowledge gap rather
 than an existing course, use the companion `$demand-driven-video-learning` Skill to plan

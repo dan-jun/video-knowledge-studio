@@ -189,6 +189,10 @@ The timeline is the main connection between reading and watching:
   star, and typed concept relations are visible beams. Chapters form separate colored
   clusters, while searching or selecting a point reveals its hierarchy, direct
   neighbours, timestamps and cross-lesson occurrences.
+- The Galaxy opens as an immersive canvas with live search suggestions, chapter
+  navigation, relation-type filters and an optional one-hop neighbourhood view. This
+  keeps the graph full-screen instead of forcing learners to scroll past the lesson
+  introduction before they can explore it.
 - When deep notes are present, legacy summary and timeline cards are suppressed to
   avoid rendering two competing note systems. They remain the fallback for lessons
   without a deep note, and their complete source material is represented in Knowledge.

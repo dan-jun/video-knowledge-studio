@@ -22,6 +22,24 @@ and typed relation labels stayed readable. Search for “系统调用” opened 
 with nine neighbours and E01/E05/E06 links; selecting a chapter and resetting to the
 full course also worked.
 
+## 2026-11-22 - A graph is not usable when its controls sit below the fold
+
+**Symptom:** The map technically existed, but opening the tab still showed the long
+lesson introduction first. Reaching the graph required scrolling, and the canvas then
+continued below the viewport.
+
+**Root cause:** The new tab reused the reading page header and a fixed graph height
+instead of switching to a dedicated graph workspace.
+
+**Fix:** Hide the lesson hero while the Galaxy is active, size the canvas from the
+remaining viewport, make search suggestions and relation filters available in the graph
+toolbar, and default focused nodes to a clean one-hop neighbourhood.
+
+**Verification:** At a 887px viewport the canvas occupied `303–823px` and was fully
+visible. Search suggestions listed eight results, “system call” focused nine neighbours,
+relation filtering removed the cause links on demand, and neighbourhood isolation
+toggled correctly.
+
 ## 2026-11-22 - Do not stack the new knowledge plugin over the old report
 
 **Symptom:** The new Learning/Knowledge/Review surface still felt noisy and its text

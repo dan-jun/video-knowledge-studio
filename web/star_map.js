@@ -523,11 +523,16 @@
     section.appendChild(head);
 
     const toolbar = h("div", "kp-star-toolbar");
+    const searchWrap = h("div", "kp-star-search-wrap");
     const search = h("input", "kp-star-search");
     search.type = "search";
     search.placeholder = "搜索概念或知识光点…";
     search.setAttribute("aria-label", "搜索知识星图");
-    toolbar.appendChild(search);
+    searchWrap.appendChild(search);
+    const suggestions = h("div", "kp-star-suggestions");
+    suggestions.hidden = true;
+    searchWrap.appendChild(suggestions);
+    toolbar.appendChild(searchWrap);
     const filter = h("select", "kp-star-select");
     filter.setAttribute("aria-label", "选择课程章节");
     const allOption = h("option", "", "全部章节");
@@ -542,9 +547,53 @@
     toolbar.appendChild(filter);
     toolbar.appendChild(button("定位本讲", "kp-star-button primary", () => focusLesson()));
     toolbar.appendChild(button("全课程", "kp-star-button", () => resetView()));
+    const isolateButton = button("邻域聚焦", "kp-star-button active", () => {
+      isolateNeighborhood = !isolateNeighborhood;
+      isolateButton.classList.toggle("active", isolateNeighborhood);
+      isolateButton.setAttribute("aria-pressed", isolateNeighborhood ? "true" : "false");
+      paintBase();
+    });
+    isolateButton.setAttribute("aria-pressed", "true");
+    toolbar.appendChild(isolateButton);
     toolbar.appendChild(button("＋", "kp-star-icon", () => zoomAt(1.28)));
     toolbar.appendChild(button("－", "kp-star-icon", () => zoomAt(0.78)));
     section.appendChild(toolbar);
+
+    const relationFilters = h("details", "kp-star-relation-filters");
+    const relationSummary = h("summary");
+    relationSummary.appendChild(h("b", "", "关系筛选"));
+    relationSummary.appendChild(h("span", "", Object.keys(TYPE_LABELS).length + " 类光线"));
+    relationFilters.appendChild(relationSummary);
+    const relationGrid = h("div", "kp-star-relation-filter-grid");
+    const relationButtons = {};
+    Object.entries(TYPE_LABELS).forEach(([type, label]) => {
+      const filterButton = h("button", "kp-star-filter active", label);
+      filterButton.type = "button";
+      filterButton.dataset.relationType = type;
+      filterButton.style.setProperty("--edge-color", EDGE_COLORS[type] || "#75dbe8");
+      filterButton.setAttribute("aria-pressed", "true");
+      filterButton.onclick = () => {
+        if (allowedTypes.has(type)) allowedTypes.delete(type);
+        else allowedTypes.add(type);
+        filterButton.classList.toggle("active", allowedTypes.has(type));
+        filterButton.setAttribute("aria-pressed", allowedTypes.has(type) ? "true" : "false");
+        paintBase();
+        renderDetail();
+      };
+      relationButtons[type] = filterButton;
+      relationGrid.appendChild(filterButton);
+    });
+    relationGrid.appendChild(button("全部显示", "kp-star-filter-all", () => {
+      Object.keys(TYPE_LABELS).forEach((type) => allowedTypes.add(type));
+      Object.entries(relationButtons).forEach(([type, item]) => {
+        item.classList.add("active");
+        item.setAttribute("aria-pressed", "true");
+      });
+      paintBase();
+      renderDetail();
+    }));
+    relationFilters.appendChild(relationGrid);
+    section.appendChild(relationFilters);
 
     const stage = h("div", "kp-star-stage");
     const canvas = h("canvas", "kp-star-canvas");
@@ -598,6 +647,9 @@
     let focus = null;
     let hovered = null;
     let chapterFilter = "";
+    let isolateNeighborhood = true;
+    const allowedTypes = new Set(Object.keys(TYPE_LABELS));
+    let suggestionHits = [];
     let active = false;
     let frame = 0;
     let resizeObserver = null;
@@ -734,11 +786,21 @@
     function nodeAlpha(kind, id, chapterId) {
       let value = chapterFilter && chapterId !== chapterFilter ? 0.07 : 1;
       if (focus) {
-        if (kind === "concept" && !focus.concepts.has(String(id))) value *= 0.08;
-        if (kind === "atom" && !focus.atoms.has(String(id))) value *= 0.035;
-        if (kind === "chapter" && !focus.chapters.has(String(id))) value *= 0.28;
+        if (kind === "concept" && !focus.concepts.has(String(id))) {
+          value *= isolateNeighborhood ? 0 : 0.08;
+        }
+        if (kind === "atom" && !focus.atoms.has(String(id))) {
+          value *= isolateNeighborhood ? 0 : 0.035;
+        }
+        if (kind === "chapter" && !focus.chapters.has(String(id))) {
+          value *= isolateNeighborhood ? 0.16 : 0.28;
+        }
       }
       return value;
+    }
+
+    function typeAllowed(type) {
+      return allowedTypes.has(type || "grouping");
     }
 
     function paintBase() {
@@ -813,6 +875,9 @@
           layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 1.25, alpha);
       });
       layout.chapterFlow.forEach((edge) => {
+        if (!typeAllowed(edge.type)) return;
+        if (focus && isolateNeighborhood &&
+            !focus.chapters.has(edge.fromId) && !focus.chapters.has(edge.toId)) return;
         context.beginPath();
         context.moveTo(edge.fromPoint.x, edge.fromPoint.y);
         context.quadraticCurveTo(edge.cx, edge.cy, edge.toPoint.x, edge.toPoint.y);
@@ -836,12 +901,15 @@
 
       context.globalAlpha = 1;
       layout.atomLinks.forEach((row) => {
+        if (focus && isolateNeighborhood && !focus.atoms.has(row.atomId)) return;
         const inFocus = focus && focus.atoms.has(row.atomId);
         const alpha = inFocus ? 0.34 : 0.018;
         worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.38, alpha);
       });
 
       layout.edges.forEach((edge) => {
+        if (!typeAllowed(edge.type)) return;
+        if (focus && isolateNeighborhood && !focus.edges.has(String(edge.id))) return;
         const active = focus && focus.edges.has(String(edge.id));
         curvePath(context, edge);
         context.strokeStyle = active
@@ -1090,6 +1158,9 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalCompositeOperation = "lighter";
       layout.chapterFlow.forEach((edge, index) => {
+        if (!typeAllowed(edge.type)) return;
+        if (focus && isolateNeighborhood &&
+            !focus.chapters.has(edge.fromId) && !focus.chapters.has(edge.toId)) return;
         const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
         const control = cssPoint(edge.cx, edge.cy);
         const to = cssPoint(edge.toPoint.x, edge.toPoint.y);
@@ -1106,8 +1177,10 @@
         ctx.shadowBlur = 0;
       });
       const activeEdges = focus
-        ? layout.edges.filter((edge) => focus.edges.has(String(edge.id))).slice(0, 80)
-        : layout.edges.filter((_, index) => index % 29 === 0).slice(0, 34);
+        ? layout.edges.filter((edge) =>
+          typeAllowed(edge.type) && focus.edges.has(String(edge.id))).slice(0, 80)
+        : layout.edges.filter((edge, index) =>
+          typeAllowed(edge.type) && index % 29 === 0).slice(0, 34);
       const relationLabels = [];
       activeEdges.forEach((edge, index) => {
         const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
@@ -1214,6 +1287,16 @@
 
     function focusForHit(hit) {
       selected = hit || null;
+      if (hit?.kind === "concept") {
+        chapterFilter = layout.conceptPositions.get(hit.id)?.chapterId || "";
+      } else if (hit?.kind === "atom") {
+        chapterFilter = layout.atomPositions.get(hit.id)?.chapterId || "";
+      } else if (hit?.kind === "chapter") {
+        chapterFilter = hit.id;
+      } else if (hit?.kind === "lesson") {
+        chapterFilter = chapterKey(layout.lessonIndex.get(hit.id)?.chapterId || "");
+      }
+      filter.value = chapterFilter;
       focus = focusSets(layout, selected);
       cameraChanged = true;
       renderDetail();
@@ -1266,6 +1349,7 @@
             groups.get(key).rows.push({ id: neighborId, concept: next });
           });
           groups.forEach((group) => {
+            if (!typeAllowed(group.type)) return;
             const block = h("div", "kp-star-relation-group");
             const heading = h("div", "kp-star-relation-head");
             heading.appendChild(h("span", "", group.label));
@@ -1468,6 +1552,8 @@
     function resetView() {
       chapterFilter = "";
       filter.value = "";
+      search.value = "";
+      suggestions.hidden = true;
       selected = null;
       focus = null;
       fitView();
@@ -1486,6 +1572,8 @@
         selected = { kind: "lesson", id: String(current.id) };
         focus = focusSets(layout, selected);
       }
+      chapterFilter = chapterKey(layout.currentLesson?.chapterId || chapterFilter);
+      filter.value = chapterFilter;
       const lessonId = selected?.id;
       const hub = lessonId ? layout.lessonHubs.get(lessonId) : null;
       if (hub) focusPoint(hub, 0.92);
@@ -1507,36 +1595,97 @@
       }
     });
 
-    search.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      const query = search.value.trim().toLowerCase();
-      if (!query) return;
-      let conceptMatch = null;
+    function searchMatches(value) {
+      const query = value.trim().toLowerCase();
+      if (!query) return [];
+      const rows = [];
       layout.conceptPositions.forEach((row, id) => {
         const concept = layout.conceptIndex.get(id);
-        if (!conceptMatch && String(concept?.label || "").toLowerCase().includes(query)) {
-          conceptMatch = { kind: "concept", id };
-        }
+        const text = String(concept?.label || "").toLowerCase();
+        if (!text.includes(query)) return;
+        rows.push({
+          kind: "concept",
+          id,
+          title: concept?.label || "核心概念",
+          subtitle: clean(row.chapterId) + " · 核心概念",
+          color: row.color,
+          rank: text === query ? 0 : text.startsWith(query) ? 1 : 2,
+        });
       });
-      if (conceptMatch) {
-        focusForHit(conceptMatch);
-        focusPoint(layout.conceptPositions.get(conceptMatch.id), 1.08);
+      layout.atomPositions.forEach((row, id) => {
+        const atom = row.atom || {};
+        const text = (String(atom.label || "") + " " + String(atom.claim || "")).toLowerCase();
+        if (!text.includes(query)) return;
+        rows.push({
+          kind: "atom",
+          id,
+          title: atom.label || atom.claim || "知识光点",
+          subtitle: "E" + String(atom.episode || "?").padStart(2, "0") + " · 知识原子",
+          color: row.color,
+          rank: 3,
+        });
+      });
+      return rows.sort((left, right) =>
+        left.rank - right.rank || left.title.length - right.title.length
+      ).slice(0, 8);
+    }
+
+    function chooseSearchHit(hit) {
+      if (!hit) return;
+      suggestions.hidden = true;
+      search.value = hit.kind === "concept"
+        ? layout.conceptIndex.get(hit.id)?.label || ""
+        : layout.atomPositions.get(hit.id)?.atom?.label || "";
+      focusForHit(hit);
+      const point = hit.kind === "concept"
+        ? layout.conceptPositions.get(hit.id)
+        : layout.atomPositions.get(hit.id);
+      focusPoint(point, hit.kind === "atom" ? 1.35 : 1.08);
+    }
+
+    function renderSuggestions(value) {
+      suggestions.innerHTML = "";
+      suggestionHits = searchMatches(value);
+      if (!suggestionHits.length) {
+        suggestions.hidden = true;
         return;
       }
-      let atomMatch = null;
-      layout.atomPositions.forEach((row, id) => {
-        if (atomMatch) return;
-        const atom = row.atom || {};
-        if ((String(atom.label || "") + " " + String(atom.claim || ""))
-          .toLowerCase().includes(query)) {
-          atomMatch = { kind: "atom", id };
-        }
+      suggestionHits.forEach((hit) => {
+        const row = h("button", "kp-star-suggestion");
+        row.type = "button";
+        const dot = h("i");
+        dot.style.background = hit.color;
+        dot.style.boxShadow = "0 0 8px " + hit.color;
+        row.appendChild(dot);
+        const body = h("span");
+        body.appendChild(h("b", "", hit.title));
+        body.appendChild(h("small", "", hit.subtitle));
+        row.appendChild(body);
+        row.onpointerdown = (event) => event.preventDefault();
+        row.onclick = () => chooseSearchHit({ kind: hit.kind, id: hit.id });
+        suggestions.appendChild(row);
       });
-      if (atomMatch) {
-        focusForHit(atomMatch);
-        focusPoint(layout.atomPositions.get(atomMatch.id), 1.35);
+      suggestions.hidden = false;
+    }
+
+    search.addEventListener("input", () => renderSuggestions(search.value));
+    search.addEventListener("focus", () => {
+      if (search.value.trim()) renderSuggestions(search.value);
+    });
+    search.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        suggestions.hidden = true;
+        return;
+      }
+      if (event.key === "Enter" && suggestionHits.length) {
+        event.preventDefault();
+        chooseSearchHit(suggestionHits[0]);
       }
     });
+    function hideSuggestionsOutside(event) {
+      if (!searchWrap.contains(event.target)) suggestions.hidden = true;
+    }
+    global.document.addEventListener("pointerdown", hideSuggestionsOutside);
 
     section._kpActivate = (next) => {
       active = Boolean(next);
@@ -1555,6 +1704,7 @@
       stopLoop();
       if (resizeObserver) resizeObserver.disconnect();
       clearTimeout(resizeTimer);
+      global.document.removeEventListener("pointerdown", hideSuggestionsOutside);
     };
     section._kpFocusLesson = focusLesson;
     return section;

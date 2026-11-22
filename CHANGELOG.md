@@ -17,6 +17,10 @@
 - The course sequence is drawn as an animated chapter flow with directional arrows and
   travelling pulses, while relationship groups in the detail panel distinguish incoming
   and outgoing mechanisms, causes, applications and prerequisites.
+- Opening the Galaxy now enters an immersive canvas mode that hides the long lesson
+  introduction and fits the graph inside the current viewport. Search now provides
+  live suggestions, relation-type chips can be toggled, and neighbourhood isolation
+  follows the focused node instead of leaving unrelated graph noise visible.
 - Added search, chapter selection, current-lesson focus, drag-to-pan, wheel zoom,
   full-course reset, local-neighbour highlighting, animated relation pulses, and a
   detail panel with timestamps and other-lesson links.
