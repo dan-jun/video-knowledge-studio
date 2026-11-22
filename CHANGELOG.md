@@ -14,6 +14,9 @@
 - Relation beams now use distinct colors for prerequisite, mechanism, causal, contrast,
   example, application and grouping links, with a star field, chapter orbit rings and
   focused travelling light pulses.
+- The course sequence is drawn as an animated chapter flow with directional arrows and
+  travelling pulses, while relationship groups in the detail panel distinguish incoming
+  and outgoing mechanisms, causes, applications and prerequisites.
 - Added search, chapter selection, current-lesson focus, drag-to-pan, wheel zoom,
   full-course reset, local-neighbour highlighting, animated relation pulses, and a
   detail panel with timestamps and other-lesson links.

@@ -1042,6 +1042,9 @@ body.knowledge-mode .tip{font-size:12px}
 .kp-star-kind{display:inline-block;margin-top:8px;padding:3px 7px;border-radius:99px;background:rgba(93,219,237,.09);color:#7bd4e2;font-size:10.5px}
 .kp-star-related{margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.07)}
 .kp-star-related>b{display:block;margin-bottom:7px;color:#89b8c1;font-size:11px}
+.kp-star-relation-group{margin-top:9px}
+.kp-star-relation-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;color:#7acbd8;font-size:10.5px}
+.kp-star-relation-head small{color:#5f8790;font:9px var(--mono)}
 .kp-star-chip{
   display:block;width:100%;margin-top:5px;padding:7px 9px;border:1px solid rgba(93,219,237,.1);
   border-radius:8px;background:rgba(93,219,237,.025);color:#c5dfe4;font-size:12px;

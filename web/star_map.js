@@ -179,6 +179,85 @@
       if (right) right.add(String(edge.from));
     });
 
+    // Start from the course/lesson hierarchy, then let evidence-backed edges shape
+    // the final constellation. Chapter and lesson gravity preserve the curriculum.
+    const conceptIds = Array.from(conceptPositions.keys());
+    const displacement = new Map(conceptIds.map((id) => [id, { x: 0, y: 0 }]));
+    for (let iteration = 0; iteration < 54; iteration += 1) {
+      displacement.forEach((row) => {
+        row.x = 0;
+        row.y = 0;
+      });
+      for (let leftIndex = 0; leftIndex < conceptIds.length; leftIndex += 1) {
+        const leftId = conceptIds[leftIndex];
+        const left = conceptPositions.get(leftId);
+        for (let rightIndex = leftIndex + 1; rightIndex < conceptIds.length; rightIndex += 1) {
+          const rightId = conceptIds[rightIndex];
+          const right = conceptPositions.get(rightId);
+          let dx = left.x - right.x;
+          let dy = left.y - right.y;
+          let distance2 = dx * dx + dy * dy;
+          if (distance2 < 1) {
+            dx = (hashText(leftId + rightId) - 0.5) * 2;
+            dy = (hashText(rightId + leftId) - 0.5) * 2;
+            distance2 = dx * dx + dy * dy + 1;
+          }
+          const distance = Math.sqrt(distance2);
+          const force = Math.min(2.2, 3900 / distance2);
+          const fx = (dx / distance) * force;
+          const fy = (dy / distance) * force;
+          displacement.get(leftId).x += fx;
+          displacement.get(leftId).y += fy;
+          displacement.get(rightId).x -= fx;
+          displacement.get(rightId).y -= fy;
+        }
+      }
+      edges.forEach((edge) => {
+        const left = conceptPositions.get(String(edge.from));
+        const right = conceptPositions.get(String(edge.to));
+        if (!left || !right) return;
+        const dx = right.x - left.x;
+        const dy = right.y - left.y;
+        const distance = Math.max(1, Math.hypot(dx, dy));
+        const force = Math.max(-1.7, Math.min(2.8, (distance - 118) * 0.010));
+        const fx = (dx / distance) * force;
+        const fy = (dy / distance) * force;
+        displacement.get(String(edge.from)).x += fx;
+        displacement.get(String(edge.from)).y += fy;
+        displacement.get(String(edge.to)).x -= fx;
+        displacement.get(String(edge.to)).y -= fy;
+      });
+      conceptPositions.forEach((row, id) => {
+        const chapter = chapterCenters.get(row.chapterId);
+        if (chapter) {
+          const dx = row.x - chapter.x;
+          const dy = row.y - chapter.y;
+          const distance = Math.max(1, Math.hypot(dx, dy));
+          if (distance > 250) {
+            const pull = Math.min(1.6, (distance - 250) * 0.004);
+            displacement.get(id).x -= (dx / distance) * pull;
+            displacement.get(id).y -= (dy / distance) * pull;
+          }
+        }
+        const hub = lessonHubs.get(row.lessonId);
+        if (hub) {
+          const dx = row.x - hub.x;
+          const dy = row.y - hub.y;
+          const distance = Math.max(1, Math.hypot(dx, dy));
+          if (distance > 105) {
+            const pull = Math.min(1.1, (distance - 105) * 0.0028);
+            displacement.get(id).x -= (dx / distance) * pull;
+            displacement.get(id).y -= (dy / distance) * pull;
+          }
+        }
+      });
+      conceptPositions.forEach((row, id) => {
+        const move = displacement.get(id);
+        row.x += Math.max(-4.2, Math.min(4.2, move.x * 0.58));
+        row.y += Math.max(-4.2, Math.min(4.2, move.y * 0.58));
+      });
+    }
+
     atoms.forEach((atom) => {
       atomPositions.set(String(atom.id), {
         atom,
@@ -280,6 +359,30 @@
       return point ? { chapterId: key, from: { x: WORLD.cx, y: WORLD.cy }, to: point } : null;
     }).filter(Boolean);
 
+    const chapterFlow = (graph.chapterFlow || []).map((edge, index) => {
+      const leftId = chapterKey(edge.from);
+      const rightId = chapterKey(edge.to);
+      const left = chapterCenters.get(leftId);
+      const right = chapterCenters.get(rightId);
+      if (!left || !right) return null;
+      const midX = (left.x + right.x) / 2;
+      const midY = (left.y + right.y) / 2;
+      const dx = midX - WORLD.cx;
+      const dy = midY - WORLD.cy;
+      const length = Math.max(1, Math.hypot(dx, dy));
+      const bend = 90 + index * 12;
+      return {
+        ...edge,
+        fromId: leftId,
+        toId: rightId,
+        fromPoint: left,
+        toPoint: right,
+        color: EDGE_COLORS[edge.type] || EDGE_COLORS.prerequisite,
+        cx: midX + (dx / length) * bend,
+        cy: midY + (dy / length) * bend,
+      };
+    }).filter(Boolean);
+
     const current = currentLesson
       ? lessons.find((row) => String(row.id) === String(currentLesson.id) ||
         Number(row.episode) === Number(currentLesson.episode))
@@ -313,6 +416,7 @@
       atomPositions,
       adjacency,
       lessonLinks,
+      chapterFlow,
       membershipLinks,
       atomLinks,
       chapterLinks,
@@ -584,6 +688,22 @@
       context.stroke();
     }
 
+    function arrowHead(context, point, control, color, alpha, radius) {
+      const angle = Math.atan2(point.y - control.y, point.x - control.x);
+      const size = Math.max(3, (radius || 7) / camera.scale);
+      context.save();
+      context.translate(point.x, point.y);
+      context.rotate(angle);
+      context.beginPath();
+      context.moveTo(0, 0);
+      context.lineTo(-size, -size * 0.52);
+      context.lineTo(-size, size * 0.52);
+      context.closePath();
+      context.fillStyle = rgba(color, alpha);
+      context.fill();
+      context.restore();
+    }
+
     function curvePath(context, edge) {
       context.beginPath();
       context.moveTo(edge.fromPoint.x, edge.fromPoint.y);
@@ -675,11 +795,22 @@
       context.setLineDash([]);
 
       layout.chapterLinks.forEach((row) => {
-        const alpha = !focus || focus.chapters.has(row.chapterId) ? 0.15 : 0.035;
-        worldLine(context, row.from, row.to, layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 1.1, alpha);
+        const alpha = !focus || focus.chapters.has(row.chapterId) ? 0.23 : 0.04;
+        worldLine(context, row.from, row.to,
+          layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 1.25, alpha);
+      });
+      layout.chapterFlow.forEach((edge) => {
+        context.beginPath();
+        context.moveTo(edge.fromPoint.x, edge.fromPoint.y);
+        context.quadraticCurveTo(edge.cx, edge.cy, edge.toPoint.x, edge.toPoint.y);
+        context.strokeStyle = rgba(edge.color, focus ? 0.11 : 0.2);
+        context.lineWidth = Math.max(0.55, 1.15 / camera.scale);
+        context.stroke();
+        arrowHead(context, edge.toPoint, { x: edge.cx, y: edge.cy },
+          edge.color, focus ? 0.16 : 0.34, 8);
       });
       layout.lessonLinks.forEach((row) => {
-        const chapterAlpha = !chapterFilter || chapterFilter === row.chapterId ? 0.08 : 0.015;
+        const chapterAlpha = !chapterFilter || chapterFilter === row.chapterId ? 0.1 : 0.018;
         worldLine(context, row.from, row.to,
           layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 0.7, chapterAlpha);
       });
@@ -717,9 +848,9 @@
         atomsByColor.get(key).rows.push(row);
       });
       atomsByColor.forEach((group) => {
-        context.globalAlpha = group.alpha;
+        context.globalAlpha = group.alpha * (focus ? 0.72 : 0.42);
         context.fillStyle = group.color;
-        const radius = Math.max(0.58, 0.72 / camera.scale);
+        const radius = Math.max(0.48, 0.59 / camera.scale);
         context.beginPath();
         group.rows.forEach((row) => {
           context.moveTo(row.x + radius, row.y);
@@ -945,6 +1076,22 @@
       ctx.drawImage(baseCanvas, 0, 0);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalCompositeOperation = "lighter";
+      layout.chapterFlow.forEach((edge, index) => {
+        const from = cssPoint(edge.fromPoint.x, edge.fromPoint.y);
+        const control = cssPoint(edge.cx, edge.cy);
+        const to = cssPoint(edge.toPoint.x, edge.toPoint.y);
+        const t = (time * 0.000055 + index * 0.23) % 1;
+        const mt = 1 - t;
+        const px = mt * mt * from.x + 2 * mt * t * control.x + t * t * to.x;
+        const py = mt * mt * from.y + 2 * mt * t * control.y + t * t * to.y;
+        ctx.fillStyle = rgba(edge.color, focus ? 0.32 : 0.92);
+        ctx.shadowColor = edge.color;
+        ctx.shadowBlur = focus ? 5 : 12;
+        ctx.beginPath();
+        ctx.arc(px, py, focus ? 1.2 : 2.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
       const activeEdges = focus
         ? layout.edges.filter((edge) => focus.edges.has(String(edge.id))).slice(0, 80)
         : layout.edges.filter((_, index) => index % 29 === 0).slice(0, 34);
@@ -1083,13 +1230,41 @@
         const neighbors = Array.from(layout.adjacency.get(selected.id) || []);
         if (neighbors.length) {
           const related = h("div", "kp-star-related");
-          related.appendChild(h("b", "", "直接相连 " + neighbors.length + " 个"));
-          neighbors.slice(0, 7).forEach((id) => {
-            const next = layout.conceptIndex.get(id);
-            if (next) related.appendChild(button(next.label, "kp-star-chip", () => {
-              focusForHit({ kind: "concept", id });
-              focusPoint(layout.conceptPositions.get(id), Math.max(camera.scale, 1.05));
-            }));
+          related.appendChild(h("b", "", "知识关系 · " + neighbors.length + " 个直接邻居"));
+          const groups = new Map();
+          layout.edges.forEach((edge) => {
+            const outgoing = String(edge.from) === selected.id;
+            const incoming = String(edge.to) === selected.id;
+            if (!outgoing && !incoming) return;
+            const neighborId = outgoing ? String(edge.to) : String(edge.from);
+            const next = layout.conceptIndex.get(neighborId);
+            if (!next) return;
+            const type = clean(edge.type || "related");
+            const direction = outgoing ? "out" : "in";
+            const key = type + ":" + direction;
+            if (!groups.has(key)) {
+              groups.set(key, {
+                type,
+                direction,
+                label: (outgoing ? "→ " : "← ") + (TYPE_LABELS[type] || "关联"),
+                rows: [],
+              });
+            }
+            groups.get(key).rows.push({ id: neighborId, concept: next });
+          });
+          groups.forEach((group) => {
+            const block = h("div", "kp-star-relation-group");
+            const heading = h("div", "kp-star-relation-head");
+            heading.appendChild(h("span", "", group.label));
+            heading.appendChild(h("small", "", group.rows.length + " 个"));
+            block.appendChild(heading);
+            group.rows.slice(0, 8).forEach(({ id, concept: next }) => {
+              block.appendChild(button(next.label, "kp-star-chip", () => {
+                focusForHit({ kind: "concept", id });
+                focusPoint(layout.conceptPositions.get(id), Math.max(camera.scale, 1.05));
+              }));
+            });
+            related.appendChild(block);
           });
           detail.appendChild(related);
         }

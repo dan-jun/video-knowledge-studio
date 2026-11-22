@@ -79,6 +79,7 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
         self.assertIn("EDGE_COLORS", star)
         self.assertIn("pillLabel", star)
         self.assertIn("perChapter", star)
+        self.assertIn("chapterFlow", star)
         self.assertIn("case 'gear': this.toggleMenu('settings')", player)
         self.assertIn("toggleMenu(view)", player)
         self.assertIn("if (k === 'Escape' && this.el.menu.classList.contains('open'))", player)
