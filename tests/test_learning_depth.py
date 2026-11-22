@@ -40,6 +40,7 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
     def test_ui_renders_expandable_timed_transcript_and_menu_toggles(self):
         knowledge = (ROOT / "web" / "knowledge.js").read_text(encoding="utf-8")
         plugin = (ROOT / "web" / "knowledge_plugin.js").read_text(encoding="utf-8")
+        star = (ROOT / "web" / "star_map.js").read_text(encoding="utf-8")
         index = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         player = (ROOT / "web" / "player.js").read_text(encoding="utf-8")
         self.assertIn("const transcriptUnits = groupTranscript", knowledge)
@@ -52,6 +53,7 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
         self.assertIn("window.VKSKnowledgePlugin.render", knowledge)
         self.assertIn("/api/knowledge/course-graph?id=", knowledge)
         self.assertIn('/knowledge_plugin.js?v=', index)
+        self.assertIn('/star_map.js?v=', index)
         self.assertIn("证据覆盖", plugin)
         self.assertIn("本讲核心锚点", plugin)
         self.assertIn("renderConceptGraph", plugin)
@@ -69,6 +71,11 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
         self.assertIn("完整字幕覆盖账本", plugin)
         self.assertIn("全课程知识体系", plugin)
         self.assertIn("/media/knowledge-frame?id=", plugin)
+        self.assertIn("renderStarMap", plugin)
+        self.assertIn("kp-star-canvas", star)
+        self.assertIn("VKSStarMap", star)
+        self.assertIn("knowledgeAtoms", star)
+        self.assertIn("requestAnimationFrame", star)
         self.assertIn("case 'gear': this.toggleMenu('settings')", player)
         self.assertIn("toggleMenu(view)", player)
         self.assertIn("if (k === 'Escape' && this.el.menu.classList.contains('open'))", player)
@@ -152,6 +159,40 @@ process.stdout.write(JSON.stringify({ episodeOnly: rows.length, explicit: generi
             check=True,
         )
         self.assertIn('"episodeOnly":2', result.stdout)
+
+    def test_star_map_builds_multiscale_galaxy(self):
+        script = r"""
+const M = require(process.argv[1]);
+const graph = {
+  course: 'Demo',
+  chapters: [{ id: 'ch1', label: 'Chapter 1', episodes: [1], lessonIds: ['lesson-1'], conceptIds: ['c1', 'c2'], atomIds: ['a1', 'a2'] }],
+  lessons: [{ id: 'lesson-1', episode: 1, episodeId: 'e1', chapterId: 'ch1', conceptIds: ['c1', 'c2'], knowledgeAtomCount: 2 }],
+  nodes: [
+    { id: 'c1', label: 'Alpha', chapterIds: ['ch1'], occurrences: [{ episode: 1, episodeId: 'e1', chapterId: 'ch1' }] },
+    { id: 'c2', label: 'Beta', chapterIds: ['ch1'], occurrences: [{ episode: 1, episodeId: 'e1', chapterId: 'ch1' }] },
+  ],
+  edges: [{ id: 'edge-1', from: 'c1', to: 'c2', type: 'mechanism' }],
+  knowledgeAtoms: [
+    { id: 'a1', chapterId: 'ch1', lessonId: 'lesson-1', conceptIds: ['c1'], episode: 1 },
+    { id: 'a2', chapterId: 'ch1', lessonId: 'lesson-1', conceptIds: ['c2'], episode: 1 },
+  ],
+};
+const layout = M.buildLayout(graph, graph.lessons[0]);
+if (layout.concepts.length !== 2 || layout.atoms.length !== 2) process.exit(2);
+if (layout.edges.length !== 1 || layout.atomLinks.length !== 2) process.exit(3);
+if (layout.chapters.length !== 1 || layout.lessons.length !== 1) process.exit(4);
+process.stdout.write(JSON.stringify({ concepts: 2, atoms: 2, edges: 1 }));
+"""
+        result = subprocess.run(
+            ["node", "-e", script, str(ROOT / "web" / "star_map.js")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=True,
+        )
+        self.assertIn('"atoms":2', result.stdout)
 
 
 if __name__ == "__main__":

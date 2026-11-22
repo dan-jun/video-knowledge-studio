@@ -73,6 +73,13 @@ class ServerTests(unittest.TestCase):
         self.assertIn("Raft", raft["episode"]["title"])
         self.assertTrue(raft["episode"]["terms"])
 
+    def test_star_map_static_asset(self):
+        with urllib.request.urlopen(self.base + "/star_map.js", timeout=20) as response:
+            body = response.read().decode("utf-8")
+            self.assertEqual(response.status, 200)
+        self.assertIn("VKSStarMap", body)
+        self.assertIn("buildLayout", body)
+
     def test_video_range(self):
         request = urllib.request.Request(
             self.base + "/media/video?id=demo-e01",

@@ -1,5 +1,25 @@
 # Lessons
 
+## 2026-11-22 - A course graph needs normalized hierarchy keys
+
+**Symptom:** The first galaxy layout displayed five chapter points but collapsed nearly
+all 656 concepts and 3,486 atoms around the course center, producing a bright central
+blob instead of chapter clusters.
+
+**Root cause:** Chapter records used IDs such as `chapter-第1章…`, while lesson and
+concept records used `第1章…`. Cluster lookups silently missed and every lesson fell
+back to the world center.
+
+**Fix:** Normalize `chapter-*` prefixes whenever chapter membership is joined, retain
+the display chapter separately, and verify layout extents and per-chapter node counts
+before rendering. Draw concepts and atoms on Canvas with chapter colors, real relation
+edges, local anchor beams and focused pulsing neighbours.
+
+**Verification:** The live map rendered 656 concept lights, 3,486 note stars, 983 beams
+and 5 separated chapter clusters. Search for “系统调用” opened a detail panel with nine
+neighbours and E01/E05/E06 links; selecting a chapter and resetting to the full course
+also worked.
+
 ## 2026-11-22 - Do not stack the new knowledge plugin over the old report
 
 **Symptom:** The new Learning/Knowledge/Review surface still felt noisy and its text

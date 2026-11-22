@@ -349,7 +349,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/login.html":
             return self._send_file(RUNTIME.settings.web_dir / "login.html", "text/html; charset=utf-8")
-        if path in {"/app.css", "/app.js", "/knowledge.css", "/knowledge.js", "/knowledge_plugin.js", "/i18n.js",
+        if path in {"/app.css", "/app.js", "/knowledge.css", "/knowledge.js", "/knowledge_plugin.js", "/star_map.js", "/i18n.js",
                     "/player.css", "/player.js", "/production.css", "/production.js",
                     "/favicon.svg"}:
             return self._send_file(RUNTIME.settings.web_dir / path.lstrip("/"))

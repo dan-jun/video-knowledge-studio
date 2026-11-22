@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added an interactive **Knowledge Galaxy** view rendered on Canvas. All 656
+  canonical concepts appear as glowing concept nodes, all 3,486 knowledge atoms as
+  smaller note stars, and the 983 evidence-backed concept relations as luminous beams.
+- The galaxy preserves the course → chapter → lesson → anchor → atom hierarchy:
+  chapters become distinct colored clusters, lesson membership appears as faint local
+  links, and the current lesson is marked in gold.
+- Added search, chapter selection, current-lesson focus, drag-to-pan, wheel zoom,
+  full-course reset, local-neighbour highlighting, animated relation pulses, and a
+  detail panel with timestamps and other-lesson links.
+- Added `/star_map.js` to both the local and open-source static asset routes.
 - Added a reading-first layout for course notes: the knowledge pane now receives
   roughly 61% of the workspace, primary questions render at 24px, explanatory text at
   14–16px, and the core-anchor navigator uses large vertical cards instead of tiny

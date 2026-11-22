@@ -184,6 +184,11 @@ The timeline is the main connection between reading and watching:
   questions, explanations and controls for comfortable reading. The relationship graph
   stays collapsed until requested; selecting a large anchor card opens the focused
   graph instead of forcing users to decode a dense miniature map.
+- The **Knowledge Galaxy** renders the complete course as a navigable star map. Every
+  canonical concept is a larger light point, every knowledge atom is a smaller note
+  star, and typed concept relations are visible beams. Chapters form separate colored
+  clusters, while searching or selecting a point reveals its hierarchy, direct
+  neighbours, timestamps and cross-lesson occurrences.
 - When deep notes are present, legacy summary and timeline cards are suppressed to
   avoid rendering two competing note systems. They remain the fallback for lessons
   without a deep note, and their complete source material is represented in Knowledge.

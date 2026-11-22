@@ -47,6 +47,14 @@ until the learner selects an anchor. When a deep-note artifact is active, suppre
 legacy summary, timeline, term and recall blocks instead of stacking both note systems;
 keep the legacy view only as a fallback when no deep note exists.
 
+For a course-wide mind map, render the multiscale model rather than a seven-node
+overview. Show every canonical concept as a larger glow, every knowledge atom as a
+smaller note star, and only evidence-backed concept edges as relation beams. Cluster by
+chapter, retain course → chapter → lesson → anchor → atom hierarchy, and expose search,
+focus, pan, zoom and current-lesson navigation. Keep labels sparse until the user
+focuses a node. Normalize both `chapter-*` graph IDs and the raw chapter IDs used by
+lessons before building cluster coordinates.
+
 For requests that start from a work, research, project or interview knowledge gap rather
 than an existing course, use the companion `$demand-driven-video-learning` Skill to plan
 the learning path, find multiple sources, render the integrated course, and create notes.
@@ -124,6 +132,7 @@ python -m unittest discover -s tests -v
 node --check web/app.js
 node --check web/knowledge.js
 node --check web/knowledge_plugin.js
+node --check web/star_map.js
 node --check web/production.js
 ```
 

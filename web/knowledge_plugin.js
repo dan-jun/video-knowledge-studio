@@ -586,6 +586,22 @@
     return details;
   }
 
+  function renderStarMap(note, lesson, courseGraph, onSeek, onOpenEpisode, onOpenKnowledge) {
+    if (!global.VKSStarMap) {
+      const node = section("知识星图", "全课程概念、知识原子和关系光束");
+      node.appendChild(h("p", "kp-error", "星图组件未加载，请刷新页面。"));
+      return node;
+    }
+    return global.VKSStarMap.create({
+      note,
+      lesson,
+      courseGraph,
+      onSeek,
+      onOpenEpisode,
+      onOpenKnowledge,
+    });
+  }
+
   function renderSemanticReview(review, onSeek) {
     if (!review) return null;
     const status = clean(review.status || "missing");
@@ -1089,6 +1105,8 @@
     const onSeek = opt.onSeek || (() => {});
     const onGenerate = opt.onGenerate || (() => {});
     const onOpenEpisode = opt.onOpenEpisode || (() => {});
+    const oldMap = host.querySelector && host.querySelector(".kp-star-zone");
+    if (oldMap && oldMap._kpDestroy) oldMap._kpDestroy();
     host.innerHTML = "";
     host.className = "kp-root";
     if (!note) {
@@ -1138,11 +1156,15 @@
       });
       const scrollHost = host.closest && host.closest("#knowledge");
       if (scrollHost) scrollHost.scrollTop = 0;
+      if (pages.star && pages.star._kpActivate) {
+        pages.star._kpActivate(name === "star");
+      }
     }
 
     [
       ["learn", "学习", null],
       ["knowledge", "知识", null],
+      ["star", "星图", null],
       ["review", "复习", reviewBadge],
     ].forEach(([key, label, badge]) => {
       const button = h("button", "kp-tab", label);
@@ -1199,6 +1221,21 @@
       if (node) knowledgePage.appendChild(node);
     });
     pages.knowledge = knowledgePage;
+
+    const starPage = h("div", "kp-page");
+    const starMap = renderStarMap(
+      note,
+      lesson,
+      courseGraph,
+      onSeek,
+      onOpenEpisode,
+      () => switchTab("knowledge"),
+    );
+    starPage.appendChild(starMap);
+    starPage._kpActivate = (active) => {
+      if (starMap && starMap._kpActivate) starMap._kpActivate(active);
+    };
+    pages.star = starPage;
 
     pages.review = h("div", "kp-page");
     pages.review.appendChild(reviewHost);
