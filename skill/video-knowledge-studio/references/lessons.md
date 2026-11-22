@@ -614,10 +614,11 @@ cross-lesson E05/E06 links and opening E05 changed the active lesson.
   its observed FPS is not a reliable measure of draw cost.
 - **Fix:** Resolve an automatic smooth/cinematic quality tier, cap adaptive DPR, render
   on demand, stop idle animation, reuse per-color glow sprites, use solid animated
-  relation strokes, skip optional layers during camera previews, cache sorted label
-  groups, index hit tests in spatial cells, and use compact numeric arrays during
-  force-layout initialization.
+  relation strokes, skip optional layers during camera previews, batch faint links and
+  node cores by color/alpha, omit visually invisible overview atom links in smooth mode,
+  cache sorted label groups, index hit tests in spatial cells, and use compact numeric
+  arrays during force-layout initialization.
 - **Verification:** On the 656/3,486/983 course graph, layout initialization fell from
-  about 374 ms to 109 ms; full base paint measured 12–17 ms and drag preview 8–9 ms in
-  the real local app; search, relation filtering, neighborhood detail and reset worked;
-  the canvas frame counter remained unchanged after the idle animation window.
+  about 374 ms to 62–125 ms; full base paint fell to about 9 ms and drag preview to about
+  6 ms in the real local app; search, relation filtering, neighborhood detail and reset
+  worked; the canvas frame counter remained unchanged after the idle animation window.

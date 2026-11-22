@@ -774,6 +774,45 @@
       context.globalAlpha = previous;
     }
 
+    function fillArcBatch(context, rows, color, alpha, radiusFor) {
+      if (!rows.length) return;
+      context.globalAlpha = alpha;
+      context.fillStyle = color;
+      context.beginPath();
+      rows.forEach((row) => {
+        const radius = radiusFor(row);
+        context.moveTo(row.x + radius, row.y);
+        context.arc(row.x, row.y, radius, 0, Math.PI * 2);
+      });
+      context.fill();
+    }
+
+    function strokeLineBatch(context, rows, color, width, alpha) {
+      if (!rows.length) return;
+      context.globalAlpha = 1;
+      context.beginPath();
+      rows.forEach((row) => {
+        context.moveTo(row.from.x, row.from.y);
+        context.lineTo(row.to.x, row.to.y);
+      });
+      context.strokeStyle = rgba(color, alpha);
+      context.lineWidth = Math.max(0.35, width / camera.scale);
+      context.stroke();
+    }
+
+    function strokeCurveBatch(context, rows, color, width, alpha) {
+      if (!rows.length) return;
+      context.globalAlpha = 1;
+      context.beginPath();
+      rows.forEach((edge) => {
+        context.moveTo(edge.fromPoint.x, edge.fromPoint.y);
+        context.quadraticCurveTo(edge.cx, edge.cy, edge.toPoint.x, edge.toPoint.y);
+      });
+      context.strokeStyle = rgba(color, alpha);
+      context.lineWidth = Math.max(0.34, width / camera.scale);
+      context.stroke();
+    }
+
     resolvedQuality = resolveQuality();
     dpr = qualityDpr();
 
@@ -1033,12 +1072,15 @@
           drawGlow(context, row.color, row.x, row.y, 540, 0.1);
         });
 
+        const starBuckets = new Map();
         ambientStars.forEach((star) => {
-          context.globalAlpha = star.alpha;
-          context.fillStyle = "#c6f6ff";
-          context.beginPath();
-          context.arc(star.x, star.y, Math.max(0.25, star.size / camera.scale), 0, Math.PI * 2);
-          context.fill();
+          const bucket = Math.round(star.alpha * 40) / 40;
+          if (!starBuckets.has(bucket)) starBuckets.set(bucket, []);
+          starBuckets.get(bucket).push(star);
+        });
+        starBuckets.forEach((rows, alpha) => {
+          fillArcBatch(context, rows, "#c6f6ff", alpha,
+            (star) => Math.max(0.25, star.size / camera.scale));
         });
         context.globalAlpha = 1;
 
@@ -1081,41 +1123,76 @@
         arrowHead(context, edge.toPoint, { x: edge.cx, y: edge.cy },
           edge.color, focus ? 0.16 : 0.34, 8);
       });
+      const lessonLinkGroups = new Map();
       layout.lessonLinks.forEach((row) => {
         const chapterAlpha = !chapterFilter || chapterFilter === row.chapterId
           ? (structureMode ? 0.2 : 0.1)
           : 0.018;
-        worldLine(context, row.from, row.to,
-          layout.chapterCenters.get(row.chapterId)?.color || COLORS[0], 0.7, chapterAlpha);
+        const color = layout.chapterCenters.get(row.chapterId)?.color || COLORS[0];
+        const key = color + ":" + chapterAlpha;
+        if (!lessonLinkGroups.has(key)) {
+          lessonLinkGroups.set(key, { color, alpha: chapterAlpha, rows: [] });
+        }
+        lessonLinkGroups.get(key).rows.push(row);
+      });
+      lessonLinkGroups.forEach((group) => {
+        strokeLineBatch(context, group.rows, group.color, 0.7, group.alpha);
       });
       if (!quick) {
+        const membershipGroups = new Map();
         layout.membershipLinks.forEach((row) => {
           const activeLesson = layout.currentLesson &&
             String(layout.currentLesson.id) === row.lessonId && !focus;
           const alpha = activeLesson ? 0.2 : (structureMode ? 0.095 : 0.024);
-          worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.55, alpha);
+          const color = row.to.color || COLORS[0];
+          const key = color + ":" + alpha;
+          if (!membershipGroups.has(key)) {
+            membershipGroups.set(key, { color, alpha, rows: [] });
+          }
+          membershipGroups.get(key).rows.push(row);
+        });
+        membershipGroups.forEach((group) => {
+          strokeLineBatch(context, group.rows, group.color, 0.55, group.alpha);
         });
 
-        context.globalAlpha = 1;
-        layout.atomLinks.forEach((row) => {
-          if (focus && isolateNeighborhood && !focus.atoms.has(row.atomId)) return;
-          const inFocus = focus && focus.atoms.has(row.atomId);
-          const alpha = inFocus ? 0.34 : 0.018;
-          worldLine(context, row.from, row.to, row.to.color || COLORS[0], 0.38, alpha);
-        });
+        const showOverviewAtomLinks = resolvedQuality === "cinematic" || camera.scale >= 0.62;
+        if (focus || showOverviewAtomLinks) {
+          const atomGroups = new Map();
+          layout.atomLinks.forEach((row) => {
+            if (focus && isolateNeighborhood && !focus.atoms.has(row.atomId)) return;
+            const inFocus = focus && focus.atoms.has(row.atomId);
+            const alpha = inFocus ? 0.34 : 0.018;
+            const color = row.to.color || COLORS[0];
+            const key = color + ":" + alpha;
+            if (!atomGroups.has(key)) {
+              atomGroups.set(key, { color, alpha, rows: [] });
+            }
+            atomGroups.get(key).rows.push(row);
+          });
+          atomGroups.forEach((group) => {
+            strokeLineBatch(context, group.rows, group.color, 0.38, group.alpha);
+          });
+        }
       }
 
+      const edgeGroups = new Map();
       layout.edges.forEach((edge) => {
         if (!typeAllowed(edge.type)) return;
-        if (focus && isolateNeighborhood && !focus.edges.has(String(edge.id))) return;
-        const active = focus && focus.edges.has(String(edge.id));
-        curvePath(context, edge);
-        context.strokeStyle = active
-          ? rgba(edge.color || "#7ef2ff", 0.82)
-          : rgba(edge.color || "#56bed6",
-            focus ? 0.035 : (structureMode ? 0.055 : 0.19));
-        context.lineWidth = Math.max(0.34, (active ? 1.15 : 0.76) / camera.scale);
-        context.stroke();
+        const active = Boolean(focus && focus.edges.has(String(edge.id)));
+        if (focus && isolateNeighborhood && !active) return;
+        const color = edge.color || (active ? "#7ef2ff" : "#56bed6");
+        const alpha = active
+          ? 0.82
+          : focus ? 0.035 : (structureMode ? 0.055 : 0.19);
+        const width = active ? 1.15 : 0.76;
+        const key = color + ":" + alpha + ":" + width;
+        if (!edgeGroups.has(key)) {
+          edgeGroups.set(key, { color, alpha, width, rows: [] });
+        }
+        edgeGroups.get(key).rows.push(edge);
+      });
+      edgeGroups.forEach((group) => {
+        strokeCurveBatch(context, group.rows, group.color, group.width, group.alpha);
       });
 
       const atomsByColor = new Map();
@@ -1148,6 +1225,7 @@
         }
         conceptsByColor.get(key).rows.push({ id, ...row });
       });
+      const conceptCoreGroups = new Map();
       conceptsByColor.forEach((group) => {
         context.globalAlpha = group.alpha;
         group.rows.forEach((row) => {
@@ -1156,24 +1234,40 @@
           const isSelected = selected?.kind === "concept" && selected.id === row.id;
           const radius = Math.max(1.15, ((isSelected ? 5.6 : current ? 3.9 : 2.8) +
             Math.min(2.2, degree * 0.09)) / camera.scale);
-          if (!quick || current || isSelected) {
+          const emphasize = current || isSelected ||
+            salientConceptIds.has(row.id) || resolvedQuality === "cinematic";
+          if (!quick && emphasize) {
+            drawGlow(context, group.color, row.x, row.y,
+              radius * (isSelected ? 4.2 : 3.6), isSelected ? 1 : 0.82);
+          } else if (quick && (current || isSelected)) {
             drawGlow(context, group.color, row.x, row.y,
               radius * (isSelected ? 4.2 : 3.6), isSelected ? 1 : 0.82);
           }
-          context.fillStyle = "rgba(240,255,255,.94)";
-          context.beginPath();
-          context.arc(row.x, row.y, Math.max(0.7, radius * 0.52), 0, Math.PI * 2);
-          context.fill();
+          if (!conceptCoreGroups.has(group.alpha)) conceptCoreGroups.set(group.alpha, []);
+          conceptCoreGroups.get(group.alpha).push({
+            x: row.x,
+            y: row.y,
+            radius: Math.max(0.7, radius * 0.52),
+          });
         });
       });
+      conceptCoreGroups.forEach((rows, alpha) => {
+        fillArcBatch(context, rows, "#f0ffff", alpha * 0.94,
+          (row) => row.radius);
+      });
 
+      const lessonHubGroups = new Map();
       layout.lessonHubs.forEach((hub) => {
         const alpha = chapterFilter && hub.chapterId !== chapterFilter ? 0.05 : 0.28;
-        context.globalAlpha = alpha;
-        context.fillStyle = hub.color;
-        context.beginPath();
-        context.arc(hub.x, hub.y, Math.max(1.1, 1.8 / camera.scale), 0, Math.PI * 2);
-        context.fill();
+        const key = hub.color + ":" + alpha;
+        if (!lessonHubGroups.has(key)) {
+          lessonHubGroups.set(key, { color: hub.color, alpha, rows: [] });
+        }
+        lessonHubGroups.get(key).rows.push(hub);
+      });
+      lessonHubGroups.forEach((group) => {
+        fillArcBatch(context, group.rows, group.color, group.alpha,
+          () => Math.max(1.1, 1.8 / camera.scale));
       });
 
       layout.chapterCenters.forEach((row, id) => {
@@ -1305,8 +1399,26 @@
       };
     }
 
+    function buildSalientConceptIds() {
+      const byChapter = new Map();
+      layout.conceptPositions.forEach((row, id) => {
+        if (!byChapter.has(row.chapterId)) byChapter.set(row.chapterId, []);
+        byChapter.get(row.chapterId).push({
+          id,
+          degree: layout.adjacency.get(id)?.size || 0,
+        });
+      });
+      const salient = new Set(layout.currentConceptIds);
+      byChapter.forEach((rows) => {
+        rows.sort((left, right) => right.degree - left.degree);
+        rows.slice(0, 14).forEach((row) => salient.add(row.id));
+      });
+      return salient;
+    }
+
     let labelGroups = buildLabelGroups();
     let hitIndexes = buildHitIndexes();
+    const salientConceptIds = buildSalientConceptIds();
 
     function drawStaticLabels(context, quick) {
       const boxes = [];

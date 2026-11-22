@@ -232,6 +232,11 @@ process.stdout.write(JSON.stringify({ concepts: 2, atoms: 2, edges: 1 }));
         self.assertIn("function buildHitIndexes", star)
         self.assertIn("hitIndexes.concepts", star)
         self.assertIn("labelGroups", star)
+        self.assertIn("function fillArcBatch", star)
+        self.assertIn("function strokeLineBatch", star)
+        self.assertIn("function strokeCurveBatch", star)
+        self.assertIn("showOverviewAtomLinks", star)
+        self.assertIn("salientConceptIds", star)
 
 
 if __name__ == "__main__":
