@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import html
 import json
 import mimetypes
@@ -132,11 +133,48 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"[{time.strftime('%H:%M:%S')}] {fmt % args}", flush=True)
 
-    def _send_json(self, obj, status=200, cookie: str | None = None):
-        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+    def _accepts_gzip(self) -> bool:
+        return "gzip" in (self.headers.get("Accept-Encoding") or "").lower()
+
+    def _etag_matches(self, etag: str) -> bool:
+        header = self.headers.get("If-None-Match") or ""
+        expected = etag.removeprefix("W/")
+        return any(
+            item.strip() == "*" or item.strip().removeprefix("W/") == expected
+            for item in header.split(",")
+            if item.strip()
+        )
+
+    def _send_not_modified(self, etag: str, cache_control: str):
+        self.send_response(304)
+        self.send_header("ETag", etag)
+        self.send_header("Cache-Control", cache_control)
+        self.send_header("Vary", "Accept-Encoding")
+        self.end_headers()
+
+    def _send_json(
+        self,
+        obj,
+        status=200,
+        cookie: str | None = None,
+        etag: str | None = None,
+        cache_control: str = "no-store",
+    ):
+        raw = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        if etag and self._etag_matches(etag):
+            self._send_not_modified(etag, cache_control)
+            return
+        encoded = self._accepts_gzip() and len(raw) >= 1024
+        body = gzip.compress(raw, compresslevel=5, mtime=0) if encoded else raw
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", cache_control)
+        self.send_header("Vary", "Accept-Encoding")
+        if etag:
+            self.send_header("ETag", etag)
+        if encoded:
+            self.send_header("Content-Encoding", "gzip")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         if cookie:
@@ -144,12 +182,29 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _send_file(self, path: Path | None, content_type: str | None = None, download=False):
+    def _send_file(
+        self,
+        path: Path | None,
+        content_type: str | None = None,
+        download=False,
+        cache_versioned=False,
+    ):
         if not path or not path.is_file():
             self.send_error(404)
             return
-        size = path.stat().st_size
+        stat = path.stat()
+        size = stat.st_size
         ctype = content_type or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        base_type = ctype.split(";", 1)[0].strip().lower()
+        etag = f'W/"{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+        cache_control = (
+            "private, max-age=31536000, immutable"
+            if cache_versioned and not download
+            else "private, no-cache"
+        )
+        if self._etag_matches(etag):
+            self._send_not_modified(etag, cache_control)
+            return
         start, end = 0, size - 1
         partial = False
         match = re.match(r"bytes=(\d+)-(\d*)", self.headers.get("Range", ""))
@@ -158,16 +213,41 @@ class Handler(BaseHTTPRequestHandler):
             end = int(match.group(2)) if match.group(2) else size - 1
             end = min(end, size - 1)
             partial = True
+        compressible = (
+            not partial and
+            (
+                base_type.startswith("text/") or
+                base_type in {
+                    "application/javascript",
+                    "application/json",
+                    "application/xml",
+                    "image/svg+xml",
+                }
+            )
+        )
+        payload = None
+        if compressible and self._accepts_gzip() and size >= 1024:
+            payload = gzip.compress(path.read_bytes(), compresslevel=6, mtime=0)
         self.send_response(206 if partial else 200)
         self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(end - start + 1))
+        self.send_header("Content-Length", str(len(payload) if payload is not None else end - start + 1))
         self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Cache-Control", cache_control)
+        self.send_header("ETag", etag)
+        self.send_header("Last-Modified", self.date_time_string(stat.st_mtime))
+        if compressible:
+            self.send_header("Vary", "Accept-Encoding")
+        if payload is not None:
+            self.send_header("Content-Encoding", "gzip")
         self.send_header("X-Content-Type-Options", "nosniff")
         if partial:
             self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
         if download:
             self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
         self.end_headers()
+        if payload is not None:
+            self.wfile.write(payload)
+            return
         try:
             with path.open("rb") as file:
                 file.seek(start)
@@ -352,7 +432,10 @@ class Handler(BaseHTTPRequestHandler):
         if path in {"/app.css", "/app.js", "/knowledge.css", "/knowledge.js", "/knowledge_plugin.js", "/star_map.js", "/i18n.js",
                     "/player.css", "/player.js", "/production.css", "/production.js",
                     "/favicon.svg"}:
-            return self._send_file(RUNTIME.settings.web_dir / path.lstrip("/"))
+            return self._send_file(
+                RUNTIME.settings.web_dir / path.lstrip("/"),
+                cache_versioned=bool(query.get("v")),
+            )
         if path in {"/", "/index.html"}:
             if not self._guard():
                 return
@@ -452,11 +535,23 @@ class Handler(BaseHTTPRequestHandler):
                 / "deep_notes"
                 / f"{ep['courseId']}-course-graph.json"
             )
+            etag = None
+            cache_control = "no-store"
             try:
+                stat = graph_path.stat()
+                etag = f'W/"{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+                cache_control = "private, no-cache"
+                if self._etag_matches(etag):
+                    self._send_not_modified(etag, cache_control)
+                    return
                 graph = json.loads(graph_path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 graph = None
-            return self._send_json({"ok": True, "graph": graph})
+            return self._send_json(
+                {"ok": True, "graph": graph},
+                etag=etag,
+                cache_control=cache_control,
+            )
         if path == "/media/video":
             ep = RUNTIME.courses.get((query.get("id") or [""])[0])
             return self._send_file(ep["videoPath"] if ep else None, "video/mp4")

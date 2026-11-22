@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import gzip
 import json
 import os
 import subprocess
@@ -74,11 +75,52 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(raft["episode"]["terms"])
 
     def test_star_map_static_asset(self):
-        with urllib.request.urlopen(self.base + "/star_map.js", timeout=20) as response:
-            body = response.read().decode("utf-8")
+        request = urllib.request.Request(
+            self.base + "/star_map.js?v=20261122-efficiency1",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            body = gzip.decompress(response.read()).decode("utf-8")
             self.assertEqual(response.status, 200)
+            self.assertEqual(response.headers.get("Content-Encoding"), "gzip")
+            self.assertIn("immutable", response.headers.get("Cache-Control", ""))
+            etag = response.headers.get("ETag")
+            self.assertTrue(etag)
         self.assertIn("VKSStarMap", body)
         self.assertIn("buildLayout", body)
+        conditional = urllib.request.Request(
+            self.base + "/star_map.js?v=20261122-efficiency1",
+            headers={"Accept-Encoding": "gzip", "If-None-Match": etag},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as cached:
+            urllib.request.urlopen(conditional, timeout=20)
+        self.assertEqual(cached.exception.code, 304)
+
+    def test_json_compression_and_static_cache_headers(self):
+        request = urllib.request.Request(
+            self.base + "/api/projects",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            self.assertEqual(response.headers.get("Content-Encoding"), "gzip")
+            payload = json.loads(gzip.decompress(response.read()))
+            self.assertIn("raft-e01", {row["id"] for row in payload})
+            self.assertEqual(response.headers.get("Cache-Control"), "no-store")
+        request = urllib.request.Request(
+            self.base + "/knowledge.css?v=efficiency-test",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            self.assertEqual(response.headers.get("Content-Encoding"), "gzip")
+            self.assertIn("immutable", response.headers.get("Cache-Control", ""))
+            self.assertTrue(gzip.decompress(response.read()))
+        request = urllib.request.Request(
+            self.base + "/knowledge.css",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            self.assertEqual(response.headers.get("Cache-Control"), "private, no-cache")
+            self.assertTrue(gzip.decompress(response.read()))
 
     def test_video_range(self):
         request = urllib.request.Request(
@@ -89,6 +131,8 @@ class ServerTests(unittest.TestCase):
             body = response.read()
             self.assertEqual(response.status, 206)
             self.assertEqual(len(body), 256)
+            self.assertIsNone(response.headers.get("Content-Encoding"))
+            self.assertEqual(response.headers.get("Accept-Ranges"), "bytes")
 
     def test_mock_ai_job(self):
         status, start = self.post_json("/api/ai/ask", {
@@ -184,12 +228,28 @@ class ServerTests(unittest.TestCase):
                 "chapters": [],
                 "nodes": [],
                 "edges": [],
+                "padding": "x" * 2000,
             }),
             encoding="utf-8",
         )
-        status, payload = self.get_json("/api/knowledge/course-graph?id=demo-e01")
-        self.assertEqual(status, 200)
-        self.assertEqual(payload["graph"]["stats"]["episodes"], 1)
+        request = urllib.request.Request(
+            self.base + "/api/knowledge/course-graph?id=demo-e01",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.headers.get("Content-Encoding"), "gzip")
+            payload = json.loads(gzip.decompress(response.read()))
+            self.assertEqual(payload["graph"]["stats"]["episodes"], 1)
+            etag = response.headers.get("ETag")
+            self.assertTrue(etag)
+        conditional = urllib.request.Request(
+            self.base + "/api/knowledge/course-graph?id=demo-e01",
+            headers={"Accept-Encoding": "gzip", "If-None-Match": etag},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as cached:
+            urllib.request.urlopen(conditional, timeout=20)
+        self.assertEqual(cached.exception.code, 304)
 
     def test_production_modes_and_project_creation(self):
         status, payload = self.get_json("/api/production/modes")

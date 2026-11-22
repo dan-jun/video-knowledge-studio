@@ -1,5 +1,28 @@
 # Lessons
 
+## 2026-11-22 - Lazy panels still pay for their data unless the request cache is scoped
+
+**Symptom:** The first screen loaded an 82 KB star-map script immediately, and every
+lesson switch re-downloaded or revalidated the same 3.3 MB course graph. Deep-note and
+course-graph APIs also ran sequentially.
+
+**Root cause:** Module loading was treated as the only startup cost; the renderer still
+fetched full-course data for every lesson, invalidated it on every switch, and awaited
+independent requests one after another. Static assets lacked compression and stable
+version URLs.
+
+**Fix:** Load the star-map module only when its tab opens, start knowledge, deep-note and
+course-graph requests together, retain the course graph while moving within one course,
+and serve text responses with gzip plus weak ETags. Version every first-screen static
+asset so repeated opens can use immutable browser caching.
+
+**Verification:** The first-screen JavaScript dropped by 82,840 bytes before gzip;
+combined text resources were 371,074 bytes raw and 96,006 bytes gzip. Course-graph
+payload was 3,328,808 bytes raw and 374,892 bytes gzip, with conditional requests
+returning 304. After a verified restart, the live page had no `star_map.js` until the
+Star tab was clicked, then rendered the 656-concept map. Switching from lesson 03 to 05
+kept one map script and one scoped course graph. Full tests and Node syntax checks pass.
+
 ## 2026-11-22 - A course graph needs normalized hierarchy keys
 
 **Symptom:** The first galaxy layout displayed five chapter points but collapsed nearly

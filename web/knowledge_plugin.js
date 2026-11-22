@@ -31,6 +31,28 @@
     grouping: "体系分支",
   };
   const MIND_COLORS = ["#58d8f2", "#67dfb2", "#f0c36d", "#ef9388", "#ae94ef", "#7ca8f2", "#9bb1bb"];
+  const STAR_MAP_VERSION = "20261122-efficiency1";
+  let starMapLoadPromise = null;
+
+  function loadStarMapScript() {
+    if (global.VKSStarMap) return Promise.resolve();
+    if (starMapLoadPromise) return starMapLoadPromise;
+    starMapLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "/star_map.js?v=" + STAR_MAP_VERSION;
+      script.async = true;
+      script.onload = () => {
+        if (global.VKSStarMap) resolve();
+        else reject(new Error("星图脚本已加载，但没有注册组件。"));
+      };
+      script.onerror = () => reject(new Error("无法加载星图脚本。"));
+      document.head.appendChild(script);
+    }).catch((error) => {
+      starMapLoadPromise = null;
+      throw error;
+    });
+    return starMapLoadPromise;
+  }
 
   function rich(value) {
     const box = h("span", "kp-rich");
@@ -1534,17 +1556,54 @@
     pages.knowledge = knowledgePage;
 
     const starPage = h("div", "kp-page");
-    const starMap = renderStarMap(
-      note,
-      lesson,
-      courseGraph,
-      onSeek,
-      onOpenEpisode,
-      () => switchTab("knowledge"),
-    );
-    starPage.appendChild(starMap);
+    const starHost = h("div", "kp-star-lazy-host");
+    let starMap = null;
+    let starLoading = false;
+    let starActive = false;
+    const showStarMessage = (message, retry) => {
+      starHost.innerHTML = "";
+      const node = section("知识星图", "首次打开时才加载布局与绘制组件");
+      node.appendChild(h("p", retry ? "kp-error" : "kp-mind-empty", message));
+      if (retry) {
+        const button = h("button", "kp-secondary", "重试加载");
+        button.type = "button";
+        button.onclick = () => starPage._kpActivate(true);
+        node.appendChild(button);
+      }
+      starHost.appendChild(node);
+    };
+    showStarMessage("星图仅在首次打开时加载，不会拖慢视频和普通笔记。", false);
+    starPage.appendChild(starHost);
     starPage._kpActivate = (active) => {
-      if (starMap && starMap._kpActivate) starMap._kpActivate(active);
+      starActive = Boolean(active);
+      if (starMap) {
+        if (starMap._kpActivate) starMap._kpActivate(starActive);
+        return;
+      }
+      if (!starActive || starLoading) return;
+      starLoading = true;
+      showStarMessage("正在加载星图组件与课程知识网络…", false);
+      loadStarMapScript()
+        .then(() => {
+          if (!starActive) return;
+          starMap = renderStarMap(
+            note,
+            lesson,
+            courseGraph,
+            onSeek,
+            onOpenEpisode,
+            () => switchTab("knowledge"),
+          );
+          starHost.innerHTML = "";
+          starHost.appendChild(starMap);
+          if (starMap && starMap._kpActivate) starMap._kpActivate(true);
+        })
+        .catch((error) => {
+          showStarMessage(error.message || "星图加载失败。", true);
+        })
+        .finally(() => {
+          starLoading = false;
+        });
     };
     pages.star = starPage;
 

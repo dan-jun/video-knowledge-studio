@@ -25,6 +25,7 @@
     currentTimeline: -1,
     deepNote: null,
     courseGraph: null,
+    courseGraphKey: null,
     deepStatus: { state: "idle", stage: "" },
   };
 
@@ -1366,6 +1367,9 @@
       bindVideo();
       return;
     }
+    const courseKey = project.knowledge || project.courseId || project.courseTitle || project.id;
+    if (S.courseGraphKey !== courseKey) S.courseGraph = null;
+    S.courseGraphKey = courseKey;
     S.project = project;
     S.data = null;
     S.kstate = null;
@@ -1374,13 +1378,26 @@
     S.selected = null;
     S.currentTimeline = -1;
     S.deepNote = null;
-    S.courseGraph = null;
     S.deepStatus = { state: "idle", stage: "" };
     const seq = ++S.loadSeq;
     root.innerHTML = '<div class="k-loading"><div class="k-spinner"></div>正在装入 87 讲知识数据…</div>';
     try {
-      const res = await fetch("/api/knowledge?id=" + encodeURIComponent(project.id));
-      const d = await res.json();
+      const knowledgeRequest = fetch(
+        "/api/knowledge?id=" + encodeURIComponent(project.id)
+      ).then((response) => response.json());
+      const deepRequest = fetch(
+        "/api/knowledge/deep?id=" + encodeURIComponent(project.id)
+      ).then((response) => response.json()).catch(() => ({ ok: false }));
+      const graphRequest = S.courseGraph
+        ? Promise.resolve({ ok: true, graph: S.courseGraph, reused: true })
+        : fetch(
+          "/api/knowledge/course-graph?id=" + encodeURIComponent(project.id)
+        ).then((response) => response.json()).catch(() => ({ ok: false }));
+      const [d, deep, graph] = await Promise.all([
+        knowledgeRequest,
+        deepRequest,
+        graphRequest,
+      ]);
       if (seq !== S.loadSeq) return;
       if (!d.ok) throw new Error(d.error || "载入失败");
       S.data = d;
@@ -1389,26 +1406,12 @@
       if (window.__vp && window.__vp.setSubtitles) {
         window.__vp.setSubtitles((d.episode && d.episode.transcript) || []);
       }
-      try {
-        const deepRes = await fetch("/api/knowledge/deep?id=" + encodeURIComponent(project.id));
-        const deep = await deepRes.json();
-        if (seq !== S.loadSeq) return;
-        S.deepNote = deep.ok ? deep.note : null;
-        if (!S.deepNote && deep.reason) {
-          S.deepStatus = { state: "failed", stage: "无法生成", error: deep.reason };
-        }
-      } catch (_) {
-        S.deepNote = null;
+      S.deepNote = deep.ok ? deep.note : null;
+      if (!S.deepNote && deep.reason) {
+        S.deepStatus = { state: "failed", stage: "无法生成", error: deep.reason };
       }
-      try {
-        const graphRes = await fetch(
-          "/api/knowledge/course-graph?id=" + encodeURIComponent(project.id)
-        );
-        const graph = await graphRes.json();
-        if (seq !== S.loadSeq) return;
+      if (!graph.reused) {
         S.courseGraph = graph.ok ? graph.graph : null;
-      } catch (_) {
-        S.courseGraph = null;
       }
       render();
     } catch (err) {
@@ -1416,6 +1419,7 @@
       if (window.__vp && window.__vp.setSubtitles) window.__vp.setSubtitles([]);
       S.deepNote = null;
       S.courseGraph = null;
+      S.courseGraphKey = null;
       S.deepStatus = { state: "idle", stage: "" };
       root.innerHTML = "";
       const fail = el("div", "k-empty", err.message || String(err));
@@ -1429,6 +1433,8 @@
     S.data = null;
     S.index = null;
     S.kstate = null;
+    S.courseGraph = null;
+    S.courseGraphKey = null;
     const root = byId("knowledge");
     if (root) root.innerHTML = "";
     const dock = byId("kaidock");
