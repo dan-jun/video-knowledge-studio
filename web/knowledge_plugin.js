@@ -203,12 +203,6 @@
     if (quality.knowledgeAtoms) {
       top.appendChild(h("span", "kp-coverage", quality.knowledgeAtoms + " 个知识原子"));
     }
-    if (quality.visualEvidenceCount) {
-      const reviewed = Number(quality.visualClusters || 0);
-      top.appendChild(h("span", "kp-coverage",
-        quality.visualEvidenceCount + " 张入选画面" + (reviewed ? " · " + reviewed + " 组已审核" : "")));
-    }
-    top.appendChild(h("span", "kp-model", note.model || "AI 综合"));
     hero.appendChild(top);
 
     hero.appendChild(h("div", "kp-kicker", "本讲要回答"));
@@ -218,7 +212,11 @@
     hero.appendChild(thesis);
 
     const actions = h("div", "kp-actions");
-    actions.appendChild(jumpButton(note.mentalModel?.[0]?.time || "", onSeek, "从知识主线开始"));
+    const start = jumpButton(note.mentalModel?.[0]?.time || "", onSeek, "从知识主线开始");
+    start.classList.add("kp-primary");
+    actions.appendChild(start);
+    const tools = h("details", "kp-tool-menu");
+    tools.appendChild(h("summary", "", "更多工具"));
     const copy = h("button", "kp-secondary", "复制 Markdown");
     copy.type = "button";
     copy.onclick = async () => {
@@ -229,12 +227,13 @@
         copy.textContent = "复制失败";
       }
     };
-    actions.appendChild(copy);
+    tools.appendChild(copy);
     const regen = h("button", "kp-ghost", status && status.state === "running" ? "生成中…" : "重新生成");
     regen.type = "button";
     regen.disabled = !!(status && status.state === "running");
     regen.onclick = () => onGenerate(true);
-    actions.appendChild(regen);
+    tools.appendChild(regen);
+    actions.appendChild(tools);
     hero.appendChild(actions);
     return hero;
   }
@@ -254,7 +253,7 @@
 
   function renderMentalModel(note, onSeek) {
     if (!(note.mentalModel || []).length) return null;
-    const node = section("一张图看懂知识主线", "不是章节列表，而是问题 → 机制 → 结果");
+    const node = section("先读懂这条主线", "先建立问题 → 机制 → 结果的全局，再进入细节");
     const flow = h("div", "kp-flow");
     note.mentalModel.forEach((row, index) => {
       const card = h("article", "kp-flow-step");
@@ -276,7 +275,7 @@
     const nodes = graph.nodes || [];
     const edges = graph.edges || [];
     if (nodes.length < 2 || !edges.length) return null;
-    const node = section("核心概念网络", "顶层锚点 + 前置、因果、对比、例子与应用关系；完整细分知识在下方原子层");
+    const node = section("本讲核心锚点", "先读一句解释；点击锚点后只展开它在网络中的直接关系");
     const canvas = h("div", "kp-graph");
     const width = 760;
     const height = 390;
@@ -287,6 +286,28 @@
       const rank = { core: 0, mechanism: 1, boundary: 2, application: 3 };
       return (rank[a.role] ?? 9) - (rank[b.role] ?? 9);
     });
+    const anchorList = h("div", "kp-anchor-list");
+    const anchorRows = {};
+    const network = h("details", "kp-network");
+    const networkSummary = h("summary", "kp-network-summary");
+    networkSummary.appendChild(h("b", "", "展开关系网络与讲解证据"));
+    networkSummary.appendChild(h("small", "", edges.length + " 条直接关系 · 默认收起"));
+    network.appendChild(networkSummary);
+    ordered.forEach((row) => {
+      const concept = (note.concepts || []).find((item) => item.title === row.conceptTitle);
+      const button = h("button", "kp-anchor-row");
+      button.type = "button";
+      button.appendChild(h("b", "", row.conceptTitle));
+      if (concept?.oneLine || row.summary) {
+        button.appendChild(h("p", "", concept?.oneLine || row.summary));
+      }
+      const time = concept?.evidence?.[0]?.time || "";
+      if (time) button.appendChild(h("small", "", time));
+      button.onclick = () => showFocus(row.conceptTitle);
+      anchorRows[row.conceptTitle] = button;
+      anchorList.appendChild(button);
+    });
+    node.appendChild(anchorList);
     ordered.forEach((row, index) => {
       const angle = -Math.PI / 2 + (Math.PI * 2 * index) / ordered.length;
       const radiusX = Math.min(285, 125 + ordered.length * 22);
@@ -366,11 +387,12 @@
       legend.appendChild(item);
     });
     canvas.appendChild(legend);
-    node.appendChild(canvas);
+    network.appendChild(canvas);
 
     const focus = h("div", "kp-focus-panel");
     focus.hidden = true;
-    node.appendChild(focus);
+    network.appendChild(focus);
+    node.appendChild(network);
 
     function clearFocus() {
       Object.values(nodeElements).forEach((element) => {
@@ -379,6 +401,7 @@
       edgeElements.forEach(({ element }) => {
         element.classList.remove("focused", "dimmed");
       });
+      Object.values(anchorRows).forEach((element) => element.classList.remove("selected"));
       focus.hidden = true;
       focus.innerHTML = "";
     }
@@ -387,6 +410,10 @@
       const graphNode = nodes.find((row) => row.conceptTitle === title);
       const concept = (note.concepts || []).find((row) => row.title === title);
       if (!graphNode || !concept) return;
+      network.open = true;
+      Object.entries(anchorRows).forEach(([name, element]) => {
+        element.classList.toggle("selected", name === title);
+      });
       const adjacent = new Set([title]);
       const relationRows = [];
       edges.forEach((edge) => {
@@ -1109,6 +1136,8 @@
         button.classList.toggle("active", key === name);
         button.setAttribute("aria-selected", key === name ? "true" : "false");
       });
+      const scrollHost = host.closest && host.closest("#knowledge");
+      if (scrollHost) scrollHost.scrollTop = 0;
     }
 
     [
@@ -1128,16 +1157,23 @@
 
     const learnPage = h("div", "kp-page");
     [
-      renderSemanticReview(note.semanticReview, onSeek),
-      renderGoals(note),
       renderMentalModel(note, onSeek),
       renderConceptGraph(
         note, onSeek, lesson, mastery, refreshReview, courseGraph, onOpenEpisode
       ),
-      renderCourseSystem(courseGraph, onOpenEpisode),
     ].forEach((node) => {
       if (node) learnPage.appendChild(node);
     });
+    const libraryLink = h("button", "kp-library-link");
+    libraryLink.type = "button";
+    libraryLink.appendChild(h("b", "", "进入完整知识库"));
+    libraryLink.appendChild(h("span", "",
+      (note.concepts || []).length + " 个锚点 · " +
+      (note.knowledgeAtoms || []).length + " 条原子 · 证据、对比、画面全部保留"
+    ));
+    libraryLink.appendChild(h("i", "", "→"));
+    libraryLink.onclick = () => switchTab("knowledge");
+    learnPage.appendChild(libraryLink);
     pages.learn = learnPage;
 
     const knowledgePage = h("div", "kp-page");
@@ -1156,6 +1192,9 @@
       renderCoverage(note, onSeek),
       renderVisual(note, lesson, onSeek),
       renderVisualAudit(note, onSeek),
+      renderCourseSystem(courseGraph, onOpenEpisode),
+      renderGoals(note),
+      renderSemanticReview(note.semanticReview, onSeek),
     ].forEach((node) => {
       if (node) knowledgePage.appendChild(node);
     });

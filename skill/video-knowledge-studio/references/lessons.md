@@ -1,5 +1,24 @@
 # Lessons
 
+## 2026-11-22 - Do not stack the new knowledge plugin over the old report
+
+**Symptom:** The new Learning/Knowledge/Review surface still felt noisy and its text
+was too small. The page showed the deep-note view, then repeated the old summary,
+timeline, terms, network, recall and evidence sections underneath it.
+
+**Root cause:** The plugin added a second knowledge experience without hiding the
+legacy renderer. The note pane also kept only 43% of the workspace, forcing dense
+8–11px typography and a miniature graph.
+
+**Fix:** Give the reading pane about 61% of the desktop width, raise primary questions
+to 24px and body copy to 14–16px, replace tiny graph-first navigation with large anchor
+cards, and collapse the graph until an anchor is selected. Toggle a `has-deep-note`
+state that hides legacy duplicate sections only while a deep note is available.
+
+**Verification:** In the live player the note pane was 902px wide, primary question
+24px, anchor summaries 14px, the graph was closed by default, nine legacy sections were
+hidden, and full anchors/atoms/course structure remained accessible from Knowledge.
+
 ## 2026-11-22 - Knowledge completeness still needs a usable learning entry
 
 **Symptom:** The course graph contained 656 canonical concepts, 3,486 atoms and 983

@@ -180,6 +180,13 @@ The timeline is the main connection between reading and watching:
   atom catalog into **Knowledge**, and reserves **Review** for concepts marked
   “unsure” or “not yet.” Clicking a graph node focuses that anchor, its direct
   neighbours, definitions, mechanisms, evidence and cross-lesson occurrences.
+- Reading mode gives the note pane more space than the video and scales primary
+  questions, explanations and controls for comfortable reading. The relationship graph
+  stays collapsed until requested; selecting a large anchor card opens the focused
+  graph instead of forcing users to decode a dense miniature map.
+- When deep notes are present, legacy summary and timeline cards are suppressed to
+  avoid rendering two competing note systems. They remain the fallback for lessons
+  without a deep note, and their complete source material is represented in Knowledge.
 - Mastery is stored per lesson in the browser's local storage. It does not require an
   account or upload learning state to a server, and the review queue survives a page
   refresh on the same device and browser profile.

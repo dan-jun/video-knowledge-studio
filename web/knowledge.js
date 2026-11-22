@@ -208,6 +208,8 @@
 
   function paintDeepPlugin(host, lesson) {
     if (!host || !lesson) return;
+    const root = byId("knowledge");
+    if (root) root.classList.toggle("has-deep-note", !!S.deepNote);
     if (!window.VKSKnowledgePlugin) {
       host.innerHTML = "";
       host.appendChild(el("div", "kp-error", "知识总结插件未加载，请刷新页面"));

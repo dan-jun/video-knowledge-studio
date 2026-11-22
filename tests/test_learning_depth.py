@@ -51,9 +51,9 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
         self.assertIn("展开全部", knowledge)
         self.assertIn("window.VKSKnowledgePlugin.render", knowledge)
         self.assertIn("/api/knowledge/course-graph?id=", knowledge)
-        self.assertIn('<script src="/knowledge_plugin.js"></script>', index)
+        self.assertIn('/knowledge_plugin.js?v=', index)
         self.assertIn("证据覆盖", plugin)
-        self.assertIn("核心概念", plugin)
+        self.assertIn("本讲核心锚点", plugin)
         self.assertIn("renderConceptGraph", plugin)
         self.assertIn("概念知识网", plugin)
         self.assertIn("renderVisualAudit", plugin)
@@ -76,6 +76,8 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
 
     def test_focus_views_review_queue_and_cross_episode_links(self):
         plugin = (ROOT / "web" / "knowledge_plugin.js").read_text(encoding="utf-8")
+        css = (ROOT / "web" / "knowledge.css").read_text(encoding="utf-8")
+        knowledge = (ROOT / "web" / "knowledge.js").read_text(encoding="utf-8")
         for token in (
             "kp-tab-shell",
             "renderReviewQueue",
@@ -86,8 +88,26 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
             "会",
             "模糊",
             "不会",
+            "kp-anchor-row",
+            "kp-network",
+            "进入完整知识库",
         ):
             self.assertIn(token, plugin)
+        for token in (
+            "grid-template-columns:220px minmax(400px,39fr) minmax(620px,61fr)",
+            "#knowledge.has-deep-note>.k-section",
+            ".kp-anchor-list",
+            ".kp-question",
+            "font-size:24px",
+            "font-size:16px",
+        ):
+            self.assertIn(token, css)
+        self.assertIn('classList.toggle("has-deep-note", !!S.deepNote)', knowledge)
+        learn_block = plugin[plugin.index("const learnPage"):plugin.index("pages.learn = learnPage")]
+        knowledge_block = plugin[plugin.index("const knowledgePage"):plugin.index("pages.knowledge = knowledgePage")]
+        for low_frequency in ("renderSemanticReview", "renderGoals", "renderCourseSystem"):
+            self.assertNotIn(low_frequency, learn_block)
+            self.assertIn(low_frequency, knowledge_block)
         script = r"""
 const P = require(process.argv[1]);
 const graph = {

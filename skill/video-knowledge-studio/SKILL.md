@@ -40,6 +40,13 @@ that equal concept labels alone are enough to build a working navigation target.
 Mastery is per lesson and stored in browser local storage. Do not describe it as an
 account-level or cross-device feature.
 
+Use a reading-first presentation rather than a dense dashboard. Give the note pane the
+majority of the workspace, keep primary questions around 24px and explanatory text at
+least 14px, present core anchors as readable cards, and collapse the detailed graph
+until the learner selects an anchor. When a deep-note artifact is active, suppress the
+legacy summary, timeline, term and recall blocks instead of stacking both note systems;
+keep the legacy view only as a fallback when no deep note exists.
+
 For requests that start from a work, research, project or interview knowledge gap rather
 than an existing course, use the companion `$demand-driven-video-learning` Skill to plan
 the learning path, find multiple sources, render the integrated course, and create notes.

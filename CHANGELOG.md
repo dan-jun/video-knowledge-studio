@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Added a reading-first layout for course notes: the knowledge pane now receives
+  roughly 61% of the workspace, primary questions render at 24px, explanatory text at
+  14–16px, and the core-anchor navigator uses large vertical cards instead of tiny
+  graph labels.
+- The core relationship graph is collapsed behind an explicit disclosure. Selecting an
+  anchor opens that disclosure and focuses the anchor, its direct neighbours and
+  source evidence without exposing the entire course network at once.
+- When a deep-note artifact is available, the legacy summary, timeline, term, recall
+  and visual sections are no longer stacked underneath the new note. The legacy view
+  remains as a fallback when no deep note exists, while complete anchors, atoms,
+  evidence and course structure remain available in the Knowledge tab.
 - Reworked the knowledge surface into compact Learning, full Knowledge and personal
   Review views instead of one long report. The Learning view now shows the lesson,
   study goals, knowledge line and core network without exposing the complete atom
