@@ -622,3 +622,20 @@ cross-lesson E05/E06 links and opening E05 changed the active lesson.
   about 374 ms to 62–125 ms; full base paint fell to about 9 ms and drag preview to about
   6 ms in the real local app; search, relation filtering, neighborhood detail and reset
   worked; the canvas frame counter remained unchanged after the idle animation window.
+
+## 2026-11-22 - Mind maps must reuse the knowledge ledger and render lazily
+
+- **Symptom:** A course UI can look like it has a mind map while showing only subtitles or
+  a generic concept network, and expanding a large chapter can block on thousands of
+  hidden leaf nodes.
+- **Root cause:** The visual tree was treated as a drawing concern instead of a second
+  projection of the existing anchor/atom ledger, and chapter atoms were eagerly inserted
+  even when every lesson branch was collapsed.
+- **Fix:** Build episode maps as central question → core anchors → atoms, and chapter
+  maps as chapter → lessons → atoms. Assign every atom exactly once, retain evidence
+  timestamps, lazy-build a chapter tree only on open, and lazy-build each lesson's
+  leaves only when that branch opens.
+- **Verification:** All 87 episode notes and all five chapters reproduce their input atom
+  IDs exactly once; E03 shows 28/28 atoms and chapter 1 shows 375/375. In the local app,
+  the 1,202-atom chapter tree built in about 3 ms and its first 55-atom lesson branch in
+  about 1.4 ms; time seeking and cross-episode opening were exercised in the browser.

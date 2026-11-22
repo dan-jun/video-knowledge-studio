@@ -21,6 +21,16 @@
     closure: "收束",
     claim: "要点",
   };
+  const RELATION_LABELS = {
+    prerequisite: "前置",
+    mechanism: "机制",
+    cause: "因果",
+    contrast: "对比",
+    example: "例子",
+    application: "应用",
+    grouping: "体系分支",
+  };
+  const MIND_COLORS = ["#58d8f2", "#67dfb2", "#f0c36d", "#ef9388", "#ae94ef", "#7ca8f2", "#9bb1bb"];
 
   function rich(value) {
     const box = h("span", "kp-rich");
@@ -161,6 +171,156 @@
     return box;
   }
 
+  function atomLeaf(atom, fallback) {
+    const row = atom || {};
+    const extra = fallback || {};
+    const title = clean(row.title || row.label || row.claim || row.atomId || row.id || "知识原子");
+    const claim = clean(row.claim || row.detail || "");
+    return {
+      id: clean(row.atomId || row.id || ""),
+      title,
+      detail: claim && claim !== title ? claim : "",
+      time: clean(row.time || ""),
+      start: Number.isFinite(Number(row.start)) ? Number(row.start) : null,
+      kind: clean(row.kind || "claim"),
+      episodeId: clean(row.episodeId || extra.episodeId || ""),
+      conceptTitles: (row.conceptTitles || extra.conceptTitles || []).map(clean).filter(Boolean),
+    };
+  }
+
+  function buildEpisodeMindMap(note) {
+    const source = note || {};
+    const graphNodes = (source.conceptGraph?.nodes || []).slice();
+    const rank = { core: 0, mechanism: 1, boundary: 2, application: 3 };
+    graphNodes.sort((left, right) => (
+      (rank[left.role] ?? 9) - (rank[right.role] ?? 9)
+    ));
+    const conceptsByTitle = Object.fromEntries(
+      (source.concepts || []).map((row) => [clean(row.title), row])
+    );
+    const edges = source.conceptGraph?.edges || [];
+    const branches = [];
+    const byTitle = new Map();
+    const ensureBranch = (title, graphNode) => {
+      const name = clean(title) || "补充知识";
+      if (byTitle.has(name)) return byTitle.get(name);
+      const concept = conceptsByTitle[name] || {};
+      const branch = {
+        title: name,
+        subtitle: clean(graphNode?.summary || concept.oneLine || ""),
+        role: clean(graphNode?.role || "detail"),
+        relations: [],
+        leaves: [],
+      };
+      byTitle.set(name, branch);
+      branches.push(branch);
+      return branch;
+    };
+    graphNodes.forEach((row) => ensureBranch(row.conceptTitle, row));
+    (source.knowledgeAtoms || []).forEach((atom) => {
+      const titles = (atom.conceptTitles || []).map(clean).filter(Boolean);
+      const matched = titles.find((title) => byTitle.has(title));
+      const title = matched || titles[0] || clean(atom.topic) || "补充知识";
+      ensureBranch(title, graphNodes.find((row) => clean(row.conceptTitle) === title))
+        .leaves.push(atomLeaf(atom, { episodeId: source.episodeId }));
+    });
+    branches.forEach((branch) => {
+      const relations = new Set();
+      edges.forEach((edge) => {
+        if (clean(edge.from) !== branch.title && clean(edge.to) !== branch.title) return;
+        relations.add(RELATION_LABELS[clean(edge.type)] || clean(edge.type) || "关系");
+      });
+      branch.relations = Array.from(relations);
+      branch.meta = branch.leaves.length + " 原子" +
+        (branch.relations.length ? " · " + branch.relations.slice(0, 3).join(" / ") : "");
+    });
+    return {
+      kind: "episode",
+      root: {
+        kicker: "本讲",
+        title: clean(source.title || source.centralQuestion || "本讲知识"),
+        subtitle: clean(source.centralQuestion || source.bigIdea || ""),
+        meta: (source.knowledgeAtoms || []).length + " 个知识原子 · " +
+          graphNodes.length + " 个核心锚点 · " + edges.length + " 条关系",
+      },
+      branches,
+      leafCount: (source.knowledgeAtoms || []).length,
+    };
+  }
+
+  function buildChapterMindMap(chapter, courseGraph) {
+    const source = chapter || {};
+    const graph = courseGraph || {};
+    const nodesById = Object.fromEntries((graph.nodes || []).map((row) => [clean(row.id), row]));
+    const atomsById = Object.fromEntries(
+      (graph.knowledgeAtoms || []).map((row) => [clean(row.id || row.atomId), row])
+    );
+    const lessonsById = Object.fromEntries((graph.lessons || []).map((row) => [clean(row.id), row]));
+    let lessons = (source.lessonIds || []).map((id) => lessonsById[clean(id)]).filter(Boolean);
+    if (!lessons.length) {
+      lessons = (graph.lessons || []).filter((row) => clean(row.chapterId) === clean(source.id));
+    }
+    lessons.sort((left, right) => Number(left.episode || 0) - Number(right.episode || 0));
+    const usedAtoms = new Set();
+    const branches = lessons.map((lesson) => {
+      const lessonId = clean(lesson.id);
+      let rows = (lesson.knowledgeAtomIds || [])
+        .map((id) => atomsById[clean(id)])
+        .filter(Boolean);
+      if (!rows.length) {
+        rows = (graph.knowledgeAtoms || []).filter((atom) => (
+          clean(atom.lessonId) === lessonId ||
+          Number(atom.episode) === Number(lesson.episode)
+        ));
+      }
+      rows = rows.filter((atom) => !usedAtoms.has(clean(atom.id || atom.atomId)));
+      const titles = (lesson.conceptIds || [])
+        .map((id) => clean(nodesById[clean(id)]?.label || id))
+        .filter(Boolean);
+      const target = episodeTarget(graph, lesson);
+      const leaves = rows.map((atom) => {
+        const id = clean(atom.id || atom.atomId);
+        if (id) usedAtoms.add(id);
+        return atomLeaf(atom, { episodeId: target, conceptTitles: titles });
+      });
+      return {
+        title: Number.isFinite(Number(lesson.episode))
+          ? "E" + String(Number(lesson.episode)).padStart(2, "0")
+          : lessonId,
+        subtitle: clean(lesson.label || lesson.title || lessonId),
+        meta: leaves.length + " 原子" + (titles.length ? " · " + titles.slice(0, 3).join(" / ") : ""),
+        relations: titles.slice(0, 3),
+        leaves,
+      };
+    });
+    const leftovers = (source.atomIds || [])
+      .map((id) => atomsById[clean(id)])
+      .filter((atom) => atom && !usedAtoms.has(clean(atom.id || atom.atomId)))
+      .map((atom) => atomLeaf(atom, { episodeId: "" }));
+    if (leftovers.length) {
+      branches.push({
+        title: "章节补充",
+        subtitle: "未归入单一讲次的章节知识",
+        meta: leftovers.length + " 原子",
+        relations: [],
+        leaves: leftovers,
+      });
+    }
+    const conceptCount = (source.conceptIds || []).length;
+    const leafCount = branches.reduce((sum, branch) => sum + branch.leaves.length, 0);
+    return {
+      kind: "chapter",
+      root: {
+        kicker: "章节",
+        title: clean(source.label || source.title || source.id || "本章"),
+        subtitle: "以讲次为分支，把本章概念与完整知识原子连成一张可追溯的导图。",
+        meta: lessons.length + " 讲 · " + conceptCount + " 个核心锚点 · " + leafCount + " 个知识原子",
+      },
+      branches,
+      leafCount,
+    };
+  }
+
   function renderEmpty(lesson, status, onGenerate) {
     const box = h("section", "kp-empty");
     box.dataset.vksKnowledgePlugin = "empty";
@@ -265,6 +425,119 @@
       if (index < note.mentalModel.length - 1) flow.appendChild(h("i", "kp-arrow", "→"));
     });
     node.appendChild(flow);
+    return node;
+  }
+
+  function renderMindMapTree(map, options) {
+    const opt = options || {};
+    const shell = h("div", "kp-mindmap");
+    const toolbar = h("div", "kp-mindmap-toolbar");
+    toolbar.appendChild(h("span", "", map.leafCount + " 个知识原子全覆盖"));
+    const expand = h("button", "kp-ghost", "全部展开");
+    const collapse = h("button", "kp-ghost", "全部收起");
+    expand.type = "button";
+    collapse.type = "button";
+    toolbar.appendChild(expand);
+    toolbar.appendChild(collapse);
+    shell.appendChild(toolbar);
+
+    const grid = h("div", "kp-mindmap-grid");
+    const rootCard = h("article", "kp-mindmap-root");
+    rootCard.appendChild(h("span", "kp-overline", map.root.kicker));
+    rootCard.appendChild(h("b", "", map.root.title));
+    if (map.root.subtitle) rootCard.appendChild(h("p", "", map.root.subtitle));
+    rootCard.appendChild(h("small", "", map.root.meta));
+    grid.appendChild(rootCard);
+
+    const branchWrap = h("div", "kp-mind-branches");
+    const branchDetails = [];
+    (map.branches || []).forEach((branch, index) => {
+      const color = MIND_COLORS[index % MIND_COLORS.length];
+      const details = h("details", "kp-mind-branch");
+      details.style.setProperty("--mind-color", color);
+      if (index === 0 && opt.openFirst) details.open = true;
+      const summary = h("summary", "kp-mind-branch-head");
+      const marker = h("i", "kp-mind-branch-dot");
+      summary.appendChild(marker);
+      const head = h("span", "kp-mind-branch-copy");
+      head.appendChild(h("b", "", branch.title));
+      if (branch.subtitle) head.appendChild(h("small", "", branch.subtitle));
+      summary.appendChild(head);
+      const meta = h("span", "kp-mind-branch-meta");
+      meta.appendChild(h("em", "", String(branch.leaves.length)));
+      meta.appendChild(h("small", "", "原子"));
+      summary.appendChild(meta);
+      details.appendChild(summary);
+      if ((branch.relations || []).length) {
+        const relations = h("div", "kp-mind-relations");
+        branch.relations.slice(0, 4).forEach((label) => {
+          relations.appendChild(h("span", "", label));
+        });
+        details.appendChild(relations);
+      }
+      const leaves = h("div", "kp-mind-leaves");
+      let leavesBuilt = false;
+      const buildLeaves = () => {
+        if (leavesBuilt) return;
+        leavesBuilt = true;
+        const startedAt = performance.now();
+        (branch.leaves || []).forEach((leaf, leafIndex) => {
+          const tag = opt.onLeaf ? "button" : "article";
+          const row = h(tag, "kp-mind-leaf");
+          if (tag === "button") {
+            row.type = "button";
+            row.setAttribute("aria-label", leaf.title);
+            row.onclick = () => opt.onLeaf(leaf, branch);
+          }
+          const top = h("span", "kp-mind-leaf-top");
+          top.appendChild(h("em", "", ATOM_KINDS[leaf.kind] || leaf.kind || "要点"));
+          top.appendChild(h("small", "", leaf.time || ""));
+          row.appendChild(top);
+          row.appendChild(h("b", "", leaf.title));
+          if (leaf.detail) row.appendChild(h("p", "", leaf.detail));
+          if ((leaf.conceptTitles || []).length > 1 && map.kind === "chapter") {
+            row.appendChild(h("small", "kp-mind-leaf-links",
+              "关联：" + leaf.conceptTitles.slice(0, 3).join(" · ")));
+          }
+          row.style.setProperty("--leaf-index", String(leafIndex));
+          leaves.appendChild(row);
+        });
+        if (!leaves.children.length) {
+          leaves.appendChild(h("p", "kp-mind-empty", "这一分支暂无可展示的知识原子。"));
+        }
+        details.dataset.leafBuildMs = (performance.now() - startedAt).toFixed(1);
+      };
+      details.addEventListener("toggle", () => {
+        if (details.open) buildLeaves();
+      });
+      if (details.open) {
+        buildLeaves();
+      }
+      details.appendChild(leaves);
+      branchDetails.push(details);
+      branchWrap.appendChild(details);
+    });
+    grid.appendChild(branchWrap);
+    shell.appendChild(grid);
+    expand.onclick = () => branchDetails.forEach((row) => { row.open = true; });
+    collapse.onclick = () => branchDetails.forEach((row) => { row.open = false; });
+    return shell;
+  }
+
+  function renderEpisodeMindMap(note, onSeek) {
+    const map = buildEpisodeMindMap(note);
+    if (!(map.branches || []).length) return null;
+    const node = section(
+      "本讲思维导图",
+      "中心问题 → 核心锚点 → 完整知识原子；点叶子回到原片",
+      "kp-mindmap-section",
+    );
+    node.appendChild(renderMindMapTree(map, {
+      openFirst: true,
+      onLeaf: (leaf) => {
+        if (leaf.time && onSeek) onSeek(leaf.time);
+      },
+    }));
     return node;
   }
 
@@ -518,6 +791,42 @@
       const card = h("article", "kp-course-chapter");
       card.appendChild(h("span", "kp-step-no", String(index + 1).padStart(2, "0")));
       card.appendChild(h("h4", "", chapter.label));
+      const chapterMap = buildChapterMindMap(chapter, graph);
+      if ((chapterMap.branches || []).length) {
+        const mapDetails = h("details", "kp-chapter-map");
+        const mapSummary = h("summary", "kp-chapter-map-summary");
+        const mapHead = h("span", "kp-chapter-map-head");
+        mapHead.appendChild(h("em", "", "章节思维导图"));
+        mapHead.appendChild(h("b", "", chapterMap.root.title));
+        mapHead.appendChild(h("small", "", chapterMap.root.meta));
+        mapSummary.appendChild(mapHead);
+        const preview = h("span", "kp-chapter-map-preview");
+        chapterMap.branches.slice(0, 4).forEach((branch, branchIndex) => {
+          const item = h("span", "", branch.title);
+          item.style.setProperty("--mind-color", MIND_COLORS[branchIndex % MIND_COLORS.length]);
+          preview.appendChild(item);
+        });
+        if (chapterMap.branches.length > 4) {
+          preview.appendChild(h("span", "more", "+" + (chapterMap.branches.length - 4)));
+        }
+        mapSummary.appendChild(preview);
+        mapDetails.appendChild(mapSummary);
+        let mapBuilt = false;
+        mapDetails.addEventListener("toggle", () => {
+          card.classList.toggle("kp-map-open", mapDetails.open);
+          if (!mapDetails.open || mapBuilt) return;
+          mapBuilt = true;
+          const startedAt = performance.now();
+          mapDetails.appendChild(renderMindMapTree(chapterMap, {
+            openFirst: false,
+            onLeaf: (leaf) => {
+              if (leaf.episodeId && onOpenEpisode) onOpenEpisode(leaf.episodeId);
+            },
+          }));
+          mapDetails.dataset.buildMs = (performance.now() - startedAt).toFixed(1);
+        });
+        card.appendChild(mapDetails);
+      }
       card.appendChild(h("p", "",
         (chapter.episodes || []).length + " 讲 · " +
         (chapter.conceptIds || []).length + " 个核心锚点 · " +
@@ -1180,6 +1489,7 @@
 
     const learnPage = h("div", "kp-page");
     [
+      renderEpisodeMindMap(note, onSeek),
       renderMentalModel(note, onSeek),
       renderConceptGraph(
         note, onSeek, lesson, mastery, refreshReview, courseGraph, onOpenEpisode
@@ -1383,7 +1693,14 @@
     return rows.join("\n");
   }
 
-  const api = { render, generate, toMarkdown, relatedEpisodes };
+  const api = {
+    render,
+    generate,
+    toMarkdown,
+    relatedEpisodes,
+    buildEpisodeMindMap,
+    buildChapterMindMap,
+  };
   global.VKSKnowledgePlugin = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

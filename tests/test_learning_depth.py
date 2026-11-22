@@ -72,6 +72,9 @@ process.stdout.write(JSON.stringify({ units: units.length, segments: flat.length
         self.assertIn("全课程知识体系", plugin)
         self.assertIn("/media/knowledge-frame?id=", plugin)
         self.assertIn("renderStarMap", plugin)
+        self.assertIn("renderEpisodeMindMap", plugin)
+        self.assertIn("renderMindMapTree", plugin)
+        self.assertIn("kp-chapter-map", plugin)
         self.assertIn("kp-star-canvas", star)
         self.assertIn("VKSStarMap", star)
         self.assertIn("knowledgeAtoms", star)
@@ -209,6 +212,7 @@ process.stdout.write(JSON.stringify({ concepts: 2, atoms: 2, edges: 1 }));
 
     def test_star_map_has_bounded_on_demand_rendering(self):
         star = (ROOT / "web" / "star_map.js").read_text(encoding="utf-8")
+        plugin = (ROOT / "web" / "knowledge_plugin.js").read_text(encoding="utf-8")
         draw_frame = star[
             star.index("function drawFrame"):star.index("function stopLoop")
         ]
@@ -237,6 +241,80 @@ process.stdout.write(JSON.stringify({ concepts: 2, atoms: 2, edges: 1 }));
         self.assertIn("function strokeCurveBatch", star)
         self.assertIn("showOverviewAtomLinks", star)
         self.assertIn("salientConceptIds", star)
+        self.assertIn("dataset.leafBuildMs", plugin)
+        self.assertIn("if (!mapDetails.open || mapBuilt) return", plugin)
+
+    def test_episode_and_chapter_mind_maps_cover_every_atom_once(self):
+        script = r"""
+const P = require(process.argv[1]);
+const note = {
+  title: 'Demo lesson',
+  episodeId: 'e1',
+  centralQuestion: 'How does it work?',
+  conceptGraph: {
+    nodes: [
+      { conceptTitle: 'Alpha', role: 'core', summary: 'A' },
+      { conceptTitle: 'Beta', role: 'mechanism', summary: 'B' },
+      { conceptTitle: 'Gamma', role: 'application', summary: 'C' },
+    ],
+    edges: [{ from: 'Alpha', to: 'Beta', type: 'mechanism' }],
+  },
+  knowledgeAtoms: [
+    { atomId: 'a1', title: 'A1', claim: 'first', conceptTitles: ['Alpha'], time: '00:01' },
+    { atomId: 'a2', title: 'A2', claim: 'second', conceptTitles: ['Beta'], time: '00:02' },
+    { atomId: 'a3', title: 'A3', claim: 'third', conceptTitles: ['Beta'], time: '00:03' },
+    { atomId: 'a4', title: 'A4', claim: 'fourth', conceptTitles: ['Gamma'], time: '00:04' },
+    { atomId: 'a5', title: 'A5', claim: 'fifth', conceptTitles: [], time: '00:05' },
+  ],
+};
+const episode = P.buildEpisodeMindMap(note);
+const episodeIds = episode.branches.flatMap((branch) => branch.leaves.map((leaf) => leaf.id)).sort();
+if (JSON.stringify(episodeIds) !== JSON.stringify(['a1', 'a2', 'a3', 'a4', 'a5'])) process.exit(2);
+if (episode.leafCount !== 5 || episode.branches.length !== 4) process.exit(3);
+
+const graph = {
+  nodes: [
+    { id: 'n1', label: 'Alpha' },
+    { id: 'n2', label: 'Beta' },
+  ],
+  lessons: [
+    { id: 'l1', episode: 1, episodeId: 'e1', chapterId: 'c1', label: 'One', conceptIds: ['n1'], knowledgeAtomIds: ['a1'] },
+    { id: 'l2', episode: 2, episodeId: 'e2', chapterId: 'c1', label: 'Two', conceptIds: ['n2'], knowledgeAtomIds: ['a2'] },
+  ],
+  knowledgeAtoms: [
+    { id: 'a1', title: 'A1', claim: 'first' },
+    { id: 'a2', title: 'A2', claim: 'second' },
+    { id: 'a3', title: 'A3', claim: 'third' },
+  ],
+};
+const chapter = P.buildChapterMindMap({
+  id: 'c1',
+  label: 'Chapter',
+  lessonIds: ['l1', 'l2'],
+  conceptIds: ['n1', 'n2'],
+  atomIds: ['a1', 'a2', 'a3'],
+}, graph);
+const chapterIds = chapter.branches.flatMap((branch) => branch.leaves.map((leaf) => leaf.id)).sort();
+if (JSON.stringify(chapterIds) !== JSON.stringify(['a1', 'a2', 'a3'])) process.exit(4);
+if (chapter.leafCount !== 3 || chapter.branches.length !== 3) process.exit(5);
+process.stdout.write(JSON.stringify({
+  episodeBranches: episode.branches.length,
+  episodeAtoms: episodeIds.length,
+  chapterBranches: chapter.branches.length,
+  chapterAtoms: chapterIds.length,
+}));
+"""
+        result = subprocess.run(
+            ["node", "-e", script, str(ROOT / "web" / "knowledge_plugin.js")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=True,
+        )
+        self.assertIn('"episodeAtoms":5', result.stdout)
+        self.assertIn('"chapterAtoms":3', result.stdout)
 
 
 if __name__ == "__main__":
