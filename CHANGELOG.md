@@ -17,6 +17,10 @@
   resumable review queue instead of producing empty approvals.
 - Added a typed, connected concept graph plus player rendering for prerequisite,
   mechanism, causal, contrast, example and application relationships.
+- Added explicit `grouping` edges for course-overview branches, so structural
+  taxonomy is represented honestly instead of forcing unsupported causal edges.
+- Empty OCR no longer causes an instructional frame to be discarded automatically;
+  manual frame review and restored OCR are preserved in the visual audit.
 - Added resumable course-wide generation and graph-building scripts for all episodes,
   with per-episode state, retries and input-hash validation.
 - Added an embedded course-system view with chapter maps and a full canonical concept

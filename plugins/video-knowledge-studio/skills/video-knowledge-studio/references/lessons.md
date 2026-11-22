@@ -489,3 +489,17 @@
   to the relevant panel. Do not use `zoompan` for interface closeups.
 - **Verification:** The final cut contains no AI waiting spinner; answer, evidence and
   gate logs are shown from fixed cropped screenshots with no scroll or cursor drift.
+
+## 2026-11-22 - Empty OCR is missing evidence, not proof a frame is unimportant
+
+- **Symptom:** Two course episodes automatically excluded every independent frame
+  group whose OCR was empty, then retained repair messages that contradicted the
+  final visual decisions.
+- **Root cause:** OCR presence was treated as the only proof of teaching value, and
+  repair logs were append-only after later human review reversed a decision.
+- **Fix:** Inspect the actual frame, add concise human OCR, record an explicit
+  decision for every candidate, and rewrite stale repair messages. Rebuild visual
+  evidence from the audit and keep the input hash synchronized.
+- **Verification:** The affected episodes re-passed fresh semantic review after
+  correcting a full working-set sequence, a per-channel CHCT definition, and two
+  unsupported concept edges.

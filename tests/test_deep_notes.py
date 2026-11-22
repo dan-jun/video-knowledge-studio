@@ -15,6 +15,7 @@ from vks.deep_notes import (
     cluster_visual_candidates,
     coverage_ratio,
     split_transcript_blocks,
+    visual_is_informative,
 )
 
 
@@ -354,6 +355,10 @@ class DeepNoteServiceTests(unittest.TestCase):
         self.assertEqual(len(candidates), 3)
         self.assertEqual(len({row["clusterId"] for row in candidates}), 2)
         self.assertEqual(candidates[0]["clusterId"], candidates[1]["clusterId"])
+
+    def test_title_only_ocr_is_not_decision_grade_visual_evidence(self):
+        self.assertFalse(visual_is_informative({"ocr": ["内中断的例子"]}))
+        self.assertTrue(visual_is_informative({"ocr": ["状态图", "就绪态"]}))
 
     def test_cache_names_cannot_collide_after_sanitizing(self):
         service = DeepNoteService(

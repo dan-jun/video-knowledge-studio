@@ -241,6 +241,7 @@
       ["contrast", "对比"],
       ["example", "例子"],
       ["application", "应用"],
+      ["grouping", "体系分支"],
     ].forEach(([type, label]) => {
       const item = h("span");
       item.appendChild(h("i", "edge-" + type));

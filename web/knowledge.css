@@ -453,7 +453,7 @@ body.knowledge-mode .head em{color:#8dcbdc}
 .kp-graph{position:relative;height:390px;border-radius:10px;border:1px solid rgba(0,229,255,.09);background:radial-gradient(circle at 50% 50%,rgba(0,229,255,.055),rgba(0,6,11,.72) 62%);overflow:hidden}
 .kp-graph-edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .kp-graph-edge{fill:none;stroke-width:1.2;opacity:.55;color:#4d8794}
-.edge-prerequisite{stroke:#59b8cb}.edge-mechanism{stroke:#59dcb0}.edge-cause{stroke:#ebbb65}.edge-contrast{stroke:#e58c72}.edge-example{stroke:#9a86e6}.edge-application{stroke:#6da7ef}
+.edge-prerequisite{stroke:#59b8cb}.edge-mechanism{stroke:#59dcb0}.edge-cause{stroke:#ebbb65}.edge-contrast{stroke:#e58c72}.edge-example{stroke:#9a86e6}.edge-application{stroke:#6da7ef}.edge-grouping{stroke:#8fa6b2;stroke-dasharray:5 4}
 .kp-graph-node{
   position:absolute;z-index:2;width:136px;min-height:58px;transform:translate(-50%,-50%);
   border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:7px 8px;text-align:left;
@@ -470,7 +470,7 @@ body.knowledge-mode .head em{color:#8dcbdc}
 .kp-graph-legend{position:absolute;left:8px;right:8px;bottom:7px;z-index:3;display:flex;gap:9px;flex-wrap:wrap;color:#688e98;font-size:7.8px}
 .kp-graph-legend span{display:inline-flex;align-items:center;gap:3px}
 .kp-graph-legend i{display:inline-block;width:12px;height:2px;background:currentColor}
-.kp-graph-legend .edge-prerequisite{color:#59b8cb}.kp-graph-legend .edge-mechanism{color:#59dcb0}.kp-graph-legend .edge-cause{color:#ebbb65}.kp-graph-legend .edge-contrast{color:#e58c72}.kp-graph-legend .edge-example{color:#9a86e6}.kp-graph-legend .edge-application{color:#6da7ef}
+.kp-graph-legend .edge-prerequisite{color:#59b8cb}.kp-graph-legend .edge-mechanism{color:#59dcb0}.kp-graph-legend .edge-cause{color:#ebbb65}.kp-graph-legend .edge-contrast{color:#e58c72}.kp-graph-legend .edge-example{color:#9a86e6}.kp-graph-legend .edge-application{color:#6da7ef}.kp-graph-legend .edge-grouping{color:#8fa6b2}
 .kp-course-system{cursor:pointer}
 .kp-course-system>summary,.kp-course-index>summary,.kp-course-group>summary{list-style:none;margin:0}
 .kp-course-system>summary::-webkit-details-marker,.kp-course-index>summary::-webkit-details-marker,.kp-course-group>summary::-webkit-details-marker{display:none}
