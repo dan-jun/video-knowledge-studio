@@ -59,7 +59,7 @@ assumes the plain-language meaning shown here.
 | Task | Current status |
 | --- | --- |
 | Play local courses, timed notes and contextual AI questions | Built into the app; a configured model is required for real AI answers |
-| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; requires a configured model and validates complete transcript accounting, a decision for every visual cluster, 5–9 concepts and a connected typed concept graph |
+| Rebuild one lesson into an evidence-linked deep knowledge note | Built into the player; validates complete transcript accounting, a decision for every visual cluster, a connected core-anchor graph and an unlimited deterministic knowledge-atom layer derived from every covered key point |
 | Generate every lesson and a course-wide knowledge graph | Provided as resumable batch scripts; each note must pass the per-lesson evidence gate before the course graph can be built |
 | Generate, check and render from a reviewed production spec | Built in; the persistent workflow pauses between stages for review |
 | Search Bilibili / YouTube | Optional Agent tool using `yt-dlp`; platform access can fail and results need review |
@@ -158,7 +158,7 @@ Do not invent unavailable sources or evidence.
 | --- | --- |
 | Course library | Find chapters and lessons, search titles, and inspect duration and knowledge-block counts |
 | Video player | Playback, speed, chapters, picture-in-picture, theater mode, screenshots, and fullscreen |
-| Knowledge notes | Terms, mechanisms, visual evidence, pitfalls, active recall, and the knowledge graph |
+| Knowledge notes | Core anchors, the complete searchable atom layer, visual evidence, pitfalls, active recall, and the multiscale knowledge graph |
 
 The timeline is the main connection between reading and watching:
 
@@ -172,6 +172,10 @@ The timeline is the main connection between reading and watching:
   uncertainty block; a visual ledger decides every frame while including only clusters
   with unique teaching information; and a typed concept graph connects all central
   concepts without isolated nodes.
+- Core anchors stay compact for navigation, while every instructional key point is
+  retained as a source-bound knowledge atom. The course view exposes
+  course → chapter → lesson → anchor → atom without forcing the default graph to show
+  every atom at once.
 - The player distinguishes current semantic review from a structural pass. Review
   sidecars are bound to the note, transcript and frame hashes, so any repair makes an
   older review visibly stale instead of silently reusing its approval.

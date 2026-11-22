@@ -9,6 +9,18 @@
 
   const clean = (value) => String(value == null ? "" : value).trim();
   const NS = "http://www.w3.org/2000/svg";
+  const ATOM_KINDS = {
+    definition: "定义",
+    mechanism: "机制",
+    cause: "因果",
+    comparison: "对比",
+    example: "例子",
+    formula: "公式",
+    boundary: "边界",
+    uncertain: "待核",
+    closure: "收束",
+    claim: "要点",
+  };
 
   function rich(value) {
     const box = h("span", "kp-rich");
@@ -82,7 +94,10 @@
     if (Number.isFinite(Number(quality.coverage))) {
       top.appendChild(h("span", "kp-coverage", "证据覆盖 " + Math.round(Number(quality.coverage) * 100) + "%"));
     }
-    if (quality.conceptCount) top.appendChild(h("span", "kp-coverage", quality.conceptCount + " 个核心概念"));
+    if (quality.conceptCount) top.appendChild(h("span", "kp-coverage", quality.conceptCount + " 个核心锚点"));
+    if (quality.knowledgeAtoms) {
+      top.appendChild(h("span", "kp-coverage", quality.knowledgeAtoms + " 个知识原子"));
+    }
     if (quality.visualEvidenceCount) {
       const reviewed = Number(quality.visualClusters || 0);
       top.appendChild(h("span", "kp-coverage",
@@ -154,7 +169,7 @@
     const nodes = graph.nodes || [];
     const edges = graph.edges || [];
     if (nodes.length < 2 || !edges.length) return null;
-    const node = section("概念知识网", "核心概念 + 前置、因果、对比、例子与应用关系");
+    const node = section("核心概念网络", "顶层锚点 + 前置、因果、对比、例子与应用关系；完整细分知识在下方原子层");
     const canvas = h("div", "kp-graph");
     const width = 760;
     const height = 390;
@@ -261,20 +276,43 @@
     summary.appendChild(h("small", "",
       (graph.stats?.episodes || 0) + " 讲 · " +
       (graph.stats?.canonicalConcepts || graph.nodes.length) + " 个规范概念 · " +
-      (graph.stats?.edges || 0) + " 条关系"
+      (graph.stats?.knowledgeAtoms || 0) + " 个知识原子 · " +
+      (graph.stats?.edges || 0) + " 条核心关系"
     ));
     details.appendChild(summary);
     const byId = Object.fromEntries((graph.nodes || []).map((row) => [row.id, row]));
+    const lessonsById = Object.fromEntries((graph.lessons || []).map((row) => [row.id, row]));
     const flow = h("div", "kp-course-flow");
     (graph.chapters || []).forEach((chapter, index) => {
       const card = h("article", "kp-course-chapter");
       card.appendChild(h("span", "kp-step-no", String(index + 1).padStart(2, "0")));
       card.appendChild(h("h4", "", chapter.label));
-      card.appendChild(h("p", "", (chapter.episodes || []).length + " 讲 · " + (chapter.conceptIds || []).length + " 个概念节点"));
+      card.appendChild(h("p", "",
+        (chapter.episodes || []).length + " 讲 · " +
+        (chapter.conceptIds || []).length + " 个核心锚点 · " +
+        (chapter.atomIds || []).length + " 个知识原子"
+      ));
       const tags = h("div", "kp-course-tags");
       (chapter.conceptIds || []).map((id) => byId[id]).filter(Boolean).slice(0, 5)
         .forEach((row) => tags.appendChild(h("span", "", row.label)));
       card.appendChild(tags);
+      const lessonDetails = h("details", "kp-course-lessons");
+      lessonDetails.appendChild(h("summary", "", "展开本章 " + (chapter.lessonIds || []).length + " 讲"));
+      const lessonList = h("div", "kp-course-lesson-list");
+      (chapter.lessonIds || []).map((id) => lessonsById[id]).filter(Boolean).forEach((lesson) => {
+        const button = h("button", "kp-course-lesson");
+        button.type = "button";
+        button.appendChild(h("b", "", "E" + String(lesson.episode).padStart(2, "0")));
+        button.appendChild(h("span", "", lesson.label));
+        button.appendChild(h("small", "", (lesson.knowledgeAtomCount || 0) + " 原子"));
+        button.onclick = (event) => {
+          event.stopPropagation();
+          if (onOpenEpisode && lesson.episodeId) onOpenEpisode(lesson.episodeId);
+        };
+        lessonList.appendChild(button);
+      });
+      lessonDetails.appendChild(lessonList);
+      card.appendChild(lessonDetails);
       const open = h("button", "kp-time", "打开第 " + (chapter.episodes?.[0] ?? "?") + " 讲");
       open.type = "button";
       open.onclick = () => {
@@ -295,7 +333,10 @@
     indexDetails.appendChild(h("summary", "", "展开全部概念索引"));
     (graph.chapters || []).forEach((chapter) => {
       const group = h("details", "kp-course-group");
-      group.appendChild(h("summary", "", chapter.label + " · " + (chapter.conceptIds || []).length + " 个概念"));
+      group.appendChild(h("summary", "",
+        chapter.label + " · " + (chapter.conceptIds || []).length +
+        " 个核心锚点 · " + (chapter.atomIds || []).length + " 个知识原子"
+      ));
       const list = h("div", "kp-course-concept-list");
       (chapter.conceptIds || []).map((id) => byId[id]).filter(Boolean).forEach((row) => {
         const item = h("div");
@@ -372,7 +413,7 @@
   }
 
   function renderConcepts(note, onSeek) {
-    const node = section("核心概念", "定义、机制、例子、边界、误区与证据放在一起");
+    const node = section("核心锚点", "顶层导航：定义、机制、例子、边界、误区与证据放在一起");
     (note.concepts || []).forEach((concept, index) => {
       const card = h("article", "kp-concept");
       const head = h("div", "kp-concept-head");
@@ -423,6 +464,90 @@
       node.appendChild(card);
     });
     return node;
+  }
+
+  function renderKnowledgeAtoms(note, onSeek) {
+    const atoms = note.knowledgeAtoms || [];
+    if (!atoms.length) return null;
+    const details = h("details", "kp-section kp-atom-atlas");
+    const summary = h("summary", "kp-head");
+    summary.appendChild(h("h3", "", "完整知识原子"));
+    summary.appendChild(h("small", "",
+      atoms.length + " 条细分知识 · 不设总量上限 · 每条可回到原片"
+    ));
+    details.appendChild(summary);
+
+    const toolbar = h("div", "kp-atom-toolbar");
+    const search = h("input", "kp-atom-search");
+    search.type = "search";
+    search.placeholder = "搜索本讲知识原子、锚点、块或时间…";
+    search.setAttribute("aria-label", "搜索知识原子");
+    toolbar.appendChild(search);
+    const visible = h("span", "kp-atom-visible", atoms.length + " 条");
+    toolbar.appendChild(visible);
+    details.appendChild(toolbar);
+
+    const groups = new Map();
+    atoms.forEach((atom) => {
+      const anchor = (atom.conceptTitles || [])[0] || "未归类";
+      if (!groups.has(anchor)) groups.set(anchor, []);
+      groups.get(anchor).push(atom);
+    });
+    const groupRoot = h("div", "kp-atom-groups");
+    groups.forEach((rows, anchor) => {
+      const group = h("details", "kp-atom-group");
+      const groupSummary = h("summary");
+      groupSummary.appendChild(h("b", "", anchor));
+      groupSummary.appendChild(h("span", "", rows.length + " 条"));
+      group.appendChild(groupSummary);
+      const list = h("div", "kp-atom-list");
+      rows.forEach((atom) => {
+        const card = h("article", "kp-atom");
+        card.dataset.search = [
+          atom.title, atom.claim, atom.topic, atom.blockId, atom.time,
+          ...(atom.conceptTitles || []),
+        ].join(" ").toLowerCase();
+        const top = h("div", "kp-atom-top");
+        top.appendChild(h("span", "kp-atom-kind kind-" + clean(atom.kind),
+          ATOM_KINDS[atom.kind] || atom.kind || "要点"));
+        top.appendChild(h("span", "kp-atom-block", atom.blockId || ""));
+        if ((atom.visualEvidenceIds || []).length) {
+          top.appendChild(h("span", "kp-atom-visual",
+            "画面 " + atom.visualEvidenceIds.length));
+        }
+        if (atom.time) top.appendChild(jumpButton(atom.time, onSeek, atom.time));
+        card.appendChild(top);
+        card.appendChild(h("b", "kp-atom-title", atom.title || atom.claim));
+        if (atom.title && atom.title !== atom.claim) {
+          card.appendChild(h("p", "", atom.claim));
+        }
+        if ((atom.conceptTitles || []).length > 1) {
+          card.appendChild(h("small", "kp-atom-anchors",
+            "连接锚点：" + atom.conceptTitles.join(" · ")));
+        }
+        list.appendChild(card);
+      });
+      group.appendChild(list);
+      groupRoot.appendChild(group);
+    });
+    details.appendChild(groupRoot);
+
+    search.addEventListener("input", () => {
+      const query = search.value.trim().toLowerCase();
+      let count = 0;
+      groupRoot.querySelectorAll(".kp-atom").forEach((card) => {
+        const match = !query || (card.dataset.search || "").includes(query);
+        card.hidden = !match;
+        if (match) count += 1;
+      });
+      groupRoot.querySelectorAll(".kp-atom-group").forEach((group) => {
+        const hasMatch = Boolean(group.querySelector(".kp-atom:not([hidden])"));
+        group.hidden = !hasMatch;
+        if (query && hasMatch) group.open = true;
+      });
+      visible.textContent = count + " 条";
+    });
+    return details;
   }
 
   function renderComparisons(note) {
@@ -642,6 +767,7 @@
       renderConceptGraph(note, onSeek),
       renderCourseSystem(courseGraph, onOpenEpisode),
       renderConcepts(note, onSeek),
+      renderKnowledgeAtoms(note, onSeek),
       renderComparisons(note),
       renderFormulas(note),
       renderExam(note, onSeek),
@@ -732,6 +858,24 @@
       if (concept.misconception) rows.push("", "**误区**：" + clean(concept.misconception));
       (concept.evidence || []).forEach((x) => rows.push("", `- [${clean(x.time)}] ${clean(x.reason)}${x.quote ? "\n  > " + clean(x.quote) : ""}`));
     });
+    if ((note.knowledgeAtoms || []).length) {
+      rows.push("", "## 完整知识原子");
+      const groups = new Map();
+      note.knowledgeAtoms.forEach((atom) => {
+        const anchor = (atom.conceptTitles || [])[0] || "未归类";
+        if (!groups.has(anchor)) groups.set(anchor, []);
+        groups.get(anchor).push(atom);
+      });
+      groups.forEach((atoms, anchor) => {
+        rows.push("", "### " + clean(anchor));
+        atoms.forEach((atom) => {
+          rows.push(
+            "- `" + clean(atom.time) + "` **" + clean(atom.title) + "** [" +
+            clean(ATOM_KINDS[atom.kind] || atom.kind) + "] — " + clean(atom.claim)
+          );
+        });
+      });
+    }
     if ((note.examPoints || []).length) {
       rows.push("", "## 考点与易错");
       note.examPoints.forEach((x) => rows.push("- `" + clean(x.time) + "` **" + clean(x.point) + "** — " + clean(x.reason)));

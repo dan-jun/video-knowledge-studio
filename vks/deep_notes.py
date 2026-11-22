@@ -17,6 +17,7 @@ from typing import Any, Callable
 
 from .config import Settings
 from .courses import clock_seconds, safe_child
+from . import knowledge_atoms
 
 
 class DeepNoteError(RuntimeError):
@@ -300,7 +301,7 @@ def deep_note_prompt(packet: dict[str, Any]) -> str:
 核心要求：
 1. 不要按字幕顺序复述，也不要输出逐字稿。先识别本讲要解决的中心问题，再给出可检验的一句话核心命题。
 2. 用因果或机制主线串起全片，说明“前提 → 动作 → 结果 → 边界”，不能只列章节。
-3. 提炼 5–9 个真正值得掌握的核心概念。每个概念必须包括：一句话定义、完整解释、至少 2 步机制、具体例子、适用边界、常见误区、至少 1 处原片证据。
+3. 提炼真正值得掌握的核心锚点，通常 5–9 个；内容确有需要时可以增加。每个锚点必须包括：一句话定义、完整解释、至少 2 步机制、具体例子、适用边界、常见误区、至少 1 处原片证据。详细知识点由 coverage.keyPoints 完整保留并确定性生成 knowledgeAtoms，不用核心锚点数量限制知识总量。
 4. 有对比就做判定表；有公式就写表达式、符号含义和适用条件；没有时返回空数组，不得补编。
 5. 考点必须区分“教师明确强调”和“由内容自然推出”；ASR 不确定、术语冲突和无画面覆盖写入 uncertainties。
 6. transcriptBlocks 是完整字幕的连续时间账本。coverage 必须对每个 blockId 恰好返回一次，不能遗漏、重复或改写时间边界。每个块的 keyPoints 要保留该段的所有实质知识；若块只是片尾、广告、空白或重复杂项，status 写 housekeeping，并在 exclusionReason 说明。不能为了省事排除教学内容。
@@ -866,8 +867,8 @@ def normalize_deep_note(
     if repairs:
         quality["warnings"].append(f"自动补足 {len(repairs)} 处结构关联，需抽查语义")
 
-    return {
-        "schemaVersion": 2,
+    note = {
+        "schemaVersion": 3,
         "episodeId": lesson.get("id"),
         "episode": lesson.get("number") or lesson.get("episode"),
         "title": lesson.get("title"),
@@ -897,6 +898,8 @@ def normalize_deep_note(
         "uncertainties": [_text(x) for x in _rows(raw.get("uncertainties")) if _text(x)],
         "quality": quality,
     }
+    knowledge_atoms.attach_knowledge_atoms(note)
+    return note
 
 
 def validate_deep_note(
@@ -915,8 +918,8 @@ def validate_deep_note(
         errors.append("知识主线少于 3 步")
 
     concepts = note.get("concepts") or []
-    if not 5 <= len(concepts) <= 9:
-        errors.append(f"核心概念应为 5–9 个，实际 {len(concepts)} 个")
+    if len(concepts) < 3:
+        errors.append(f"核心锚点至少需要 3 个，实际 {len(concepts)} 个")
     concept_titles = {_text(concept.get("title")) for concept in concepts if isinstance(concept, dict)}
     if len(concept_titles) != len(concepts):
         errors.append("核心概念标题必须唯一")
@@ -1059,6 +1062,8 @@ def validate_deep_note(
         if len(edge_types) < 2 or not (edge_types & {"contrast", "example", "application"}):
             errors.append("概念图只有单一线性关系，尚未形成多维知识网")
 
+    if int(note.get("schemaVersion") or 0) >= 3:
+        errors.extend(knowledge_atoms.validate_knowledge_atoms(note))
     if len(note.get("recall") or []) < 3:
         errors.append("主动回忆少于 3 题")
     if len(note.get("glossary") or []) < 3:
@@ -1218,10 +1223,14 @@ class DeepNoteService:
         blocking = [
             row for row in omissions if row.get("severity") in {"high", "medium"}
         ]
+        prompt_current = (
+            (review.get("reviewer") or {}).get("prompt_version")
+            == "deep-semantic-review-v2"
+        )
         result = {
             "status": (
                 "valid"
-                if review.get("note_sha256") == canonical_note_hash(note)
+                if review.get("note_sha256") == canonical_note_hash(note) and prompt_current
                 else "stale"
             ),
             "decision": review.get("decision"),
@@ -1248,7 +1257,7 @@ class DeepNoteService:
             return None
         if not isinstance(note, dict):
             return None
-        if int(note.get("schemaVersion") or 0) < 2:
+        if int(note.get("schemaVersion") or 0) < 3:
             return None
         if note.get("inputHash") != packet["inputHash"]:
             return None

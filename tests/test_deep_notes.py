@@ -82,7 +82,10 @@ def quality_payload(packet: dict, concepts: int = 5) -> dict:
             "status": "knowledge",
             "topic": f"知识块 {index + 1}",
             "keyPoints": [f"第 {index + 1} 块的关键主张。"],
-            "conceptTitles": [titles[index % len(titles)]],
+            "conceptTitles": [
+                title for title_index, title in enumerate(titles)
+                if title_index % max(1, len(packet["transcriptBlocks"])) == index
+            ],
             "exclusionReason": "",
         })
     visual_decisions = [
@@ -107,13 +110,14 @@ def quality_payload(packet: dict, concepts: int = 5) -> dict:
         }
         for index in range(len(titles) - 1)
     ]
-    graph_edges.append({
-        "from": titles[0],
-        "to": titles[2],
-        "type": "example",
-        "explain": "用后一个概念的具体场景说明前一个概念。",
-        "time": "03:30",
-    })
+    if len(titles) >= 3:
+        graph_edges.append({
+            "from": titles[0],
+            "to": titles[2],
+            "type": "example",
+            "explain": "用后一个概念的具体场景说明前一个概念。",
+            "time": "03:30",
+        })
     return {
         "centralQuestion": "条件如何通过机制产生结果？",
         "bigIdea": "先追踪条件，再按机制推导结果。",
@@ -212,6 +216,10 @@ class DeepNoteServiceTests(unittest.TestCase):
         self.assertEqual(note["quality"]["visualClusters"], 3)
         self.assertEqual(note["quality"]["includedVisualClusters"], 3)
         self.assertEqual(note["quality"]["graphNodeCount"], 5)
+        self.assertEqual(
+            len(note["knowledgeAtoms"]),
+            sum(len(row["keyPoints"]) for row in note["coverage"]),
+        )
         self.assertTrue(service.cache_path("deep-e01").is_file())
         cached = service.cached(self.episode)
         self.assertEqual(cached["inputHash"], note["inputHash"])
@@ -236,20 +244,30 @@ class DeepNoteServiceTests(unittest.TestCase):
         self.episode["knowledge"]["transcript"][0]["text"] += " 新修订。"
         self.assertIsNone(service.cached(self.episode))
 
-    def test_rejects_too_few_concepts(self):
+    def test_rejects_fewer_than_three_core_anchors(self):
         service = DeepNoteService(
             self.settings(),
-            generator=lambda packet, images, progress: (quality_payload(packet, 3), "test-provider"),
+            generator=lambda packet, images, progress: (quality_payload(packet, 2), "test-provider"),
         )
         started = service.start(self.episode)
         row = wait_for_job(service, started["job"])
         self.assertEqual(row["status"], "failed")
-        self.assertIn("核心概念应为 5–9 个", row["error"])
+        self.assertIn("核心锚点至少需要 3 个", row["error"])
+
+    def test_accepts_more_than_nine_core_anchors(self):
+        service = DeepNoteService(
+            self.settings(),
+            generator=lambda packet, images, progress: (quality_payload(packet, 10), "test-provider"),
+        )
+        started = service.start(self.episode)
+        row = wait_for_job(service, started["job"])
+        self.assertEqual(row["status"], "done", row.get("error"))
+        self.assertEqual(row["note"]["quality"]["conceptCount"], 10)
 
     def test_repairs_unknown_coverage_links_with_visible_warning(self):
         def generator(packet, images, progress):
             raw = quality_payload(packet)
-            raw["coverage"][0]["conceptTitles"] = ["不存在的概念"]
+            raw["coverage"][0]["conceptTitles"].append("不存在的概念")
             return raw, "test-provider"
 
         service = DeepNoteService(
@@ -385,7 +403,11 @@ class DeepNoteServiceTests(unittest.TestCase):
             "summary": "complete",
             "note_sha256": canonical_note_hash(note),
             "omissions": [],
-            "reviewer": {"reviewed_at": "now", "model": "test"},
+            "reviewer": {
+                "reviewed_at": "now",
+                "model": "test",
+                "prompt_version": "deep-semantic-review-v2",
+            },
         }), encoding="utf-8")
         current = service.review_status(note)
         self.assertEqual(current["status"], "valid")

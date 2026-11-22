@@ -20,7 +20,7 @@ from vks.deep_notes import DeepNoteService, _extract_json
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROMPT_VERSION = "deep-semantic-review-v1"
+PROMPT_VERSION = "deep-semantic-review-v2"
 
 
 def canonical_hash(value):
@@ -77,11 +77,14 @@ def review_schema():
 
 
 def review_prompt(packet, note, hashes):
+    review_note = dict(note)
+    review_note.pop("knowledgeAtoms", None)
+    review_note.pop("knowledgeGraph", None)
     evidence = {
         "lesson": packet.get("lesson"),
         "transcriptBlocks": packet.get("transcriptBlocks"),
         "visualCandidates": packet.get("visualCandidates"),
-        "finalNote": note,
+        "finalNote": review_note,
         "hashes": hashes,
         "writerRepairs": (note.get("quality") or {}).get("repairs") or [],
     }
@@ -90,10 +93,11 @@ def review_prompt(packet, note, hashes):
 要求：
 1. transcriptBlocks 是完整连续字幕账本。逐个检查定义、机制、成立条件、公式及符号、例题/演示、对比、边界、例外、教师强调的易错点和结论，是否在 finalNote 中有可学习、可复习的表达。只判断证据中实际存在的知识，不得用课程常识补编。
 2. coverage.keyPoints 只是索引，不能因为关键词出现就判定覆盖。笔记必须解释为什么、怎么做、何时成立、例子如何推出。
-3. 核对 coverage 的概念关联是否对应同一时间段语义；核对 conceptGraph 的每条边是否由原片支持，不能仅因节点相邻或为了连通而成立。
-4. 核对 visualCandidates 与 finalNote.visualAudit/visualEvidence：每个有独有教学信息的视觉组都应有代表帧；装饰、片尾、水印可以整组排除，但必须有明确 reason。caption、whatItAdds、conceptTitles 必须说明该帧相对字幕新增的信息。
-5. 重点复核 writerRepairs。自动补图、补边、补概念关联在语义上不成立时按高严重度问题报告。
-6. 时间戳必须指向支持该主张的实际证据；ASR 不确定处应保留不确定性。
+3. knowledgeAtoms 与 knowledgeGraph 是 coverage.keyPoints 的确定性投影，不进入本审校 payload；结构门禁已核对逐块原子数、时间、锚点归属和悬空关系。不要把缺少第二套原子改写视为遗漏。
+4. 核对 coverage 的概念关联是否对应同一时间段语义；核对 conceptGraph 的每条边是否由原片支持，不能仅因节点相邻或为了连通而成立。
+5. 核对 visualCandidates 与 finalNote.visualAudit/visualEvidence：每个有独有教学信息的视觉组都应有代表帧；装饰、片尾、水印可以整组排除，但必须有明确 reason。caption、whatItAdds、conceptTitles 必须说明该帧相对字幕新增的信息。
+6. 重点复核 writerRepairs。自动补图、补边、补概念关联在语义上不成立时按高严重度问题报告。
+7. 时间戳必须指向支持该主张的实际证据；ASR 不确定处应保留不确定性。
 
 判定：
 - 核心定义、机制、公式、关键例子或教师明确强调考点缺失/错误，记 high。
@@ -197,7 +201,7 @@ def prepare(settings, episode):
     service = DeepNoteService(settings)
     note = service.cached(episode)
     if not note:
-        raise RuntimeError(f"{episode['id']} is missing a valid schema v2 deep note")
+        raise RuntimeError(f"{episode['id']} is missing a valid schema v3 deep note")
     packet = service.build_packet(episode)
     hashes = {
         "note_sha256": canonical_hash(note),

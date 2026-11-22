@@ -21,6 +21,14 @@
   taxonomy is represented honestly instead of forcing unsupported causal edges.
 - Empty OCR no longer causes an instructional frame to be discarded automatically;
   manual frame review and restored OCR are preserved in the visual audit.
+- Added a schema-v3 multiscale knowledge model: 5–9 is now a recommendation for
+  core navigation anchors, while every instructional coverage key point becomes one
+  evidence-linked `knowledgeAtom` without a total-count cap.
+- Added a grouped, searchable complete-atom view and course-level lesson navigation;
+  the compact core graph remains the default network instead of turning into a
+  hundreds-of-node spiderweb.
+- Added schema-v3 migration and validation helpers so ordinary coverage key points,
+  not only the core anchors, can be audited and restored from source evidence.
 - Added resumable course-wide generation and graph-building scripts for all episodes,
   with per-episode state, retries and input-hash validation.
 - Added an embedded course-system view with chapter maps and a full canonical concept

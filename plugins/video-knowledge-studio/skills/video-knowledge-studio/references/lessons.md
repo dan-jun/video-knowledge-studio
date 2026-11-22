@@ -503,3 +503,16 @@
 - **Verification:** The affected episodes re-passed fresh semantic review after
   correcting a full working-set sequence, a per-channel CHCT definition, and two
   unsupported concept edges.
+
+## 2026-11-22 - Core anchors must not cap knowledge coverage
+
+- **Symptom:** A 5–9 core-concept range made complete lessons appear to contain only
+  a handful of knowledge units.
+- **Root cause:** Navigation compression and evidence coverage shared one array, so
+  a readability heuristic became an accidental epistemic limit.
+- **Fix:** Keep anchors for the compact graph, but add an unlimited deterministic
+  `knowledgeAtoms` layer sourced from every instructional coverage key point. Bind
+  each atom to block, time, anchors and visual evidence; expose the full layer on
+  demand and retain the anchors as the default view.
+- **Verification:** The migrated course preserves 677 anchors while carrying 3,486
+  atoms and 18,347 atom-layer relations; every non-housekeeping key point maps once.

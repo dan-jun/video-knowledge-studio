@@ -25,6 +25,12 @@ Use this skill to:
 The default architecture is one instance per person. `127.0.0.1` means the current
 computer; never tell another person to use the same loopback URL as a shared service.
 
+The deep-note model is multiscale: 5–9 core anchors are a navigation recommendation,
+not a knowledge limit. Schema v3 stores one evidence-linked `knowledgeAtom` for every
+instructional coverage key point, then groups atoms under anchors and lessons. The
+default player view should remain the compact anchor network; expose the complete atom
+layer on demand.
+
 For requests that start from a work, research, project or interview knowledge gap rather
 than an existing course, use the companion `$demand-driven-video-learning` Skill to plan
 the learning path, find multiple sources, render the integrated course, and create notes.

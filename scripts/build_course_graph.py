@@ -28,11 +28,13 @@ def build(course_id: str, output: Path):
     for episode in episode_rows:
         note = service.cached(episode)
         if not note:
-            raise RuntimeError(f"{episode['id']} is missing a valid schema v2 deep note")
+            raise RuntimeError(f"{episode['id']} is missing a valid schema v3 deep note")
         notes[episode["id"]] = note
 
     key_to_id = {}
     nodes = []
+    knowledge_atoms = []
+    lessons = []
     chapter_nodes = {}
     chapter_order = []
     for chapter in course["chapters"]:
@@ -42,6 +44,8 @@ def build(course_id: str, output: Path):
             "label": chapter["title"],
             "conceptIds": [],
             "episodes": [],
+            "lessonIds": [],
+            "atomIds": [],
         }
 
     local_meta = {}
@@ -52,6 +56,7 @@ def build(course_id: str, output: Path):
         chapter_id = episode["chapterId"]
         episode_to_chapter[episode_id] = chapter_id
         chapter_nodes[chapter_id]["episodes"].append(int(episode["number"]))
+        local_concept_ids = []
         for graph_node in (note.get("conceptGraph") or {}).get("nodes", []):
             title = str(graph_node.get("conceptTitle") or "").strip()
             key = key_of(title) or title
@@ -84,6 +89,45 @@ def build(course_id: str, output: Path):
             })
             if node["id"] not in chapter_nodes[chapter_id]["conceptIds"]:
                 chapter_nodes[chapter_id]["conceptIds"].append(node["id"])
+            if node["id"] not in local_concept_ids:
+                local_concept_ids.append(node["id"])
+
+        lesson_id = f"lesson-{episode_id}"
+        lesson = {
+            "id": lesson_id,
+            "episodeId": episode_id,
+            "episode": int(episode["number"]),
+            "label": note.get("title") or episode.get("title") or episode_id,
+            "chapterId": chapter_id,
+            "conceptIds": local_concept_ids,
+            "knowledgeAtomIds": [],
+            "knowledgeAtomCount": len(note.get("knowledgeAtoms") or []),
+        }
+        lessons.append(lesson)
+        chapter_nodes[chapter_id]["lessonIds"].append(lesson_id)
+        for atom in note.get("knowledgeAtoms") or []:
+            atom_id = "atom-" + str(atom.get("atomId"))
+            concept_ids = []
+            for title in atom.get("conceptTitles") or []:
+                concept_id = key_to_id.get(key_of(title))
+                if concept_id and concept_id not in concept_ids:
+                    concept_ids.append(concept_id)
+            knowledge_atoms.append({
+                "id": atom_id,
+                "episodeId": episode_id,
+                "episode": int(episode["number"]),
+                "lessonId": lesson_id,
+                "chapterId": chapter_id,
+                "label": atom.get("title"),
+                "claim": atom.get("claim"),
+                "kind": atom.get("kind"),
+                "blockId": atom.get("blockId"),
+                "time": atom.get("time"),
+                "conceptIds": concept_ids,
+                "visualEvidenceIds": atom.get("visualEvidenceIds") or [],
+            })
+            lesson["knowledgeAtomIds"].append(atom_id)
+            chapter_nodes[chapter_id]["atomIds"].append(atom_id)
 
     edge_map = {}
 
@@ -184,7 +228,7 @@ def build(course_id: str, output: Path):
         ).encode("utf-8")
     ).hexdigest()
     result = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "courseId": course_id,
         "course": course["title"],
         "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -192,14 +236,22 @@ def build(course_id: str, output: Path):
         "stats": {
             "episodes": len(notes),
             "chapters": len(chapter_nodes),
+            "lessons": len(lessons),
             "conceptOccurrences": sum(len(node["occurrences"]) for node in nodes),
             "canonicalConcepts": len(nodes),
+            "knowledgeAtoms": len(knowledge_atoms),
+            "knowledgeRelations": sum(
+                len((note.get("knowledgeGraph") or {}).get("edges") or [])
+                for note in notes.values()
+            ),
             "edges": len(edges),
         },
         "chapters": [chapter_nodes[cid] for cid in chapter_order],
         "chapterFlow": chapter_flow,
+        "lessons": lessons,
         "nodes": nodes,
         "edges": edges,
+        "knowledgeAtoms": knowledge_atoms,
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     tmp = output.with_suffix(".tmp")
