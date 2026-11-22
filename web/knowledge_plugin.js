@@ -1154,6 +1154,7 @@
         button.classList.toggle("active", key === name);
         button.setAttribute("aria-selected", key === name ? "true" : "false");
       });
+      host.classList.toggle("kp-star-active", name === "star");
       const scrollHost = host.closest && host.closest("#knowledge");
       if (scrollHost) scrollHost.scrollTop = 0;
       if (pages.star && pages.star._kpActivate) {

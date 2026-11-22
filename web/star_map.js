@@ -558,6 +558,8 @@
     const hint = h("div", "kp-star-help",
       "拖拽平移 · 滚轮缩放 · 点击光点查看它和谁相连");
     stage.appendChild(hint);
+    const depthBadge = h("div", "kp-star-depth", "课程总览");
+    stage.appendChild(depthBadge);
     const detail = h("aside", "kp-star-detail");
     detail.hidden = true;
     stage.appendChild(detail);
@@ -622,6 +624,14 @@
       };
     }
 
+    function updateDepthBadge() {
+      depthBadge.textContent = camera.scale < 0.46
+        ? "课程总览"
+        : camera.scale < 0.9
+          ? "章节结构"
+          : "知识细节";
+    }
+
     function cameraTransform(context) {
       context.setTransform(
         dpr * camera.scale, 0, 0, dpr * camera.scale,
@@ -643,6 +653,7 @@
       camera.x = (bounds.minX + bounds.maxX) / 2;
       camera.y = (bounds.minY + bounds.maxY) / 2;
       cameraChanged = true;
+      updateDepthBadge();
     }
 
     function focusPoint(point, scale) {
@@ -651,6 +662,7 @@
       camera.y = point.y;
       camera.scale = Math.max(0.34, Math.min(2.2, scale || Math.max(camera.scale, 0.72)));
       cameraChanged = true;
+      updateDepthBadge();
     }
 
     function zoomAt(multiplier, sx, sy) {
@@ -662,6 +674,7 @@
       camera.x = worldX - (screenX - size.width / 2) / camera.scale;
       camera.y = worldY - (screenY - size.height / 2) / camera.scale;
       cameraChanged = true;
+      updateDepthBadge();
     }
 
     function resize() {
